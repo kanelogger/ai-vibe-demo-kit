@@ -1,44 +1,10 @@
 #!/usr/bin/env node
-// check-docs — 校验阶段文档是否存在且非空
-// Usage: node scripts/check-docs.mjs [project-root]
+// Compatibility wrapper. Kit-Test v1 uses workflow/ and SPECS/ contracts.
+import { spawnSync } from "node:child_process";
 
-import { readFile, access } from "node:fs/promises";
-import { join } from "node:path";
+const result = spawnSync(process.execPath, ["scripts/kit.mjs", "check", ...process.argv.slice(2)], {
+  cwd: process.cwd(),
+  stdio: "inherit",
+});
 
-const DOCS = [
-  "docs/requirements/draft.md",
-  "docs/requirements/confirmed.md",
-  "docs/technical/options.md",
-  "docs/technical/selected.md",
-  "docs/execution/ready.md",
-];
-
-async function exists(path) {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function check(projectRoot) {
-  let allOk = true;
-
-  for (const doc of DOCS) {
-    const fullPath = join(projectRoot, doc);
-    if (!(await exists(fullPath))) {
-      console.log(`  ⚠️  Missing: ${doc}`);
-      allOk = false;
-    }
-  }
-
-  if (allOk) {
-    console.log("✅ All doc placeholders present");
-  } else {
-    console.log("⚠️  Some docs not yet created (this is OK for early stages)");
-  }
-}
-
-const projectRoot = process.argv[2] || process.cwd();
-await check(projectRoot);
+process.exit(result.status ?? 1);

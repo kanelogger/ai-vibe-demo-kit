@@ -7,10 +7,12 @@
     "preinstall": "npx only-allow pnpm",
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
+    "test": "pnpm --filter @kit-test/cli test",
     "typecheck": "pnpm -r typecheck",
     "cli": "node packages/cli/dist/index.js",
+    "check": "node packages/cli/dist/index.js check",
+    "stage": "node packages/cli/dist/index.js stage",
     "clean": "pnpm -r exec rimraf dist node_modules && rimraf node_modules pnpm-lock.yaml",
-    "check-stage": "node scripts/check-stage.mjs",
     "template:install": "cd templates/pc-admin && pnpm install",
     "template:dev": "cd templates/pc-admin && pnpm dev",
     "template:mysql": "docker compose up -d mysql"

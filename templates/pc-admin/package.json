@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "kit:check": "node scripts/kit.mjs check",
+    "kit:stage": "node scripts/kit.mjs stage"
   },
   "engines": {
     "node": "^20.19.0 || >=22.13.0",

@@ -1,50 +1,10 @@
 #!/usr/bin/env node
-// check-stage — 阶段闸门校验（同根 scripts/check-stage.mjs 的逻辑）
-// Usage: node scripts/check-stage.mjs
+// Compatibility wrapper. Kit-Test v1 stage validation lives in `kit check`.
+import { spawnSync } from "node:child_process";
 
-import { readFile, access } from "node:fs/promises";
-import { join } from "node:path";
+const result = spawnSync(process.execPath, ["scripts/kit.mjs", "check", ...process.argv.slice(2)], {
+  cwd: process.cwd(),
+  stdio: "inherit",
+});
 
-const STAGES = [
-  "requirements-draft",
-  "user-confirmed",
-  "solution-selected",
-  "implementation-ready",
-];
-
-async function exists(path) {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function check() {
-  const statePath = join(process.cwd(), "workflow-state.json");
-
-  if (!(await exists(statePath))) {
-    console.error("❌ workflow-state.json not found");
-    process.exit(1);
-  }
-
-  const state = JSON.parse(await readFile(statePath, "utf-8"));
-
-  if (!STAGES.includes(state.stage)) {
-    console.error(`❌ Invalid stage: "${state.stage}"`);
-    process.exit(1);
-  }
-
-  if (
-    STAGES.indexOf(state.stage) >= STAGES.indexOf("solution-selected") &&
-    !state.selectedBy
-  ) {
-    console.error("❌ selectedBy must be set");
-    process.exit(1);
-  }
-
-  console.log(`✅ Stage "${state.stage}" valid`);
-}
-
-await check();
+process.exit(result.status ?? 1);

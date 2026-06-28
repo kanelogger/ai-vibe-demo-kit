@@ -7,62 +7,26 @@ if (envFound.error) {
   throw new Error("⚠️  Couldn't find .env file  ⚠️");
 }
 
+function requireEnv(key: string): string {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`⚠️  Missing required env var: ${key}  ⚠️`);
+  }
+  return value;
+}
+
 export default {
-  port: parseInt(process.env.PORT, 10),
-  databaseURL: process.env.MONGODB_URI,
-  jwtSecret: process.env.JWT_SECRET,
-  jwtAlgorithm: process.env.JWT_ALGO,
-  options: {
-    swaggerDefinition: {
-      info: {
-        description: "admin官方后端",
-        title: "Swagger",
-        version: require("../../package.json").version,
-      },
-      host: `localhost:${parseInt(process.env.PORT, 10)}`,
-      basePath: "/",
-      produces: ["application/json", "application/xml"],
-      schemes: ["http", "https"],
-      securityDefinitions: {
-        JWT: {
-          type: "apiKey",
-          in: "header",
-          name: "Authorization",
-          description: "Bearer Authorization",
-        },
-      },
-    },
-    route: {
-      url: "./swagger-ui.html",
-      // swagger文件 api
-      docs: "/swagger.json",
-    },
-    // app absolute path
-    basedir: __dirname,
-    // path to the API handle folder
-    files: ["../router/*.ts"],
-  },
+  port: parseInt(requireEnv("PORT"), 10),
+  jwtSecret: requireEnv("JWT_SECRET"),
   logs: {
-    level: process.env.LOG_LEVEL || "silly",
-  },
-  agenda: {
-    dbCollection: process.env.AGENDA_DB_COLLECTION,
-    pooltime: process.env.AGENDA_POOL_TIME,
-    concurrency: parseInt(process.env.AGENDA_CONCURRENCY, 10),
+    level: process.env.LOG_LEVEL || "debug",
   },
   mysql: {
-    host: "localhost",
-    charset: "utf8_general_ci",
-    user: "root",
-    password: "123456789",
-  },
-  mongodb: {},
-  sqlite: {},
-  api: {
-    prefix: "/api",
-  },
-  emails: {
-    apiKey: process.env.MAILGUN_API_KEY,
-    domain: process.env.MAILGUN_DOMAIN,
+    host: process.env.MYSQL_HOST || "localhost",
+    port: parseInt(process.env.MYSQL_PORT || "3306", 10),
+    user: process.env.MYSQL_USER || "root",
+    password: process.env.MYSQL_PASSWORD || "123456789",
+    database: process.env.MYSQL_DATABASE || "admin",
+    charset: "utf8mb4_unicode_ci",
   },
 };

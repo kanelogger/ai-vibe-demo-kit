@@ -1,36 +1,26 @@
-import * as express from "express";
-import * as expressWs from "express-ws";
-import * as bodyParser from "body-parser";
+import Fastify from "fastify";
+import cors from "@fastify/cors";
+import { requireAuth } from "./utils/jwt";
+import authRoutes from "./routes/auth";
+import userRoutes from "./routes/users";
+import asyncRoutes from "./routes/async-routes";
 
-class App {
-  public app;
-  constructor() {
-    this.app = express();
-    this.config();
-  }
-  private config(): void {
-    // 支持websocket
-    expressWs(this.app);
-    // 支持json编码的主体
-    this.app.use(bodyParser.json());
-    // 支持编码的主体
-    this.app.use(
-      bodyParser.urlencoded({
-        extended: true,
-      })
-    );
-    // 设置静态访问目录(Swagger)
-    this.app.use(express.static("public"));
-    // 设置跨域访问
-    this.app.all("*", (req, res, next) => {
-      res.header("Access-Control-Allow-Origin", "*");
-      res.header("Access-Control-Allow-Headers", "content-type");
-      res.header("Access-Control-Allow-Methods", "PUT,POST,GET,DELETE,OPTIONS");
-      res.header("X-Powered-By", " 3.2.1");
-      res.header("Content-Type", "application/json;charset=utf-8");
-      next();
-    });
-  }
+export function buildApp() {
+  const app = Fastify({
+    logger: false,
+  });
+
+  app.register(cors, {
+    origin: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  });
+
+  app.addHook("onRequest", requireAuth);
+
+  app.register(authRoutes);
+  app.register(userRoutes);
+  app.register(asyncRoutes);
+
+  return app;
 }
-
-export default new App().app;

@@ -112,7 +112,7 @@ History entries are written only by `kit stage advance`:
 `workflow/*.md` files follow a strict creation-and-advance lifecycle:
 
 1. **Agent creates.** The Agent writes the stage file for the **immediate next stage** (the only entry in `allowedNextStages`). This is the "immediate target" rule — the file may exist before `kit stage advance` because the Agent prepares it in advance.
-2. **User confirms and advances.** The user reviews the file, then runs `kit stage advance <stage> --by user --quote "..."`. `kit stage advance` **does not create or modify any `workflow/*.md` file**. It only updates `workflow-state.json` (stage, allowedNextStages, history).
+2. **User confirms and advances.** The user reviews the file, then runs `kit stage advance <stage> --by user --quote "..."`. `kit stage advance` **does not create or modify any `workflow/*.md` file**. Before writing state, it **reads the target artifact and validates minimal frontmatter**: the file must exist, have valid YAML frontmatter, and include the `status` field required for the target stage. If validation fails, the command aborts and does not update `workflow-state.json`. After validation passes, it updates `workflow-state.json` — see Transition State Diff below for the full field-by-field diff per transition. `kit check` still performs full Gate Rules validation post-advance.
 3. **File becomes current-stage artifact.** After advance, the previously prepared file is now the current stage's required artifact. `kit check` (with Phase 2 artifact checks) validates it exists with correct frontmatter.
 4. **Next cycle.** The Agent now prepares the file for the new immediate next stage, and the cycle repeats.
 
@@ -128,27 +128,73 @@ Example flow for `initialized` → `requirements-draft`:
     │  ↑ only updates workflow-state.json; does NOT touch workflow/requirements.md
     │
 [requirements-draft]  workflow/requirements.md exists (current stage artifact)
+    │  kit check → ✅ (status: draft matches current stage)
     │
-    │  Agent creates workflow/requirements.md (status: confirmed, confirmedBy, etc.)
+    │  Agent updates workflow/requirements.md frontmatter to status: confirmed
     │  ↑ same file, updated frontmatter; still the immediate target
+    │  ↑ kit check NOW FAILS — expected: kit stage advance will validate instead
     │
     │  User: kit stage advance requirements-confirmed --by user --quote "需求没问题"
+    │  ↑ validates file exists + status: confirmed, then advances state
     │
 [requirements-confirmed]  workflow/requirements.md is confirmed
+    │  kit check → ✅ (status: confirmed matches current stage)
 ```
+
+## Transition State Diff
+
+When `kit stage advance <stage> --by user --quote "..."` runs, `workflow-state.json` receives the following per-transition updates. `—` means a field is unchanged from its previous value; `append entry` pushes a new `{"from","to","advancedBy","advancedAt","quote","doc"}` object to the `history` array.
+
+| Transition | `stage` | `allowedNextStages` | `currentStageDoc` | `lastConfirmedDoc` | `confirmation` | `selection` | `history` |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `initialized` → `requirements-draft` | `"requirements-draft"` | `["requirements-confirmed"]` | `"workflow/requirements.md"` | — | — | — | append entry |
+| `requirements-draft` → `requirements-confirmed` | `"requirements-confirmed"` | `["solution-options"]` | `"workflow/requirements.md"` | `"workflow/requirements.md"` | `{"confirmedBy":"user","confirmedAt":"<ISO>","confirmationQuote":"<quote>"}` | — | append entry |
+| `requirements-confirmed` → `solution-options` | `"solution-options"` | `["solution-selected"]` | `"workflow/solution-options.md"` | — | — | — | append entry |
+| `solution-options` → `solution-selected` | `"solution-selected"` | `["implementation-ready"]` | `"workflow/solution-selected.md"` | — | — | `{"selectionType":"option\|custom","selectedOptionId":"<id>","selectedBy":"user","selectedAt":"<ISO>","selectionQuote":"<quote>"}` | append entry |
+| `solution-selected` → `implementation-ready` | `"implementation-ready"` | `[]` | `"workflow/implementation-ready.md"` | `"workflow/implementation-ready.md"` | `{"confirmedBy":"user","confirmedAt":"<ISO>","confirmationQuote":"<quote>"}` | — | append entry |
+
+### Pre-Advance Validation
+
+Before writing updated state, `kit stage advance` validates the target artifact against these minimum requirements. If the file is missing, has no YAML frontmatter, or the `status` field does not match, the command aborts with an error.
+
+| Transition | File must exist | Required `status` |
+| --- | --- | --- |
+| `initialized` → `requirements-draft` | `workflow/requirements.md` | `draft` |
+| `requirements-draft` → `requirements-confirmed` | `workflow/requirements.md` | `confirmed` |
+| `requirements-confirmed` → `solution-options` | `workflow/solution-options.md` | `proposed` |
+| `solution-options` → `solution-selected` | `workflow/solution-selected.md` | `selected` |
+| `solution-selected` → `implementation-ready` | `workflow/implementation-ready.md` | `ready` |
+
+`kit stage advance` validates **only** the `status` field. It does not check additional frontmatter fields required by the post-advance Gate Rules. This is a deliberate v1 simplification: `kit stage advance` is the transition gate, `kit check` is the quality gate.
+
+**Fields checked by `kit check` but NOT by `kit stage advance`:**
+
+| Transition | Additional fields `kit check` validates |
+| --- | --- |
+| `requirements-draft` → `requirements-confirmed` | `confirmedBy`, `confirmedAt`, `confirmationQuote` |
+| `solution-options` → `solution-selected` | `selectionType`, `selectedOptionId`, `selectedBy`, `selectedAt`, `selectionQuote` |
+| `solution-selected` → `implementation-ready` | `confirmedBy`, `confirmedAt`, `confirmationQuote` |
+
+An advance that passes pre-advance validation may still fail `kit check` if the Agent omitted these additional fields. Agents must ensure the target artifact is complete before invoking `kit stage advance`.
 
 ## Gate Rules
 
 `kit check` validates YAML frontmatter and JSON only. Markdown body is for human readability; `AGENTS.md` still requires the matching human-readable confirmation section.
 
-| Stage | Required artifacts | Required frontmatter / state |
-| --- | --- | --- |
-| `initialized` | Root control files, root `SPECS/API.md`, frontend/backend `SPECS/README.md`, frontend/backend `SPECS/API.md`, `memory/decisions.md`, `tasks/README.md` | No `workflow/*.md` stage files may exist. |
-| `requirements-draft` | `workflow/requirements.md` | `status: draft`. No solution or implementation workflow files may exist. |
-| `requirements-confirmed` | `workflow/requirements.md`, `tasks/backlog.md` | `status: confirmed`, `confirmedBy`, `confirmedAt`, `confirmationQuote`; state `lastConfirmedDoc` points to `workflow/requirements.md`. |
-| `solution-options` | `workflow/solution-options.md` | `status: proposed`, exactly 3 `optionIds`. No selected or implementation workflow files may exist. |
-| `solution-selected` | `workflow/solution-selected.md`, `memory/decisions.md` | `status: selected`, `selectionType: option\|custom`, `selectedOptionId`, `selectedBy`, `selectedAt`, `selectionQuote`; `memory/decisions.md` must contain the same `selectedOptionId`. |
-| `implementation-ready` | `workflow/implementation-ready.md`, `tasks/sprint-01.md`, root `SPECS/API.md` | `status: ready`, `confirmedBy`, `confirmedAt`, `confirmationQuote`; frontend/backend API files still reference `../../SPECS/API.md`. |
+### `kit check` vs `kit stage advance` responsibility split
+
+* `kit check` validates the **current stable state** only. It uses the per-stage requirements columns in the Gate Rules table below. When the Agent has prepared an immediate target artifact (updated frontmatter, new file) but the stage has not yet advanced, `kit check` is **expected to fail** — this is not a bug; the pre-advance validation is `kit stage advance`'s responsibility.
+* `kit stage advance` performs **pre-advance validation** against the [Pre-Advance Validation](#pre-advance-validation) table (file existence + required `status`). It does not consult Gate Rules. Only `kit stage advance` determines whether the transition is allowed.
+* The **Allowed immediate target artifact** column in the Gate Rules table only controls whether a file's **existence** is permitted at the current stage — it prevents new files from being flagged as premature. It does **not** override the current stage's `status` requirement. When a file serves as both the current stage artifact and the immediate target (currently only `workflow/requirements.md` in `requirements-draft`), `kit check` checks its `status` against the current stage requirement.
+
+| Stage | Required artifacts | Required frontmatter / state | Allowed immediate target artifact |
+| --- | --- | --- | --- |
+| `initialized` | Root control files, root `SPECS/API.md`, frontend/backend `SPECS/README.md`, frontend/backend `SPECS/API.md`, `memory/decisions.md`, `tasks/README.md` | No `workflow/*.md` stage files may exist, except the allowed immediate target artifact. | `workflow/requirements.md` |
+| `requirements-draft` | `workflow/requirements.md` | `status: draft`. No solution or implementation workflow files may exist. | `workflow/requirements.md` (updated frontmatter) |
+| `requirements-confirmed` | `workflow/requirements.md`, `tasks/backlog.md` | `status: confirmed`, `confirmedBy`, `confirmedAt`, `confirmationQuote`; state `lastConfirmedDoc` points to `workflow/requirements.md`. | `workflow/solution-options.md` |
+| `solution-options` | `workflow/solution-options.md` | `status: proposed`, exactly 3 `optionIds`. No selected or implementation workflow files may exist, except the allowed immediate target artifact. | `workflow/solution-selected.md` |
+| `solution-selected` | `workflow/solution-selected.md`, `memory/decisions.md` | `status: selected`, `selectionType: option\|custom`, `selectedOptionId`, `selectedBy`, `selectedAt`, `selectionQuote`; `memory/decisions.md` must contain the same `selectedOptionId`. | `workflow/implementation-ready.md` |
+| `implementation-ready` | `workflow/implementation-ready.md`, `tasks/sprint-01.md`, root `SPECS/API.md` | `status: ready`, `confirmedBy`, `confirmedAt`, `confirmationQuote`; frontend/backend API files still reference `../../SPECS/API.md`. | N/A (terminal stage) |
 
 Selection rules:
 
@@ -209,7 +255,9 @@ requirement-clarification (→ ce-brainstorm)
 
 `requirement-grilling`, `domain-modeling`, `ubiquitous-language`, `security-review`, UI design, prototype, debug, and architecture diagram skills remain conditional triggers. Hook support is limited to generated documentation and examples in v1; no runtime-specific hook integration ships in v1.
 
-**v1 limitation:** Stage gates are enforced only by `kit check` (post-hoc validation of JSON and YAML frontmatter). `AGENTS.md` rules rely on Agent compliance; there is no runtime interception of file creation or stage advancement. Runtime hooks and real-time gate enforcement are deferred to v2.
+### Stage Gate Enforcement
+
+**v1 design:** `kit stage advance` validates the target artifact's existence and `status` frontmatter before writing state (see [Pre-Advance Validation](#pre-advance-validation)). Full Gate Rules validation remains the responsibility of `kit check` post-advance. `AGENTS.md` rules rely on Agent compliance; there is no runtime interception of file creation. Runtime hooks and real-time gate enforcement are deferred to v2.
 
 ### `upfrontUserConfirm` (intentionally excluded)
 

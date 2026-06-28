@@ -29,7 +29,7 @@ summary: 将 AGENTS、SPECS、workflow、tasks、memory 控制文件加入生成
 ## Acceptance Criteria
 
 * Fresh generated project contains every control file listed in `00-contract.md`.
-* Fresh generated project does not contain stage artifacts such as `workflow/requirements.md` or `workflow/solution-selected.md`.
+* Fresh generated project does not contain stage artifacts such as `workflow/requirements.md` or `workflow/solution-selected.md`. This applies to the output of `kit init` only — it does not mean all `initialized`-stage projects must reject `workflow/requirements.md`; the `initialized` Gate Rules explicitly allow `workflow/requirements.md` as the immediate target artifact.
 * `frontend/SPECS/API.md` and `backend/SPECS/API.md` contain the exact source line.
 * Root, frontend, and backend `AGENTS.md` do not contradict the state machine or Gate Rules in `00-contract.md`.
 * Fresh generated project passes `kit check` at `initialized`.

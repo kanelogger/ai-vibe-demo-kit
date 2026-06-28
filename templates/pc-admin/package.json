@@ -2,7 +2,7 @@
   "name": "{{projectName}}",
   "version": "0.1.0",
   "private": true,
-  "description": "PC 后台管理系统 — 由 kit-test 生成",
+  "description": "PC 后台管理系统 — 由 demo-ai-app-kit 生成",
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",

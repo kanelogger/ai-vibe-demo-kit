@@ -17,7 +17,7 @@ function run(args, options = {}) {
 }
 
 async function tempProject() {
-  const root = await mkdtemp(join(tmpdir(), "kit-test-"));
+  const root = await mkdtemp(join(tmpdir(), "demo-ai-app-kit-"));
   const result = run(["init", "demo-admin"], { cwd: root });
   assert.equal(result.status, 0, result.stderr);
   return { root, project: join(root, "demo-admin") };

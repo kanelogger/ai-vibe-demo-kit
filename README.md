@@ -1,8 +1,8 @@
-# kit-test
+# demo-ai-app-kit
 
 Agent-friendly PC admin project scaffold.
 
-`kit-test` creates a full-stack admin workspace with:
+`demo-ai-app-kit` creates a full-stack admin workspace with:
 
 - a Vue admin frontend template;
 - a Fastify backend template;
@@ -15,7 +15,7 @@ Agent-friendly PC admin project scaffold.
 Create a project without installing globally:
 
 ```sh
-npx kit-test init my-admin
+npx demo-ai-app-kit init my-admin
 ```
 
 Then run the generated project checks:
@@ -28,16 +28,16 @@ node scripts/kit.mjs check
 You can also install the package globally:
 
 ```sh
-npm install -g kit-test
+npm install -g demo-ai-app-kit
 kit init my-admin
 ```
 
 ## Commands
 
 ```sh
-kit-test init <project-name>
-kit-test check [project-root]
-kit-test stage advance <stage> --by user --quote "<user exact quote>"
+kit init <project-name>
+kit check [project-root]
+kit stage advance <stage> --by user --quote "<user exact quote>"
 ```
 
 The generated project also includes local scripts:

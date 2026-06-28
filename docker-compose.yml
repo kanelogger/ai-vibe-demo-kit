@@ -1,7 +1,7 @@
 services:
   mysql:
     image: mysql:8.0
-    container_name: kit-test-mysql
+    container_name: demo-ai-app-kit-mysql
     environment:
       MYSQL_ROOT_PASSWORD: "123456789"
       MYSQL_DATABASE: admin

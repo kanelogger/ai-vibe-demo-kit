@@ -1,14 +1,14 @@
 {
-  "name": "kit-test",
+  "name": "demo-ai-app-kit",
   "version": "0.1.0",
   "description": "Agent-friendly PC 后台项目快速搭建工具",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kanelogger/kit-test.git"
+    "url": "git+https://github.com/kanelogger/demo-ai-app-kit.git"
   },
-  "homepage": "https://github.com/kanelogger/kit-test#readme",
+  "homepage": "https://github.com/kanelogger/demo-ai-app-kit#readme",
   "bugs": {
-    "url": "https://github.com/kanelogger/kit-test/issues"
+    "url": "https://github.com/kanelogger/demo-ai-app-kit/issues"
   },
   "keywords": [
     "agent",
@@ -18,8 +18,7 @@
     "vibe-coding"
   ],
   "bin": {
-    "kit": "packages/cli/dist/index.js",
-    "kit-test": "packages/cli/dist/index.js"
+    "kit": "packages/cli/dist/index.js"
   },
   "files": [
     ".agents/skills/",
@@ -35,7 +34,7 @@
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "build": "pnpm -r build",
-    "test": "pnpm --filter @kit-test/cli test",
+    "test": "pnpm --filter @demo-ai-app-kit/cli test",
     "typecheck": "pnpm -r typecheck",
     "cli": "node packages/cli/dist/index.js",
     "check": "node packages/cli/dist/index.js check",

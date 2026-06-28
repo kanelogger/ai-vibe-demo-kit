@@ -1,5 +1,5 @@
 {
-  "name": "@kit-test/cli",
+  "name": "@demo-ai-app-kit/cli",
   "version": "0.1.0",
   "private": true,
   "type": "module",

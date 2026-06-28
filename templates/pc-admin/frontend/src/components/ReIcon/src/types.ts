@@ -17,4 +17,5 @@ export interface iconType {
   fill?: string;
   // all icon
   style?: object;
+  class?: string | string[] | Record<string, boolean>;
 }

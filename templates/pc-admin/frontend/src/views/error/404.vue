@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
-import noExist from "@/assets/status/404.svg?component";
+import PureStatusIllustration from "@/components/PureStatusIllustration/index.vue";
 
 defineOptions({
   name: "404"
@@ -13,7 +13,7 @@ const router = useRouter();
   <div
     class="flex flex-col md:flex-row justify-center items-center min-h-full w-full p-4 md:p-0"
   >
-    <noExist />
+    <PureStatusIllustration :code="404" />
     <div class="mt-8 md:ml-12 md:mt-0 text-center md:text-left">
       <p
         v-motion

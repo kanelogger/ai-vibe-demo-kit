@@ -3,15 +3,16 @@ import Motion from "./utils/motion";
 import { useRouter } from "vue-router";
 import { message } from "@/utils/message";
 import { loginRules } from "./utils/rule";
-import { ref, reactive, toRaw } from "vue";
+import { ref, reactive } from "vue";
 import { debounce } from "@pureadmin/utils";
 import { useNav } from "@/layout/hooks/useNav";
 import { useEventListener } from "@vueuse/core";
 import type { FormInstance } from "element-plus";
 import { useUserStoreHook } from "@/store/modules/user";
 import { initRouter, getTopMenu } from "@/router/utils";
-import { bg, avatar, illustration } from "./utils/static";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
+import PureLoginBg from "@/components/PureLoginBg/index.vue";
+import PureLoginIllustration from "@/components/PureLoginIllustration/index.vue";
 
 import Lock from "~icons/ri/lock-fill";
 import User from "~icons/ri/user-3-fill";
@@ -81,14 +82,13 @@ useEventListener(document, "keydown", ({ code }) => {
 
 <template>
   <div class="select-none">
-    <img :src="bg" class="wave" />
+    <PureLoginBg />
     <div class="login-container">
       <div class="img">
-        <component :is="toRaw(illustration)" />
+        <PureLoginIllustration />
       </div>
       <div class="login-box">
         <div class="login-form">
-          <avatar class="avatar" />
           <Motion>
             <h2 class="outline-hidden">{{ title }}</h2>
           </Motion>

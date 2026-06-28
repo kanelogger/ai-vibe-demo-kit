@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { useNav } from "@/layout/hooks/useNav";
-import MdiKeyboardEsc from "@/assets/svg/keyboard_esc.svg?component";
-import EnterOutlined from "@/assets/svg/enter_outlined.svg?component";
 import ArrowUpLine from "~icons/ri/arrow-up-line";
 import ArrowDownLine from "~icons/ri/arrow-down-line";
 
@@ -15,7 +13,7 @@ const { device } = useNav();
 <template>
   <div class="search-footer text-[#333] dark:text-white">
     <span class="search-footer-item">
-      <EnterOutlined class="icon" />
+      <kbd class="icon">↵</kbd>
       确认
     </span>
     <span class="search-footer-item">
@@ -24,7 +22,7 @@ const { device } = useNav();
       切换
     </span>
     <span class="search-footer-item">
-      <MdiKeyboardEsc class="icon" />
+      <kbd class="icon">ESC</kbd>
       关闭
     </span>
     <p v-if="device !== 'mobile' && total > 0" class="search-footer-total">

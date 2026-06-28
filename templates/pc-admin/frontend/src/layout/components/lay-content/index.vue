@@ -3,7 +3,8 @@ import LayFrame from "../lay-frame/index.vue";
 import LayFooter from "../lay-footer/index.vue";
 import { getConfig } from "@/config";
 import { useGlobal } from "@pureadmin/utils";
-import BackTopIcon from "@/assets/svg/back_top.svg?component";
+import PureIcon from "@/components/PureIcon/index.vue";
+import BackTopIcon from "~icons/ri/arrow-up-line";
 import { h, computed, Transition, defineComponent } from "vue";
 import { usePermissionStoreHook } from "@/store/modules/permission";
 
@@ -119,7 +120,7 @@ const transitionMain = defineComponent({
                 title="回到顶部"
                 target=".app-main .el-scrollbar__wrap"
               >
-                <BackTopIcon />
+                <PureIcon :icon="BackTopIcon" />
               </el-backtop>
               <div class="grow">
                 <transitionMain :route="route">

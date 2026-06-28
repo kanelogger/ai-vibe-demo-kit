@@ -19,11 +19,12 @@ import {
 
 import Fullscreen from "~icons/ri/fullscreen-fill";
 import ExitFullscreen from "~icons/ri/fullscreen-exit-fill";
-import DragIcon from "@/assets/table-bar/drag.svg?component";
-import ExpandIcon from "@/assets/table-bar/expand.svg?component";
-import RefreshIcon from "@/assets/table-bar/refresh.svg?component";
-import SettingIcon from "@/assets/table-bar/settings.svg?component";
-import CollapseIcon from "@/assets/table-bar/collapse.svg?component";
+import DragIcon from "~icons/ri/drag-move-fill";
+import ExpandIcon from "~icons/ri/expand-right-fill";
+import RefreshIcon from "~icons/ri/refresh-line";
+import SettingIcon from "~icons/ri/settings-3-line";
+import CollapseIcon from "~icons/ri/contract-left-fill";
+import PureIcon from "@/components/PureIcon/index.vue";
 
 const props = {
   /** 头部最左边的标题 */
@@ -240,7 +241,8 @@ export default defineComponent({
 
     const reference = {
       reference: () => (
-        <SettingIcon
+        <PureIcon
+          icon={SettingIcon}
           class={["w-[16px]", iconClass.value]}
           v-tippy={rendTippyProps("列设置")}
         />
@@ -273,7 +275,8 @@ export default defineComponent({
               ) : null}
               {props.tableRef?.size ? (
                 <>
-                  <ExpandIcon
+                  <PureIcon
+                    icon={ExpandIcon}
                     class={["w-[16px]", iconClass.value]}
                     style={{
                       transform: isExpandAll.value ? "none" : "rotate(-90deg)"
@@ -286,7 +289,8 @@ export default defineComponent({
                   <el-divider direction="vertical" />
                 </>
               ) : null}
-              <RefreshIcon
+              <PureIcon
+                icon={RefreshIcon}
                 class={[
                   "w-[16px]",
                   iconClass.value,
@@ -301,7 +305,10 @@ export default defineComponent({
                 trigger="click"
                 v-tippy={rendTippyProps("密度")}
               >
-                <CollapseIcon class={["w-[16px]", iconClass.value]} />
+                <PureIcon
+                  icon={CollapseIcon}
+                  class={["w-[16px]", iconClass.value]}
+                />
               </el-dropdown>
               <el-divider direction="vertical" />
 
@@ -340,7 +347,8 @@ export default defineComponent({
                         {checkColumnList.map((item, index) => {
                           return (
                             <div class="flex items-center">
-                              <DragIcon
+                              <PureIcon
+                                icon={DragIcon}
                                 class={[
                                   "drag-btn w-[16px] mr-2",
                                   isFixedColumn(item)

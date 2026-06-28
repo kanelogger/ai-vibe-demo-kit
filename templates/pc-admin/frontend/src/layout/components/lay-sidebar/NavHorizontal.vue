@@ -5,6 +5,7 @@ import LayNotice from "../lay-notice/index.vue";
 import { getConfig } from "@/config";
 import { ref, nextTick, computed } from "vue";
 import { isAllEmpty } from "@pureadmin/utils";
+import PureAvatar from "@/components/PureAvatar/index.vue";
 import { usePermissionStoreHook } from "@/store/modules/permission";
 import LaySidebarItem from "../lay-sidebar/components/SidebarItem.vue";
 import LaySidebarFullScreen from "../lay-sidebar/components/SidebarFullScreen.vue";
@@ -69,7 +70,12 @@ nextTick(() => {
       <!-- 退出登录 -->
       <el-dropdown trigger="click">
         <span class="el-dropdown-link navbar-bg-hover">
-          <img :src="userAvatar" :style="avatarsStyle" />
+          <PureAvatar
+            :src="userAvatar"
+            :username="username"
+            :size="22"
+            :style="avatarsStyle"
+          />
           <p v-if="username" class="dark:text-white">{{ username }}</p>
         </span>
         <template #dropdown>

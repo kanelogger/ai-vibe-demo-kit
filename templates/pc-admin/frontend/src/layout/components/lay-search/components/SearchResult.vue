@@ -4,7 +4,6 @@ import { getConfig } from "@/config";
 import { useResizeObserver } from "@pureadmin/utils";
 import { useRenderIcon } from "@/components/ReIcon/src/hooks";
 import { ref, computed, getCurrentInstance, onMounted } from "vue";
-import EnterOutlined from "@/assets/svg/enter_outlined.svg?component";
 
 interface Emits {
   (e: "update:value", val: string): void;
@@ -83,7 +82,7 @@ defineExpose({ handleScroll });
       <span class="result-item-title">
         {{ item.meta?.title }}
       </span>
-      <EnterOutlined />
+      <kbd class="enter-badge">↵</kbd>
     </div>
   </div>
 </template>
@@ -109,5 +108,28 @@ defineExpose({ handleScroll });
       margin-left: 5px;
     }
   }
+}
+
+.enter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 20px;
+  padding: 0 4px;
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  color: #666;
+  background: #f4f4f5;
+  border: 1px solid #d4d4d8;
+  border-radius: 4px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
+}
+
+.dark .enter-badge {
+  color: #a1a1aa;
+  background: #27272a;
+  border-color: #3f3f46;
 }
 </style>

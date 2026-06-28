@@ -23,7 +23,8 @@ import LayNavbar from "./components/lay-navbar/index.vue";
 import LayContent from "./components/lay-content/index.vue";
 import NavVertical from "./components/lay-sidebar/NavVertical.vue";
 import NavHorizontal from "./components/lay-sidebar/NavHorizontal.vue";
-import BackTopIcon from "@/assets/svg/back_top.svg?component";
+import PureIcon from "@/components/PureIcon/index.vue";
+import BackTopIcon from "~icons/ri/arrow-up-line";
 
 const appWrapperRef = ref();
 const { isDark } = useDark();
@@ -156,7 +157,7 @@ const LayHeader = defineComponent({
           title="回到顶部"
           target=".main-container .el-scrollbar__wrap"
         >
-          <BackTopIcon />
+          <PureIcon :icon="BackTopIcon" />
         </el-backtop>
         <LayHeader />
         <!-- 主体内容 -->

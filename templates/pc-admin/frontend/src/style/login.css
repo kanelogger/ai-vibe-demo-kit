@@ -14,7 +14,6 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-gap: 18rem;
-  padding: 0 2rem;
 }
 
 .img {
@@ -36,11 +35,6 @@
 
 .login-form {
   width: 360px;
-}
-
-.avatar {
-  width: 350px;
-  height: 80px;
 }
 
 .login-form h2 {
@@ -71,10 +65,6 @@
     width: 360px;
   }
 
-  .avatar {
-    width: 280px;
-    height: 80px;
-  }
 }
 
 @media screen and (max-width: 968px) {

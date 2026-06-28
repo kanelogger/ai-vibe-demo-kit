@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from "vue-router";
-import noServer from "@/assets/status/500.svg?component";
+import PureStatusIllustration from "@/components/PureStatusIllustration/index.vue";
 
 defineOptions({
   name: "500"
@@ -13,7 +13,7 @@ const router = useRouter();
   <div
     class="flex flex-col md:flex-row justify-center items-center min-h-full w-full p-4 md:p-0"
   >
-    <noServer />
+    <PureStatusIllustration :code="500" />
     <div class="mt-8 md:ml-12 md:mt-0 text-center md:text-left">
       <p
         v-motion

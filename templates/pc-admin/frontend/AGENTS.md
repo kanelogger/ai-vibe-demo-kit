@@ -1,18 +1,18 @@
-# Frontend Agent Rules
+# 前端 Agent 规则
 
-Work inside `frontend/`.
+工作范围限制在 `frontend/` 内。
 
-## Responsibilities
+## 职责
 
-- Maintain frontend-local specs under `frontend/SPECS/`.
-- Read the shared API contract at `../SPECS/API.md`.
-- Keep `frontend/SPECS/API.md` as a reference to `../../SPECS/API.md`.
-- Do not change backend code.
-- Do not implement feature code before root stage is `implementation-ready`.
+- 维护 `frontend/SPECS/` 下的前端本地规格。
+- 读取 `../SPECS/API.md` 中的共享 API 契约。
+- 保持 `frontend/SPECS/API.md` 只引用 `../../SPECS/API.md`。
+- 不要修改后端代码。
+- 根目录阶段进入 `implementation-ready` 前，不得实现功能代码。
 
-## Local Specs
+## 本地规格
 
-Expected future files:
+后续预期文件：
 
 - `frontend/SPECS/PRD.md`
 - `frontend/SPECS/ARCHITECTURE.md`
@@ -20,4 +20,4 @@ Expected future files:
 - `frontend/SPECS/FEATURES/<feature-slug>/spec.md`
 - `frontend/SPECS/FEATURES/<feature-slug>/tasks.md`
 
-Frontend VO field names must match response fields documented in root `SPECS/API.md`.
+前端 VO 字段名必须与根目录 `SPECS/API.md` 中记录的响应字段一致。

@@ -1,18 +1,18 @@
-# Backend Agent Rules
+# 后端 Agent 规则
 
-Work inside `backend/`.
+工作范围限制在 `backend/` 内。
 
-## Responsibilities
+## 职责
 
-- Maintain backend-local specs under `backend/SPECS/`.
-- Read the shared API contract at `../SPECS/API.md`.
-- Keep `backend/SPECS/API.md` as a reference to `../../SPECS/API.md`.
-- Do not change frontend code.
-- Do not implement feature code before root stage is `implementation-ready`.
+- 维护 `backend/SPECS/` 下的后端本地规格。
+- 读取 `../SPECS/API.md` 中的共享 API 契约。
+- 保持 `backend/SPECS/API.md` 只引用 `../../SPECS/API.md`。
+- 不要修改前端代码。
+- 根目录阶段进入 `implementation-ready` 前，不得实现功能代码。
 
-## Local Specs
+## 本地规格
 
-Expected future files:
+后续预期文件：
 
 - `backend/SPECS/PRD.md`
 - `backend/SPECS/ARCHITECTURE.md`
@@ -20,4 +20,4 @@ Expected future files:
 - `backend/SPECS/FEATURES/<feature-slug>/spec.md`
 - `backend/SPECS/FEATURES/<feature-slug>/tasks.md`
 
-Backend response JSON fields must match frontend VO fields documented in root `SPECS/API.md`.
+后端响应 JSON 字段必须与根目录 `SPECS/API.md` 中记录的前端 VO 字段一致。

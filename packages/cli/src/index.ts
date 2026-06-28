@@ -84,6 +84,7 @@ const TEXT_EXTENSIONS = new Set([
 const CLI_PATH = fileURLToPath(import.meta.url);
 const REPO_ROOT = resolve(dirname(CLI_PATH), "../../..");
 const TEMPLATE_ROOT = join(REPO_ROOT, "templates", "pc-admin");
+const KIT_SKILLS_ROOT = join(REPO_ROOT, ".agents", "skills");
 
 async function main(argv: string[]): Promise<void> {
   const [command, ...rest] = argv;
@@ -126,6 +127,7 @@ async function initCommand(args: string[]): Promise<void> {
     projectName: basename(projectName),
     kitCliPath: CLI_PATH,
   });
+  await copyDirectory(KIT_SKILLS_ROOT, join(targetRoot, ".agents", "skills"));
 
   await mkdir(join(targetRoot, "frontend"), { recursive: true });
   await mkdir(join(targetRoot, "backend"), { recursive: true });
@@ -537,6 +539,25 @@ async function copyTemplate(sourceRoot: string, targetRoot: string, replacements
 
     if (entry.isFile()) {
       await copyTemplateFile(sourcePath, targetPath, replacements);
+    }
+  }
+}
+
+async function copyDirectory(sourceRoot: string, targetRoot: string): Promise<void> {
+  await mkdir(targetRoot, { recursive: true });
+  for (const entry of await readdir(sourceRoot, { withFileTypes: true })) {
+    if (shouldSkipTemplateEntry(entry.name)) continue;
+
+    const sourcePath = join(sourceRoot, entry.name);
+    const targetPath = join(targetRoot, entry.name);
+    if (entry.isDirectory()) {
+      await copyDirectory(sourcePath, targetPath);
+      continue;
+    }
+
+    if (entry.isFile()) {
+      await mkdir(dirname(targetPath), { recursive: true });
+      await copyFile(sourcePath, targetPath);
     }
   }
 }

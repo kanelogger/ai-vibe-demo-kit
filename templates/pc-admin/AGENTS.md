@@ -1,15 +1,15 @@
-# Generated Project Agent Rules
+# 生成项目 Agent 规则
 
-This workspace is controlled by Kit-Test v1. The root owns workflow state, stage gates, shared API contracts, tasks, and decisions.
+本工作区由 Kit-Test v1 控制。根目录负责流程状态、阶段门、共享 API 契约、任务和决策记录。
 
-## Commands
+## 命令
 
-- `pnpm kit:check`: validate the current workflow state.
-- `pnpm kit:stage -- advance <stage> --by user --quote "<user exact quote>"`: advance exactly one stage after the user confirms.
+- `pnpm kit:check`：校验当前流程状态。
+- `pnpm kit:stage -- advance <stage> --by user --quote "<用户原话>"`：用户确认后，只推进一个阶段。
 
-## Stage Order
+## 阶段顺序
 
-Stages are fixed and cannot be skipped:
+阶段顺序固定，不得跳过：
 
 ```text
 initialized
@@ -20,36 +20,36 @@ initialized
 -> implementation-ready
 ```
 
-`workflow-state.json` is the machine-readable source of the current stage. Do not edit it by hand. Use `kit stage advance`.
+`workflow-state.json` 是当前阶段的机器可读事实源。不要手动编辑它，必须使用 `kit stage advance` 推进阶段。
 
-## Hard Stops
+## 硬停顿
 
-- After asking clarification questions, stop until the user replies.
-- Without `requirements-confirmed`, do not create solution files.
-- Without `solution-selected`, do not create implementation-ready files.
-- Without `implementation-ready`, do not implement feature code.
-- Do not select a solution by Agent default. User selection must be explicit. If the user explicitly says the Agent may choose, record that exact quote.
+- 提出澄清问题后，必须停止，直到用户回复。
+- 没有进入 `requirements-confirmed` 前，不得创建方案文件。
+- 没有进入 `solution-selected` 前，不得创建 implementation-ready 文件。
+- 没有进入 `implementation-ready` 前，不得实现功能代码。
+- 不得由 Agent 默认选择方案。用户选择必须是显式的。如果用户明确允许 Agent 代选，记录用户原话。
 
-## Workflow Files
+## 流程文件
 
-- `workflow/requirements.md` is created for `requirements-draft`, then updated to `status: confirmed` before advancing to `requirements-confirmed`.
-- `workflow/solution-options.md` is created only after requirements are confirmed and must present exactly three option ids.
-- `workflow/solution-selected.md` records the user's chosen option or custom selection.
-- `workflow/implementation-ready.md` is created only after a solution is selected.
+- `workflow/requirements.md` 在 `requirements-draft` 阶段创建，并在推进到 `requirements-confirmed` 前更新为 `status: confirmed`。
+- `workflow/solution-options.md` 只能在需求确认后创建，并且必须提供正好三个方案 id。
+- `workflow/solution-selected.md` 记录用户选择的方案或自定义选择。
+- `workflow/implementation-ready.md` 只能在方案已选择后创建。
 
-`kit stage advance` validates only the target artifact exists and has the required `status`. `kit check` validates the stable current stage.
+`kit stage advance` 只校验目标产物存在且具备要求的 `status`。`kit check` 校验当前稳定阶段。
 
-## Specs And API Contract
+## 规格与 API 契约
 
-- `SPECS/API.md` is the only cross-end API contract.
-- `frontend/SPECS/API.md` and `backend/SPECS/API.md` must only reference `../../SPECS/API.md`.
-- Frontend VO fields and backend response JSON fields must be represented in root `SPECS/API.md`.
-- Frontend work stays inside `frontend/` unless updating root workflow/API/tasks is explicitly part of the current stage.
-- Backend work stays inside `backend/` unless updating root workflow/API/tasks is explicitly part of the current stage.
+- `SPECS/API.md` 是唯一的前后端共享 API 契约。
+- `frontend/SPECS/API.md` 与 `backend/SPECS/API.md` 只能引用 `../../SPECS/API.md`。
+- 前端 VO 字段和后端响应 JSON 字段都必须体现在根目录 `SPECS/API.md` 中。
+- 前端工作限制在 `frontend/` 内，除非当前阶段明确要求更新根目录 workflow/API/tasks。
+- 后端工作限制在 `backend/` 内，除非当前阶段明确要求更新根目录 workflow/API/tasks。
 
-## Skill Routing
+## 技能路由
 
-Default chain:
+默认链路：
 
 ```text
 requirement-clarification -> doc-iteration -> spec-lock -> solution-options
@@ -57,4 +57,4 @@ requirement-clarification -> doc-iteration -> spec-lock -> solution-options
 -> webapp-testing -> code-review -> documentation
 ```
 
-Use conditional skills only when their trigger is explicit or required by the task.
+只有当触发条件明确，或任务确实需要时，才使用条件型技能。

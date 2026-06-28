@@ -118,6 +118,8 @@ test("init creates scaffold and initialized check passes", async () => {
     for (const path of ["frontend", "backend", "SPECS", "workflow", "tasks", "memory", "AGENTS.md", "workflow-state.json"]) {
       assert.equal(existsSync(join(project, path)), true, path);
     }
+    assert.equal(existsSync(join(project, ".agents/skills/implement/SKILL.md")), true);
+    assert.equal(existsSync(join(project, ".agents/skills/spec-driven-development/SKILL.md")), true);
     assert.equal(existsSync(join(project, "workflow/requirements.md")), false);
     assert.equal(existsSync(join(project, "frontend/node_modules")), false);
     assert.equal(existsSync(join(project, "backend/node_modules")), false);

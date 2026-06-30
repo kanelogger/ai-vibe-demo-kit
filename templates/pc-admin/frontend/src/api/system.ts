@@ -323,6 +323,41 @@ export type DictOptionItem = {
   status: number;
 };
 
+export type SystemConfigItem = {
+  id: number;
+  configCode: string;
+  configName: string;
+  configValue: string;
+  valueType: string;
+  status: number;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SystemConfigQuery = {
+  configCode?: string;
+  configName?: string;
+  status?: number | "";
+  page?: number;
+  pageSize?: number;
+};
+
+export type SystemConfigPayload = {
+  configCode: string;
+  configName: string;
+  configValue: string;
+  valueType: string;
+  status: number;
+  description?: string;
+};
+
+export type SystemConfigValue = {
+  configCode: string;
+  configValue: string;
+  valueType: string;
+};
+
 export const getMenu = (id: number) => {
   return http.request<ApiResult<MenuDetail>>("get", `/menus/${id}`);
 };
@@ -514,5 +549,53 @@ export const getDictOptions = (dictCode: string, enabledOnly = true) => {
     "get",
     `/dict-types/by-code/${dictCode}/options`,
     { params: { enabledOnly } }
+  );
+};
+
+export const getSystemConfigs = (params: SystemConfigQuery) => {
+  return http.request<ApiResult<PageResult<SystemConfigItem>>>(
+    "get",
+    "/system-configs",
+    { params }
+  );
+};
+
+export const getSystemConfig = (id: number) => {
+  return http.request<ApiResult<SystemConfigItem>>("get", `/system-configs/${id}`);
+};
+
+export const createSystemConfig = (data: SystemConfigPayload) => {
+  return http.request<ApiResult<SystemConfigItem>>("post", "/system-configs", {
+    data
+  });
+};
+
+export const updateSystemConfig = (id: number, data: SystemConfigPayload) => {
+  return http.request<ApiResult<SystemConfigItem>>(
+    "patch",
+    `/system-configs/${id}`,
+    { data }
+  );
+};
+
+export const updateSystemConfigStatus = (id: number, status: number) => {
+  return http.request<ApiResult<SystemConfigItem>>(
+    "patch",
+    `/system-configs/${id}/status`,
+    { data: { status } }
+  );
+};
+
+export const deleteSystemConfig = (id: number) => {
+  return http.request<ApiResult<{ message: string }>>(
+    "delete",
+    `/system-configs/${id}`
+  );
+};
+
+export const getSystemConfigValue = (configCode: string) => {
+  return http.request<ApiResult<SystemConfigValue>>(
+    "get",
+    `/system-configs/by-code/${configCode}/value`
   );
 };

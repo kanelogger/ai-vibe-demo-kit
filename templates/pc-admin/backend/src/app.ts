@@ -11,6 +11,7 @@ import menuManagementRoutes from "./routes/menu-management";
 import logRoutes from "./routes/logs";
 import orgManagementRoutes from "./routes/org-management";
 import dictManagementRoutes from "./routes/dict-management";
+import configManagementRoutes from "./routes/config-management";
 import asyncRoutes from "./routes/async-routes";
 import Logger from "./loaders/logger";
 
@@ -35,6 +36,7 @@ export function buildApp() {
   app.register(logRoutes);
   app.register(orgManagementRoutes);
   app.register(dictManagementRoutes);
+  app.register(configManagementRoutes);
   app.register(userRoutes);
   app.register(asyncRoutes);
 

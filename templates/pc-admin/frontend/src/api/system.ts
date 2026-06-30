@@ -77,6 +77,53 @@ export type UserPayload = {
   roleIds: number[];
 };
 
+export type RoleListItem = {
+  id: number;
+  roleName: string;
+  roleCode: string;
+  status: number;
+  description: string | null;
+  isSuperAdmin: boolean;
+  userCount: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RoleDetail = RoleListItem & {
+  menuIds: number[];
+};
+
+export type RoleQuery = {
+  roleName?: string;
+  roleCode?: string;
+  status?: number | "";
+  page?: number;
+  pageSize?: number;
+};
+
+export type RolePayload = {
+  roleName: string;
+  roleCode?: string;
+  status: number;
+  description?: string;
+  menuIds: number[];
+};
+
+export type MenuDetail = {
+  id: number;
+  menuName: string;
+  menuCode: string;
+  parentId: number | null;
+  icon: string | null;
+  sortOrder: number;
+  routePath: string;
+  componentPath: string | null;
+  visible: number;
+  status: number;
+  roleIds: number[];
+  children?: MenuDetail[];
+};
+
 export const getUsers = (params: UserQuery) => {
   return http.request<ApiResult<PageResult<UserListItem>>>("get", "/users", {
     params
@@ -123,4 +170,40 @@ export const getPostOptions = () => {
 
 export const getRoleOptions = () => {
   return http.request<ApiResult<OptionItem[]>>("get", "/roles/options");
+};
+
+export const getRoles = (params: RoleQuery) => {
+  return http.request<ApiResult<PageResult<RoleListItem>>>("get", "/roles", {
+    params
+  });
+};
+
+export const getRole = (id: number) => {
+  return http.request<ApiResult<RoleDetail>>("get", `/roles/${id}`);
+};
+
+export const createRole = (data: RolePayload) => {
+  return http.request<ApiResult<RoleDetail>>("post", "/roles", { data });
+};
+
+export const updateRole = (id: number, data: RolePayload) => {
+  return http.request<ApiResult<RoleDetail>>("patch", `/roles/${id}`, {
+    data
+  });
+};
+
+export const updateRoleStatus = (id: number, status: number) => {
+  return http.request<ApiResult<RoleDetail>>(
+    "patch",
+    `/roles/${id}/status`,
+    { data: { status } }
+  );
+};
+
+export const deleteRole = (id: number) => {
+  return http.request<ApiResult<{ message: string }>>("delete", `/roles/${id}`);
+};
+
+export const getMenuTree = () => {
+  return http.request<ApiResult<MenuDetail[]>>("get", "/menus/tree");
 };

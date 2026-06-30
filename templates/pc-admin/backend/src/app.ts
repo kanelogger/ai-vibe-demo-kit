@@ -6,6 +6,7 @@ import { sendError } from "./utils/response";
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/users";
 import userManagementRoutes from "./routes/user-management";
+import roleManagementRoutes from "./routes/role-management";
 import asyncRoutes from "./routes/async-routes";
 import Logger from "./loaders/logger";
 
@@ -25,6 +26,7 @@ export function buildApp() {
 
   app.register(authRoutes);
   app.register(userManagementRoutes);
+  app.register(roleManagementRoutes);
   app.register(userRoutes);
   app.register(asyncRoutes);
 

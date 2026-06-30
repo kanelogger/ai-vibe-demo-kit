@@ -387,6 +387,29 @@ export type ChangePasswordPayload = {
   confirmPassword: string;
 };
 
+export type AttachmentItem = {
+  id: number;
+  originalName: string;
+  storedName: string;
+  url: string;
+  mimeType: string;
+  fileExt: string;
+  fileSize: number;
+  businessModule: string | null;
+  businessRecordId: number | null;
+  referenceStatus: number;
+  uploadUserId: number;
+  uploadedAt: string;
+};
+
+export type AttachmentQuery = {
+  originalName?: string;
+  businessModule?: string;
+  referenceStatus?: number | "";
+  page?: number;
+  pageSize?: number;
+};
+
 export const getMenu = (id: number) => {
   return http.request<ApiResult<MenuDetail>>("get", `/menus/${id}`);
 };
@@ -642,5 +665,27 @@ export const changeProfilePassword = (data: ChangePasswordPayload) => {
     "post",
     "/profile/change-password",
     { data }
+  );
+};
+
+export const getAttachments = (params: AttachmentQuery) => {
+  return http.request<ApiResult<PageResult<AttachmentItem>>>(
+    "get",
+    "/attachments",
+    { params }
+  );
+};
+
+export const uploadAttachment = (data: FormData) => {
+  return http.request<ApiResult<AttachmentItem>>("post", "/attachments", {
+    data,
+    headers: { "Content-Type": "multipart/form-data" }
+  });
+};
+
+export const deleteAttachment = (id: number) => {
+  return http.request<ApiResult<{ message: string }>>(
+    "delete",
+    `/attachments/${id}`
   );
 };

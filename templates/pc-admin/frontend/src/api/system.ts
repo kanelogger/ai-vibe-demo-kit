@@ -435,6 +435,72 @@ export type MessageQuery = {
   pageSize?: number;
 };
 
+export type LoginLogItem = {
+  id: number;
+  userId: number | null;
+  loginName: string;
+  loginIp: string | null;
+  userAgent: string | null;
+  loginResult: number;
+  failureReason: string | null;
+  loggedAt: string;
+};
+
+export type LoginLogQuery = {
+  loginName?: string;
+  loginResult?: number | "";
+  startAt?: string;
+  endAt?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export type OperationLogItem = {
+  id: number;
+  operatorId: number | null;
+  operatorName: string | null;
+  moduleCode: string;
+  operationType: string;
+  requestMethod: string;
+  requestPath: string;
+  requestParams: string | null;
+  operationResult: number;
+  errorMessage: string | null;
+  operatedAt: string;
+};
+
+export type OperationLogQuery = {
+  operatorName?: string;
+  moduleCode?: string;
+  operationType?: string;
+  operationResult?: number | "";
+  startAt?: string;
+  endAt?: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export type ExceptionLogItem = {
+  id: number;
+  requestPath: string;
+  requestMethod: string;
+  errorType: string;
+  errorMessage: string;
+  stackSummary: string | null;
+  handledStatus: number;
+  occurredAt: string;
+};
+
+export type ExceptionLogQuery = {
+  requestPath?: string;
+  errorType?: string;
+  handledStatus?: number | "";
+  startAt?: string;
+  endAt?: string;
+  page?: number;
+  pageSize?: number;
+};
+
 export const getMenu = (id: number) => {
   return http.request<ApiResult<MenuDetail>>("get", `/menus/${id}`);
 };
@@ -741,4 +807,46 @@ export const markMessagesRead = (data: { ids?: number[]; all?: boolean }) => {
 
 export const getUnreadMessageCount = () => {
   return http.request<ApiResult<{ count: number }>>("get", "/messages/unread-count");
+};
+
+export const getLoginLogs = (params: LoginLogQuery) => {
+  return http.request<ApiResult<PageResult<LoginLogItem>>>(
+    "get",
+    "/logs/login",
+    { params }
+  );
+};
+
+export const getLoginLog = (id: number) => {
+  return http.request<ApiResult<LoginLogItem>>("get", `/logs/login/${id}`);
+};
+
+export const getOperationLogs = (params: OperationLogQuery) => {
+  return http.request<ApiResult<PageResult<OperationLogItem>>>(
+    "get",
+    "/logs/operation",
+    { params }
+  );
+};
+
+export const getOperationLog = (id: number) => {
+  return http.request<ApiResult<OperationLogItem>>(
+    "get",
+    `/logs/operation/${id}`
+  );
+};
+
+export const getExceptionLogs = (params: ExceptionLogQuery) => {
+  return http.request<ApiResult<PageResult<ExceptionLogItem>>>(
+    "get",
+    "/logs/exception",
+    { params }
+  );
+};
+
+export const getExceptionLog = (id: number) => {
+  return http.request<ApiResult<ExceptionLogItem>>(
+    "get",
+    `/logs/exception/${id}`
+  );
 };

@@ -16,6 +16,7 @@ import profileRoutes from "./routes/profile";
 import attachmentRoutes from "./routes/attachments";
 import messageRoutes from "./routes/messages";
 import asyncRoutes from "./routes/async-routes";
+import { recordExceptionLog } from "./services/log-management";
 import Logger from "./loaders/logger";
 
 export function buildApp() {
@@ -53,7 +54,7 @@ export function buildApp() {
   });
 
   app.setErrorHandler(
-    (error: FastifyError, _request: FastifyRequest, reply: FastifyReply) => {
+    async (error: FastifyError, request: FastifyRequest, reply: FastifyReply) => {
       if (isAppError(error)) {
         reply
           .code(error.statusCode)
@@ -73,6 +74,17 @@ export function buildApp() {
       }
 
       Logger.error("Unhandled error: %o", error);
+      try {
+        await recordExceptionLog({
+          requestPath: request.url,
+          requestMethod: request.method,
+          errorType: error.name || "Error",
+          errorMessage: error.message || "Unknown error",
+          stackSummary: error.stack ?? null,
+        });
+      } catch (logError) {
+        Logger.error("记录异常日志失败: %o", logError);
+      }
       reply.code(500).send(sendError("INTERNAL_ERROR", "服务器内部错误"));
     }
   );

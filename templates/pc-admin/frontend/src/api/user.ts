@@ -2,6 +2,12 @@ import { http } from "@/utils/http";
 
 export type UserResult = {
   success: boolean;
+  /** 错误信息，失败时返回 */
+  error?: {
+    code: string;
+    message: string;
+    details?: Record<string, unknown>;
+  };
   data: {
     /** 用户 ID */
     userId: number;

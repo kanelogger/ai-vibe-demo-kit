@@ -271,6 +271,58 @@ export type PostPayload = {
   description?: string;
 };
 
+export type DictTypeItem = {
+  id: number;
+  dictCode: string;
+  dictName: string;
+  status: number;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DictTypeQuery = {
+  dictCode?: string;
+  dictName?: string;
+  status?: number | "";
+  page?: number;
+  pageSize?: number;
+};
+
+export type DictTypePayload = {
+  dictCode: string;
+  dictName: string;
+  status: number;
+  description?: string;
+};
+
+export type DictItem = {
+  id: number;
+  dictTypeId: number;
+  itemValue: string;
+  itemLabel: string;
+  sortOrder: number;
+  status: number;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DictItemPayload = {
+  itemValue: string;
+  itemLabel: string;
+  sortOrder: number;
+  status: number;
+  description?: string;
+};
+
+export type DictOptionItem = {
+  id: number;
+  label: string;
+  value: string;
+  status: number;
+};
+
 export const getMenu = (id: number) => {
   return http.request<ApiResult<MenuDetail>>("get", `/menus/${id}`);
 };
@@ -372,4 +424,95 @@ export const updatePostStatus = (id: number, status: number) => {
 
 export const deletePost = (id: number) => {
   return http.request<ApiResult<{ message: string }>>("delete", `/posts/${id}`);
+};
+
+export const getDictTypes = (params: DictTypeQuery) => {
+  return http.request<ApiResult<PageResult<DictTypeItem>>>(
+    "get",
+    "/dict-types",
+    { params }
+  );
+};
+
+export const getDictType = (id: number) => {
+  return http.request<ApiResult<DictTypeItem>>("get", `/dict-types/${id}`);
+};
+
+export const createDictType = (data: DictTypePayload) => {
+  return http.request<ApiResult<DictTypeItem>>("post", "/dict-types", { data });
+};
+
+export const updateDictType = (id: number, data: DictTypePayload) => {
+  return http.request<ApiResult<DictTypeItem>>(
+    "patch",
+    `/dict-types/${id}`,
+    { data }
+  );
+};
+
+export const updateDictTypeStatus = (id: number, status: number) => {
+  return http.request<ApiResult<DictTypeItem>>(
+    "patch",
+    `/dict-types/${id}/status`,
+    { data: { status } }
+  );
+};
+
+export const deleteDictType = (id: number) => {
+  return http.request<ApiResult<{ message: string }>>(
+    "delete",
+    `/dict-types/${id}`
+  );
+};
+
+export const getDictItems = (dictTypeId: number) => {
+  return http.request<ApiResult<DictItem[]>>(
+    "get",
+    `/dict-types/${dictTypeId}/items`
+  );
+};
+
+export const createDictItem = (dictTypeId: number, data: DictItemPayload) => {
+  return http.request<ApiResult<DictItem>>(
+    "post",
+    `/dict-types/${dictTypeId}/items`,
+    { data }
+  );
+};
+
+export const updateDictItem = (id: number, data: DictItemPayload) => {
+  return http.request<ApiResult<DictItem>>("patch", `/dict-items/${id}`, {
+    data
+  });
+};
+
+export const updateDictItemStatus = (id: number, status: number) => {
+  return http.request<ApiResult<DictItem>>("patch", `/dict-items/${id}/status`, {
+    data: { status }
+  });
+};
+
+export const sortDictItems = (
+  items: Array<{ id: number; sortOrder: number }>
+) => {
+  return http.request<ApiResult<{ message: string }>>(
+    "patch",
+    "/dict-items/batch-sort",
+    { data: { items } }
+  );
+};
+
+export const deleteDictItem = (id: number) => {
+  return http.request<ApiResult<{ message: string }>>(
+    "delete",
+    `/dict-items/${id}`
+  );
+};
+
+export const getDictOptions = (dictCode: string, enabledOnly = true) => {
+  return http.request<ApiResult<DictOptionItem[]>>(
+    "get",
+    `/dict-types/by-code/${dictCode}/options`,
+    { params: { enabledOnly } }
+  );
 };

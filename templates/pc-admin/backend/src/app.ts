@@ -10,6 +10,7 @@ import roleManagementRoutes from "./routes/role-management";
 import menuManagementRoutes from "./routes/menu-management";
 import logRoutes from "./routes/logs";
 import orgManagementRoutes from "./routes/org-management";
+import dictManagementRoutes from "./routes/dict-management";
 import asyncRoutes from "./routes/async-routes";
 import Logger from "./loaders/logger";
 
@@ -33,6 +34,7 @@ export function buildApp() {
   app.register(menuManagementRoutes);
   app.register(logRoutes);
   app.register(orgManagementRoutes);
+  app.register(dictManagementRoutes);
   app.register(userRoutes);
   app.register(asyncRoutes);
 

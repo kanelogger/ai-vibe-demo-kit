@@ -221,6 +221,56 @@ export type MenuPayload = {
   roleIds: number[];
 };
 
+export type DepartmentItem = {
+  id: number;
+  deptCode: string;
+  deptName: string;
+  status: number;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type DepartmentQuery = {
+  deptCode?: string;
+  deptName?: string;
+  status?: number | "";
+  page?: number;
+  pageSize?: number;
+};
+
+export type DepartmentPayload = {
+  deptCode: string;
+  deptName: string;
+  status: number;
+  description?: string;
+};
+
+export type PostItem = {
+  id: number;
+  postCode: string;
+  postName: string;
+  status: number;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PostQuery = {
+  postCode?: string;
+  postName?: string;
+  status?: number | "";
+  page?: number;
+  pageSize?: number;
+};
+
+export type PostPayload = {
+  postCode: string;
+  postName: string;
+  status: number;
+  description?: string;
+};
+
 export const getMenu = (id: number) => {
   return http.request<ApiResult<MenuDetail>>("get", `/menus/${id}`);
 };
@@ -261,4 +311,65 @@ export const sortMenuTree = (
 
 export const deleteMenu = (id: number) => {
   return http.request<ApiResult<{ message: string }>>("delete", `/menus/${id}`);
+};
+
+export const getDepartments = (params: DepartmentQuery) => {
+  return http.request<ApiResult<PageResult<DepartmentItem>>>(
+    "get",
+    "/departments",
+    { params }
+  );
+};
+
+export const createDepartment = (data: DepartmentPayload) => {
+  return http.request<ApiResult<DepartmentItem>>("post", "/departments", {
+    data
+  });
+};
+
+export const updateDepartment = (id: number, data: DepartmentPayload) => {
+  return http.request<ApiResult<DepartmentItem>>(
+    "patch",
+    `/departments/${id}`,
+    { data }
+  );
+};
+
+export const updateDepartmentStatus = (id: number, status: number) => {
+  return http.request<ApiResult<DepartmentItem>>(
+    "patch",
+    `/departments/${id}/status`,
+    { data: { status } }
+  );
+};
+
+export const deleteDepartment = (id: number) => {
+  return http.request<ApiResult<{ message: string }>>(
+    "delete",
+    `/departments/${id}`
+  );
+};
+
+export const getPosts = (params: PostQuery) => {
+  return http.request<ApiResult<PageResult<PostItem>>>("get", "/posts", {
+    params
+  });
+};
+
+export const createPost = (data: PostPayload) => {
+  return http.request<ApiResult<PostItem>>("post", "/posts", { data });
+};
+
+export const updatePost = (id: number, data: PostPayload) => {
+  return http.request<ApiResult<PostItem>>("patch", `/posts/${id}`, { data });
+};
+
+export const updatePostStatus = (id: number, status: number) => {
+  return http.request<ApiResult<PostItem>>("patch", `/posts/${id}/status`, {
+    data: { status }
+  });
+};
+
+export const deletePost = (id: number) => {
+  return http.request<ApiResult<{ message: string }>>("delete", `/posts/${id}`);
 };

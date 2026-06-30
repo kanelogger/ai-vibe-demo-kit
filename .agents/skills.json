@@ -1,0 +1,253 @@
+{
+  "version": 1,
+  "source": "skills-list.md",
+  "skillsRoot": ".agents/skills",
+  "defaultChain": [
+    "requirement-clarification",
+    "doc-iteration",
+    "spec-lock",
+    "solution-options",
+    "tech-plan-generator",
+    "api-design",
+    "shell-implementation",
+    "tdd",
+    "webapp-testing",
+    "code-review",
+    "documentation"
+  ],
+  "stageDefaults": {
+    "initialized": [
+      "requirement-clarification",
+      "requirement-grilling"
+    ],
+    "requirements-draft": [
+      "requirement-clarification",
+      "doc-iteration",
+      "spec-lock"
+    ],
+    "requirements-confirmed": [
+      "solution-options",
+      "domain-modeling",
+      "api-design"
+    ],
+    "solution-options": [
+      "solution-options",
+      "solution-stress-test"
+    ],
+    "solution-selected": [
+      "tech-plan-generator",
+      "api-design",
+      "security-review"
+    ],
+    "implementation-ready": [
+      "shell-implementation",
+      "tdd",
+      "webapp-testing",
+      "code-review",
+      "documentation"
+    ]
+  },
+  "skills": [
+    {
+      "alias": "requirement-clarification",
+      "skill": "ce-brainstorm",
+      "level": "L1",
+      "stage": "requirements",
+      "description": "多轮澄清后产出结构化需求文档"
+    },
+    {
+      "alias": "requirement-grilling",
+      "skill": "grilling",
+      "level": "L1",
+      "stage": "requirements",
+      "description": "追问边界、异常、验收标准，把态度转成事实"
+    },
+    {
+      "alias": "doc-iteration",
+      "skill": "doc-coauthoring",
+      "level": "L1",
+      "stage": "requirements",
+      "description": "与用户协同修改 workflow/requirements.md"
+    },
+    {
+      "alias": "spec-lock",
+      "skill": "spec-driven-development",
+      "level": "L1",
+      "stage": "requirements",
+      "description": "将需求转成可执行规格，先 spec 后代码"
+    },
+    {
+      "alias": "domain-modeling",
+      "skill": "domain-modeling",
+      "level": "L1",
+      "stage": "requirements",
+      "description": "统一术语、实体、流程边界"
+    },
+    {
+      "alias": "ubiquitous-language",
+      "skill": "ubiquitous-language",
+      "level": "L1",
+      "stage": "requirements",
+      "description": "统一领域术语表"
+    },
+    {
+      "alias": "solution-options",
+      "skill": "design-an-interface",
+      "level": "L1",
+      "stage": "solution-options",
+      "description": "产出 3 个技术方案和推荐理由"
+    },
+    {
+      "alias": "tech-plan-generator",
+      "skill": "planning-and-task-breakdown",
+      "level": "L1",
+      "stage": "solution-selected",
+      "description": "方案选定后拆实施计划"
+    },
+    {
+      "alias": "api-design",
+      "skill": "api-and-interface-design",
+      "level": "L1",
+      "stage": "solution-selected",
+      "description": "前后端契约、模块边界、API 路由"
+    },
+    {
+      "alias": "security-review",
+      "skill": "security-and-hardening",
+      "level": "L1",
+      "stage": "implementation-ready",
+      "description": "输入、鉴权、存储、外部调用"
+    },
+    {
+      "alias": "shell-implementation",
+      "skill": "implement",
+      "level": "L1",
+      "stage": "implementation-ready",
+      "description": "按方案编码"
+    },
+    {
+      "alias": "tdd",
+      "skill": "tdd",
+      "level": "L1",
+      "stage": "implementation-ready",
+      "description": "行为验收、单元和集成测试"
+    },
+    {
+      "alias": "webapp-testing",
+      "skill": "webapp-testing",
+      "level": "L1",
+      "stage": "implementation-ready",
+      "description": "真实浏览器验证主业务闭环"
+    },
+    {
+      "alias": "code-review",
+      "skill": "code-review-and-quality",
+      "level": "L1",
+      "stage": "implementation-ready",
+      "description": "实现后唯一 review gate"
+    },
+    {
+      "alias": "documentation",
+      "skill": "documentation-and-adrs",
+      "level": "L1",
+      "stage": "implementation-ready",
+      "description": "记录 ADR、方案选择、技能追踪"
+    },
+    {
+      "alias": "idea-exploration",
+      "skill": "ce-ideate",
+      "level": "L2",
+      "trigger": "需求极模糊，需要先发散多个方向"
+    },
+    {
+      "alias": "solution-stress-test",
+      "skill": "grilling",
+      "level": "L2",
+      "trigger": "方案确定前需要压力测试"
+    },
+    {
+      "alias": "architecture-diagram",
+      "skill": "architecture-diagram",
+      "level": "L2",
+      "trigger": "技术方案需要架构图、流程图或时序图"
+    },
+    {
+      "alias": "deep-module-design",
+      "skill": "codebase-design",
+      "level": "L2",
+      "trigger": "需要强调深度模块设计时"
+    },
+    {
+      "alias": "prototype",
+      "skill": "prototype",
+      "level": "L2",
+      "trigger": "技术方案不确定，先做可丢弃原型"
+    },
+    {
+      "alias": "debug",
+      "skill": "ce-debug",
+      "level": "L2",
+      "trigger": "调试复杂问题，定位根因"
+    },
+    {
+      "alias": "debug-flow",
+      "skill": "debugging-and-error-recovery",
+      "level": "L2",
+      "trigger": "构建、运行、测试失败时"
+    },
+    {
+      "alias": "frontend-ui",
+      "skill": "frontend-ui-engineering",
+      "level": "L2",
+      "trigger": "需要生成高质量后台 UI"
+    },
+    {
+      "alias": "frontend-ui-design",
+      "skill": "ce-frontend-design",
+      "level": "L2",
+      "trigger": "需要产出前端设计方案"
+    },
+    {
+      "alias": "ui-guidelines",
+      "skill": "web-design-guidelines",
+      "level": "L2",
+      "trigger": "检查 UI 可用性、可访问性、一致性"
+    },
+    {
+      "alias": "context-engineering",
+      "skill": "context-engineering",
+      "level": "L3",
+      "description": "配置 AGENTS.md、SPEC、RULES、SKILLS 等项目控制文件"
+    },
+    {
+      "alias": "agent-native-arch",
+      "skill": "ce-agent-native-architecture",
+      "level": "L3",
+      "description": "设计阶段锁、workflow-state.json、硬停顿协议、Agent 可中断续跑机制"
+    },
+    {
+      "alias": "skill-routing",
+      "skill": "using-agent-skills",
+      "level": "L3",
+      "description": "自动路由到正确技能"
+    },
+    {
+      "alias": "skill-craft",
+      "skill": "skill-creator",
+      "level": "L3",
+      "description": "现成技能不够时定制新技能"
+    },
+    {
+      "alias": "skill-optimize",
+      "skill": "skill-optimizer",
+      "level": "L3",
+      "description": "优化现有技能"
+    },
+    {
+      "alias": "handoff",
+      "skill": "handoff",
+      "level": "L3",
+      "description": "阶段间切换 Agent/LLM 的交接协议"
+    }
+  ]
+}

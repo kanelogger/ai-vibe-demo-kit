@@ -1,170 +1,178 @@
+# ai-vibe-demo-kit 待办与状态
 
-**当前项目已经实现了 `ref.md` 中“PDCA 阶段锁”这一核心控制机制的最小可用版本（v1），但距离完整愿景仍有明显距离。**
+## 三、与 ref.md 愿景的差距
 
-- **已落地**：CLI 三件套（`init / check / stage advance`）、状态机、阶段门、基础 Agent 控制文件、模板骨架、测试覆盖。
-- **未落地**：Hook 路由增强、独立技能索引、RULES 控制文件、完整 SDD 文档生成、npm 分发形态、以及“第 6 步起 Agent 自动调用技能产出文档”的端到端工作流。
+### 1. 模板索引已落地
 
-可以概括为：**“骨架已通，血肉未齐”**。
-实现一个可执行 hook 脚本，用关键词提示 Agent 调用对应 skill
+`ref.md` 要求控制文件包含 `AGENTS.md` / `SPEC` / `RULES` / `Template`。
 
-## 二、主要差距
+当前状态：
 
-### 1. 控制文件不完整：`RULES` 与 `Template` 缺失
+- `templates/pc-admin/AGENTS.md` 已存在。
+- `templates/pc-admin/SPECS/` 已存在。
+- `templates/pc-admin/rules/` 已存在。
+- `templates/pc-admin/TEMPLATE.md` 已存在，并已纳入 `kit check` 控制文件校验。
 
-`ref.md` 明确要求四类控制文件：
+剩余影响：无。根目录维护者视角的 `TEMPLATE.md` 已判断为不需要；生成项目侧的模板地图已经补齐。
 
-```text
-AGENTS.md / SPEC / RULES / Template
-```
+### 2. 技能索引已机器化，编排入口仍缺失
 
-当前只有：
+当前有：
 
-- `AGENTS.md` ✅
-- `SPECS/`（仅有 `API.md` / `README.md`）⚠️
-- `RULES` ❌
-- `Template` ❌
+- `.agents/skills/<skill>/SKILL.md`
+- `skills-list.md`
+- `.agents/skills.json`
 
-**影响**：Agent 在运行时缺少一份显式的“行为规则”文件和模板索引，长期会削弱控制面的完整性。
+缺少：
 
----
+- `.agents/routing.json`
+- 或等价的运行时路由规则。
 
-### 2. SDD 文档生成愿景只落到“说明”层面，未落到模板
+当前状态：
 
-`ref.md` 要求一次完整全栈 SDD 产出：
+- `.agents/skills.json` 已把 `skills-list.md` 机器化，包含默认链路、阶段推荐和 alias 到真实 skill 的映射。
+- `kit init` 已把 `.agents/skills.json` 复制进生成项目。
+- `kit check` 已校验技能索引存在、JSON 结构、alias 引用和真实 `SKILL.md` 文件。
+- `templates/pc-admin/AGENTS.md` 已要求选择 skill 时读取 `.agents/skills.json`。
 
-```text
-前端：proposal.md / spec.md / tasks.md
-后端：proposal.md / spec.md / design.md / tasks.md
-```
+剩余影响：CLI 仍没有 `kit skills` / `kit next` 一类编排入口，Agent 还需要自己读取索引后执行判断。
 
-当前：
+### 3. SDD 骨架文件未落地
 
-- `plan/04-specs-contract.md` 里把这些旧 SDD 文档**映射**到了新的 `SPECS/` 结构；
-- `templates/pc-admin/SPECS/sample-feature-walkthrough.md` 是一份**说明文档**；
-- 但 `templates/pc-admin/` 实际模板里**没有**这些文件或目录：
-  - `frontend/SPECS/PRD.md`
-  - `frontend/SPECS/ARCHITECTURE.md`
-  - `frontend/SPECS/FEATURES/<feature-slug>/spec.md`
-  - `frontend/SPECS/FEATURES/<feature-slug>/tasks.md`
-  - 后端同理。
+`templates/pc-admin/SPECS/README.md` 已说明旧 SDD 到新目录的映射，但实际模板中仍缺少这些骨架：
 
-**影响**：Agent 进入 `implementation-ready` 后，仍然需要自己判断该创建哪些 spec 文件，无法直接沿用模板结构。
+| 目标文件 | 状态 |
+| --- | --- |
+| `frontend/SPECS/PRD.md` | 缺失 |
+| `frontend/SPECS/ARCHITECTURE.md` | 缺失 |
+| `frontend/SPECS/FEATURES/<feature-slug>/spec.md` | 缺失 |
+| `frontend/SPECS/FEATURES/<feature-slug>/tasks.md` | 缺失 |
+| `backend/SPECS/PRD.md` | 缺失 |
+| `backend/SPECS/ARCHITECTURE.md` | 缺失 |
+| `backend/SPECS/FEATURES/<feature-slug>/spec.md` | 缺失 |
+| `backend/SPECS/FEATURES/<feature-slug>/tasks.md` | 缺失 |
 
----
+影响：进入 `implementation-ready` 后，Agent 仍要自行判断 SDD 文件形态，容易写散。
 
-### 3. Hook 机制完全缺失
+### 4. workflow/tasks 模板已落地
 
-`ref.md` 把 Hook 列为三层控制面的中间层：
+最近提交已删除 `workflow/` 与 `tasks/` 下的全量预填计划，只保留 README 骨架。当前已补齐可复制的最小模板。
 
-> “如果运行环境支持 hooks，就可以做一层‘意图路由增强’。”
+当前状态：
 
-当前项目中：
+- `workflow/requirements.template.md`
+- `workflow/solution-options.template.md`
+- `workflow/solution-selected.template.md`
+- `workflow/implementation-ready.template.md`
+- `tasks/backlog.template.md`
+- `tasks/sprint-01.template.md`
+- `workflow/README.md` 与 `tasks/README.md` 已说明复制成正式文件的时机。
 
-- 没有任何 hook 文件或目录；
-- `plan/02-template-control-files.md` 明确把“runtime-specific hook integration”列为 **Out of Scope**。
+剩余影响：无。`kit check` 已把这些模板纳入控制文件校验，并允许 `workflow/*.template.md` 在所有阶段存在。
 
-**影响**：Agent 能否主动调用 skill 完全依赖 `AGENTS.md` 的提示，没有运行时的意图路由增强。
+### 5. Hook 路由增强缺失
 
----
+当前没有：
 
-### 4. 技能发现缺少独立的 JSON 索引
+- `.agents/hooks/`
+- hook 协议文档
+- 可执行 hook 脚本
+- “当前 stage + 用户消息 -> 推荐 skill”的运行时输出
 
-`skills-list.md` 里写得很清楚：
+影响：skill 触发概率仍主要依赖提示词，不够稳定。
 
-> “Agent 的技能发现和路由由独立的 JSON 索引文件负责。”
+### 6. CLI 与 skill 没有编排入口
 
-但实际 `.agents/` 下只有：
+当前 `kit` 只负责 scaffold、check、stage advance。
 
-- 大量 `SKILL.md`；
-- 没有 `skills.json` / `index.json` / `routing.json` 之类的索引文件。
+尚未实现：
 
-**影响**：Agent 无法通过机器可读索引自动发现技能，只能依赖人类可读的 `skills-list.md` 或系统提示中的 skill 列表。
+- `kit skills`
+- `kit next`
+- `kit propose`
+- `kit options`
+- `kit sdd`
+- `kit skill <alias>`
 
----
+影响：第 6-9 步用户旅程还没有形成“阶段 -> 推荐技能 -> 产物模板 -> check -> 用户确认 -> stage advance”的闭环。
 
-### 5. 用户旅程第 6–9 步未自动化
+### 7. README 仍偏最小用法
 
-`ref.md` 描述的旅程：
+当前 README 能说明 init/check/stage，但还缺：
 
-```text
-6. Agent 调用技能询问用户、完善需求 → 产出需求文档
-7. 用户查看、迭代 → 调整的需求文档
-8. 调用技能、结合模板进行技术方案设计 → 3 个方案
-9. 将选择的技术方案……
-```
+- 完整从 `npx ai-vibe-demo-kit init` 到 `implementation-ready` 的示例。
+- 每个阶段应该创建哪个 workflow 文件。
+- `kit check` 失败时如何修复。
+- `npm pack --dry-run` / `npm publish --dry-run` 的发布前检查说明。
+- 生成项目内 `pnpm kit:check` / `pnpm kit:stage` 的推荐用法。
 
-当前：
+## 四、待办清单
 
-- CLI 提供了阶段推进命令；
-- `.agents/skills/` 里放置了 `ce-brainstorm`、`doc-coauthoring`、`design-an-interface`、`planning-and-task-breakdown` 等技能；
-- **但 CLI 与技能之间没有编排**：`kit` 不会自动触发 skill，也不会根据当前 stage 推荐下一步该调用哪个 skill。
+### P1 - 控制面补齐
 
-**影响**：Agent 仍然需要人工阅读 `AGENTS.md` 和 `skills-list.md` 决定下一步，没有形成“阶段 → 技能 → 产物”的闭环。
+- [x] 新增 `templates/pc-admin/TEMPLATE.md`，说明模板结构、扩展方式、生成约定、前后端边界。
+- [x] 判断是否也需要根目录 `TEMPLATE.md`；结论是不需要，避免混入生成项目说明。
+- [x] 新增 `.agents/skills.json`，把 `skills-list.md` 机器化。
+- [x] 在 `templates/pc-admin/AGENTS.md` 中引用 `TEMPLATE.md`。
+- [x] 更新 CLI `check`，把 `TEMPLATE.md` 纳入控制文件校验。
+- [x] 在 `templates/pc-admin/AGENTS.md` 中引用技能索引。
+- [x] 更新 CLI `check`，把技能索引纳入控制文件校验。
 
----
+### P2 - workflow/tasks 模板
 
-### 6. npm 分发形态尚未就绪
+- [x] 新增 `workflow/requirements.template.md`，包含 `status: draft` / `confirmed` 示例字段。
+- [x] 新增 `workflow/solution-options.template.md`，包含正好 3 个 `optionIds` 示例。
+- [x] 新增 `workflow/solution-selected.template.md`，包含用户选择字段。
+- [x] 新增 `workflow/implementation-ready.template.md`，包含进入实现前确认字段。
+- [x] 新增 `tasks/backlog.template.md`。
+- [x] 新增 `tasks/sprint-01.template.md`。
+- [x] 更新 `workflow/README.md` 和 `tasks/README.md`，说明从 template 复制成正式文件的时机。
 
-`ref.md` 的用户旅程第一步是：
+### P3 - SDD 模板
 
-```text
-1. npm install <kit>
-2. npx <kit> init <project-name>
-```
+- [ ] 新增 `frontend/SPECS/PRD.md`。
+- [ ] 新增 `frontend/SPECS/ARCHITECTURE.md`。
+- [ ] 新增 `frontend/SPECS/FEATURES/.gitkeep`。
+- [ ] 新增 `frontend/SPECS/FEATURES/example-feature/spec.md`。
+- [ ] 新增 `frontend/SPECS/FEATURES/example-feature/tasks.md`。
+- [ ] 新增 `backend/SPECS/PRD.md`。
+- [ ] 新增 `backend/SPECS/ARCHITECTURE.md`。
+- [ ] 新增 `backend/SPECS/FEATURES/.gitkeep`。
+- [ ] 新增 `backend/SPECS/FEATURES/example-feature/spec.md`。
+- [ ] 新增 `backend/SPECS/FEATURES/example-feature/tasks.md`。
+- [ ] 更新 `SPECS/README.md`，明确这些文件和 `workflow/` 的关系。
 
-当前：
+### P4 - CLI 与 skill 编排
 
-- `package.json` 中 `name` 是 `kit-test`；
-- `"private": true`；
-- 没有 bin 字段；
-- CLI 入口是通过 `scripts/kit.mjs` 在生成项目里挂载的 `pnpm kit:check` / `pnpm kit:stage`。
+- [ ] 设计 `kit skills`：读取 `.agents/skills.json`，列出可用 alias、stage、输入、输出。
+- [ ] 设计 `kit next`：读取 `workflow-state.json`，输出当前阶段下一步建议、应调用技能、应创建文件。
+- [ ] 设计 `kit propose`：辅助创建 `workflow/requirements.md` 初稿。
+- [ ] 设计 `kit options`：辅助创建 `workflow/solution-options.md`，并校验正好 3 个方案。
+- [ ] 设计 `kit sdd`：根据选定方案生成前后端 SDD 骨架。
+- [ ] 明确 CLI 只做文件/状态编排，不伪装成真正执行 Agent skill。
 
-**影响**：项目目前是一个仓库内 monorepo，不是一个可 `npm install` / `npx` 消费的 kit 包。
+### P5 - Hook 机制
 
----
+- [ ] 新增 `.agents/hooks/README.md`，定义最小 hook 输入输出协议。
+- [ ] 新增 `.agents/hooks/route-skill.mjs`，输入当前 stage 和用户消息，输出推荐 skill alias。
+- [ ] 在 `TEMPLATE.md` / `AGENTS.md` 中说明 hook 是可选增强，不作为阶段推进事实源。
+- [ ] 给 hook 增加最小测试或可复现示例。
 
-### 7. 计划完成门全部未勾选
+### P6 - 发布与文档打磨
 
-`plan/*.md` 中所有 Completion Gate 的复选框都是 `- [ ]`，包括 Phase 1–4 的全部验收项：
+- [ ] 修复本机 npm cache 权限，确保默认 `npm pack --dry-run` 可直接通过。
+- [ ] 跑 `npm publish --dry-run`。
+- [ ] 更新 README 的完整用户旅程。
+- [ ] 说明生成项目后如何运行 `pnpm install`、`pnpm kit:check`、`pnpm kit:stage`。
+- [ ] 检查发布包是否应包含 `skills-list.md` 或只保留机器索引。
+- [ ] 发布前确认 `package.json` 版本号和 changelog/release note。
 
-```text
-plan/01-cli-foundation.md:58:- [ ] `pnpm build` exits cleanly.
-plan/02-template-control-files.md:58:- [ ] Fresh generated project contains every control file...
-plan/03-stage-gate-fixtures.md:64:- [ ] Every valid fixture passes `kit check`.
-plan/04-specs-contract.md:64:- [ ] Every old SDD document from `ref.md` has an explicit destination...
-```
+## 五、建议下一步
 
-虽然测试已经通过，但这些 checkbox 未更新，说明**项目验收状态没有在文档层面得到确认**。
+推荐继续做 P3 + P4：
 
----
+1. 补齐前后端 SDD 模板骨架。
+2. 再设计 `kit skills` / `kit next`，读取 `.agents/skills.json` 输出阶段建议。
+3. 最后预研 hook 路由增强。
 
-## 三、具体缺失清单
-
-按优先级排序：
-
-| 优先级 | 缺失项 | 对应愿景 |
-|---|---|---|
-| P1 | 项目级 `RULES` 控制文件 | ref.md 控制文件四件套 |
-| P1 | `Template` 索引/说明文件 | ref.md 控制文件四件套 |
-| P1 | 独立 JSON 技能索引（`.agents/skills.json`） | skills-list.md 自述 |
-| P2 | `frontend/SPECS/PRD.md`、`ARCHITECTURE.md`、`FEATURES/<slug>/{spec,tasks}.md` 模板 | ref.md SDD 文档清单 |
-| P2 | 后端同上 | ref.md SDD 文档清单 |
-| P2 | 全栈 SDD 生成提示词模板文件 | ref.md 中“全栈 SDD 生成提示词模板” |
-| P2 | CLI 与 skill 的编排入口（如 `kit propose` / `kit sdd`） | ref.md 第 6–9 步 |
-| P3 | Hook 路由增强机制 | ref.md Hook 层 |
-| P3 | npm 包发布准备（改名、bin、取消 private） | ref.md 用户旅程第 1–2 步 |
-| P3 | 更新 `plan/*.md` 完成门状态 | 项目内部契约 |
-
----
-
-## 四、建议下一步
-
-如果想继续逼近 `ref.md` 愿景，建议按以下顺序推进：
-
-1. **补全控制文件**：新增根目录 `RULES.md` 和 `TEMPLATE.md`，与 `AGENTS.md`、`SPECS/` 形成四件套。
-2. **建立技能索引**：创建 `.agents/skills.json`，把 `skills-list.md` 中的映射机器化。
-3. **扩展 SPECS 模板**：在 `templates/pc-admin/frontend/SPECS/` 和 `backend/SPECS/` 下补齐 `PRD.md`、`ARCHITECTURE.md`、`FEATURES/.gitkeep` 等骨架。
-4. **增加 CLI 编排命令**：例如 `kit propose`（触发需求澄清）、`kit sdd`（触发 SDD 生成）、`kit options`（触发方案生成），把阶段与 skill 关联起来。
-5. **Hook 机制预研**：先出一个 `.agents/hooks/` 设计文档或最小示例，验证意图路由增强的可行性。
-6. **npm 包化**：调整 `package.json` 的 `name`、`private`、`bin`，使项目可被 `npx` 调用。
-7. **勾选完成门**：根据当前测试结果，把 `plan/*.md` 中已满足的 Completion Gate 标记为 `[x]`。
+理由：`TEMPLATE.md`、`.agents/skills.json`、workflow/tasks 模板已经补齐；剩余风险主要是进入 `implementation-ready` 后缺少前后端 SDD 文件形态，以及 CLI 尚未提供读取索引后的下一步建议。

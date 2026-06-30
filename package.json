@@ -1,6 +1,6 @@
 {
   "name": "ai-vibe-demo-kit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Agent-friendly PC 后台项目快速搭建工具",
   "repository": {
     "type": "git",
@@ -22,6 +22,7 @@
     "kit": "packages/cli/dist/index.js"
   },
   "files": [
+    ".agents/skills.json",
     ".agents/skills/",
     "packages/cli/package.json",
     "packages/cli/dist/",

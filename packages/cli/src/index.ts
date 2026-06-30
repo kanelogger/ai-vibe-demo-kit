@@ -84,6 +84,7 @@ const TEXT_EXTENSIONS = new Set([
 const CLI_PATH = fileURLToPath(import.meta.url);
 const REPO_ROOT = resolve(dirname(CLI_PATH), "../../..");
 const TEMPLATE_ROOT = join(REPO_ROOT, "templates", "pc-admin");
+const KIT_SKILLS_INDEX = join(REPO_ROOT, ".agents", "skills.json");
 const KIT_SKILLS_ROOT = join(REPO_ROOT, ".agents", "skills");
 
 async function main(argv: string[]): Promise<void> {
@@ -128,6 +129,8 @@ async function initCommand(args: string[]): Promise<void> {
     kitCliPath: CLI_PATH,
   });
   await materializeEnvExamples(targetRoot);
+  await mkdir(join(targetRoot, ".agents"), { recursive: true });
+  await copyFile(KIT_SKILLS_INDEX, join(targetRoot, ".agents", "skills.json"));
   await copyDirectory(KIT_SKILLS_ROOT, join(targetRoot, ".agents", "skills"));
 
   await mkdir(join(targetRoot, "frontend"), { recursive: true });
@@ -226,6 +229,7 @@ async function checkProject(root: string): Promise<CheckIssue[]> {
   if (!isStage(state.stage)) return issues;
 
   await validateCommonControlFiles(root, issues);
+  await validateSkillsIndex(root, issues);
   await validateSourceLine(root, "frontend/SPECS/API.md", issues);
   await validateSourceLine(root, "backend/SPECS/API.md", issues);
   await validateWorkflowFiles(root, state.stage, issues);
@@ -280,9 +284,17 @@ function validateStateShape(state: WorkflowState, issues: CheckIssue[]): void {
 async function validateCommonControlFiles(root: string, issues: CheckIssue[]): Promise<void> {
   const files = [
     "AGENTS.md",
+    "TEMPLATE.md",
+    ".agents/skills.json",
     "workflow/README.md",
+    "workflow/requirements.template.md",
+    "workflow/solution-options.template.md",
+    "workflow/solution-selected.template.md",
+    "workflow/implementation-ready.template.md",
     "SPECS/API.md",
     "tasks/README.md",
+    "tasks/backlog.template.md",
+    "tasks/sprint-01.template.md",
     "memory/decisions.md",
     "frontend/AGENTS.md",
     "frontend/SPECS/README.md",
@@ -296,6 +308,75 @@ async function validateCommonControlFiles(root: string, issues: CheckIssue[]): P
     if (!(await exists(join(root, file)))) {
       issues.push(issue(file, "Required control file is missing.", `Restore ${file} from the kit template.`));
     }
+  }
+}
+
+async function validateSkillsIndex(root: string, issues: CheckIssue[]): Promise<void> {
+  const relPath = ".agents/skills.json";
+  const fullPath = join(root, relPath);
+  if (!(await exists(fullPath))) return;
+
+  let index: unknown;
+  try {
+    index = JSON.parse(await readFile(fullPath, "utf8"));
+  } catch (error) {
+    issues.push(issue(relPath, error instanceof Error ? error.message : "Invalid JSON.", "Restore .agents/skills.json from the kit template."));
+    return;
+  }
+
+  if (!isRecord(index)) {
+    issues.push(issue(relPath, "Skill index must be a JSON object.", "Restore .agents/skills.json from the kit template."));
+    return;
+  }
+
+  if (index.version !== 1) {
+    issues.push(issue(relPath, "version must be 1.", "Set `version` to 1 in .agents/skills.json."));
+  }
+
+  const skills = index.skills;
+  if (!Array.isArray(skills) || skills.length === 0) {
+    issues.push(issue(relPath, "skills must be a non-empty array.", "Add skill entries with alias and skill fields."));
+    return;
+  }
+
+  const aliases = new Set<string>();
+  for (const [entryIndex, entry] of skills.entries()) {
+    if (!isRecord(entry)) {
+      issues.push(issue(relPath, `skills[${entryIndex}] must be an object.`, "Use skill entries with alias and skill fields."));
+      continue;
+    }
+
+    const alias = typeof entry.alias === "string" ? entry.alias.trim() : "";
+    const skill = typeof entry.skill === "string" ? entry.skill.trim() : "";
+    if (!alias) {
+      issues.push(issue(relPath, `skills[${entryIndex}] is missing alias.`, "Add a stable alias for every skill entry."));
+    } else if (aliases.has(alias)) {
+      issues.push(issue(relPath, `Duplicate alias "${alias}".`, "Keep aliases unique in .agents/skills.json."));
+    } else {
+      aliases.add(alias);
+    }
+
+    if (!skill) {
+      issues.push(issue(relPath, `skills[${entryIndex}] is missing skill.`, "Point every alias to a real .agents/skills/<skill>/SKILL.md file."));
+      continue;
+    }
+
+    const skillPath = join(root, ".agents", "skills", skill, "SKILL.md");
+    if (!(await exists(skillPath))) {
+      issues.push(issue(`.agents/skills/${skill}/SKILL.md`, `Skill "${skill}" referenced by alias "${alias || `<index ${entryIndex}>`}" is missing.`, "Restore the missing skill directory or update .agents/skills.json."));
+    }
+  }
+
+  validateAliasList(index.defaultChain, aliases, "defaultChain", relPath, issues);
+
+  const stageDefaults = index.stageDefaults;
+  if (!isRecord(stageDefaults)) {
+    issues.push(issue(relPath, "stageDefaults must be an object.", "Map each workflow stage to an array of skill aliases."));
+    return;
+  }
+
+  for (const stage of STAGES) {
+    validateAliasList(stageDefaults[stage], aliases, `stageDefaults.${stage}`, relPath, issues);
   }
 }
 
@@ -316,7 +397,7 @@ async function validateWorkflowFiles(root: string, stage: Stage, issues: CheckIs
 
   const allowed = allowedWorkflowFiles(stage);
   for (const entry of await readdir(workflowRoot)) {
-    if (!entry.endsWith(".md") || entry === "README.md") continue;
+    if (!entry.endsWith(".md") || entry === "README.md" || entry.endsWith(".template.md")) continue;
     const rel = `workflow/${entry}`;
     if (!allowed.has(rel)) {
       issues.push(
@@ -675,6 +756,19 @@ function parseOptions(args: string[]): Record<string, string> {
   return result;
 }
 
+function validateAliasList(value: unknown, aliases: Set<string>, fieldPath: string, relPath: string, issues: CheckIssue[]): void {
+  if (!Array.isArray(value)) {
+    issues.push(issue(relPath, `${fieldPath} must be an array.`, `Set ${fieldPath} to an array of skill aliases.`));
+    return;
+  }
+
+  for (const alias of value) {
+    if (typeof alias !== "string" || !aliases.has(alias)) {
+      issues.push(issue(relPath, `${fieldPath} references unknown alias "${String(alias)}".`, "Use aliases declared in the skills array."));
+    }
+  }
+}
+
 function allowedWorkflowFiles(stage: Stage): Set<string> {
   const files: string[] = [];
   if (stageIndex(stage) >= stageIndex("requirements-draft")) files.push("workflow/requirements.md");
@@ -707,6 +801,10 @@ function sameArray(left: unknown[], right: unknown[]): boolean {
 
 function isStage(value: string): value is Stage {
   return STAGES.includes(value as Stage);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function stageIndex(stage: Stage): number {

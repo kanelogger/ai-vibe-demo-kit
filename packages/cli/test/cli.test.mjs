@@ -115,9 +115,26 @@ async function buildProjectAt(stage) {
 test("init creates scaffold and initialized check passes", async () => {
   const { root, project } = await tempProject();
   try {
-    for (const path of ["frontend", "backend", "SPECS", "workflow", "tasks", "memory", "AGENTS.md", "workflow-state.json"]) {
+    for (const path of [
+      "frontend",
+      "backend",
+      "SPECS",
+      "workflow",
+      "tasks",
+      "memory",
+      "AGENTS.md",
+      "TEMPLATE.md",
+      "workflow-state.json",
+      "workflow/requirements.template.md",
+      "workflow/solution-options.template.md",
+      "workflow/solution-selected.template.md",
+      "workflow/implementation-ready.template.md",
+      "tasks/backlog.template.md",
+      "tasks/sprint-01.template.md",
+    ]) {
       assert.equal(existsSync(join(project, path)), true, path);
     }
+    assert.equal(existsSync(join(project, ".agents/skills.json")), true);
     assert.equal(existsSync(join(project, ".agents/skills/implement/SKILL.md")), true);
     assert.equal(existsSync(join(project, ".agents/skills/spec-driven-development/SKILL.md")), true);
     assert.equal(existsSync(join(project, "scripts/kit-runtime.mjs")), true);
@@ -292,6 +309,30 @@ test("invalid fixtures fail with repair actions", async () => {
       stage: "initialized",
       mutate: async (project) => write(project, "frontend/SPECS/API.md", "# duplicate API\n"),
       expected: /Missing exact root API source line/,
+    },
+    {
+      name: "missing template map",
+      stage: "initialized",
+      mutate: async (project) => rm(join(project, "TEMPLATE.md"), { force: true }),
+      expected: /TEMPLATE\.md: Required control file is missing/,
+    },
+    {
+      name: "missing skill index",
+      stage: "initialized",
+      mutate: async (project) => rm(join(project, ".agents/skills.json"), { force: true }),
+      expected: /\.agents\/skills\.json: Required control file is missing/,
+    },
+    {
+      name: "missing workflow template",
+      stage: "initialized",
+      mutate: async (project) => rm(join(project, "workflow/requirements.template.md"), { force: true }),
+      expected: /workflow\/requirements\.template\.md: Required control file is missing/,
+    },
+    {
+      name: "missing referenced skill",
+      stage: "initialized",
+      mutate: async (project) => write(project, ".agents/skills.json", "{\n  \"version\": 1,\n  \"defaultChain\": [\"ghost\"],\n  \"stageDefaults\": {\n    \"initialized\": [\"ghost\"],\n    \"requirements-draft\": [\"ghost\"],\n    \"requirements-confirmed\": [\"ghost\"],\n    \"solution-options\": [\"ghost\"],\n    \"solution-selected\": [\"ghost\"],\n    \"implementation-ready\": [\"ghost\"]\n  },\n  \"skills\": [{ \"alias\": \"ghost\", \"skill\": \"ghost-skill\" }]\n}\n"),
+      expected: /\.agents\/skills\/ghost-skill\/SKILL\.md: Skill "ghost-skill" referenced by alias "ghost" is missing/,
     },
     {
       name: "missing confirmed fields",

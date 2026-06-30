@@ -2,6 +2,8 @@
 
 本工作区由 ai-vibe-demo-kit v1 控制。根目录负责流程状态、阶段门、共享 API 契约、任务和决策记录。
 
+先读 `TEMPLATE.md` 获取模板地图、扩展位置和文件边界；需要选择 skill 时读取 `.agents/skills.json`；再按任务类型读取 `rules/`、`frontend/AGENTS.md` 或 `backend/AGENTS.md`。
+
 ## 命令
 
 - `pnpm kit:check`：校验当前流程状态。
@@ -48,6 +50,8 @@ initialized
 - 后端工作限制在 `backend/` 内，除非当前阶段明确要求更新根目录 workflow/API/tasks。
 
 ## 技能路由
+
+`.agents/skills.json` 是技能别名、默认链路和阶段推荐的机器可读事实源。不要只凭本节文字选择 skill。
 
 默认链路：
 

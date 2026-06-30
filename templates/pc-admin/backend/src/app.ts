@@ -8,6 +8,7 @@ import userRoutes from "./routes/users";
 import userManagementRoutes from "./routes/user-management";
 import roleManagementRoutes from "./routes/role-management";
 import menuManagementRoutes from "./routes/menu-management";
+import logRoutes from "./routes/logs";
 import asyncRoutes from "./routes/async-routes";
 import Logger from "./loaders/logger";
 
@@ -29,6 +30,7 @@ export function buildApp() {
   app.register(userManagementRoutes);
   app.register(roleManagementRoutes);
   app.register(menuManagementRoutes);
+  app.register(logRoutes);
   app.register(userRoutes);
   app.register(asyncRoutes);
 

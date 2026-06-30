@@ -10,6 +10,7 @@ import {
   updateMenuRoles,
   updateMenuStatus,
 } from "../services/menu-management";
+import { recordOperationLog } from "../services/operation-logs";
 
 interface IdParams {
   id: string;
@@ -28,6 +29,14 @@ export default async function menuManagementRoutes(
 
   app.post("/menus", async (request: FastifyRequest, reply: FastifyReply) => {
     const menu = await createMenu(request.body, actorId(request));
+    await recordOperationLog({
+      operatorId: actorId(request),
+      moduleCode: "MENU",
+      operationType: "CREATE",
+      requestMethod: request.method,
+      requestPath: request.url,
+      requestParams: request.body,
+    });
     return reply.send(sendSuccess(menu));
   });
 
@@ -52,6 +61,14 @@ export default async function menuManagementRoutes(
         request.body,
         actorId(request)
       );
+      await recordOperationLog({
+        operatorId: actorId(request),
+        moduleCode: "MENU",
+        operationType: "UPDATE",
+        requestMethod: request.method,
+        requestPath: request.url,
+        requestParams: { id: request.params.id, body: request.body },
+      });
       return reply.send(sendSuccess(menu));
     }
   );
@@ -67,12 +84,29 @@ export default async function menuManagementRoutes(
         request.body?.status,
         actorId(request)
       );
+      await recordOperationLog({
+        operatorId: actorId(request),
+        moduleCode: "MENU",
+        operationType: "STATUS",
+        requestMethod: request.method,
+        requestPath: request.url,
+        requestParams: { id: request.params.id, body: request.body },
+      });
       return reply.send(sendSuccess(menu));
     }
   );
 
   app.patch("/menus/tree/sort", async (request, reply) => {
-    return reply.send(sendSuccess(await sortMenuTree(request.body, actorId(request))));
+    const result = await sortMenuTree(request.body, actorId(request));
+    await recordOperationLog({
+      operatorId: actorId(request),
+      moduleCode: "MENU",
+      operationType: "SORT",
+      requestMethod: request.method,
+      requestPath: request.url,
+      requestParams: request.body,
+    });
+    return reply.send(sendSuccess(result));
   });
 
   app.put(
@@ -86,6 +120,14 @@ export default async function menuManagementRoutes(
         request.body,
         actorId(request)
       );
+      await recordOperationLog({
+        operatorId: actorId(request),
+        moduleCode: "MENU",
+        operationType: "ASSIGN_ROLES",
+        requestMethod: request.method,
+        requestPath: request.url,
+        requestParams: { id: request.params.id, body: request.body },
+      });
       return reply.send(sendSuccess(menu));
     }
   );
@@ -97,6 +139,14 @@ export default async function menuManagementRoutes(
       reply: FastifyReply
     ) => {
       await deleteMenu(Number(request.params.id), actorId(request));
+      await recordOperationLog({
+        operatorId: actorId(request),
+        moduleCode: "MENU",
+        operationType: "DELETE",
+        requestMethod: request.method,
+        requestPath: request.url,
+        requestParams: { id: request.params.id },
+      });
       return reply.send(sendSuccess({ message: "删除成功" }));
     }
   );

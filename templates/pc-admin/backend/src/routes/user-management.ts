@@ -12,6 +12,7 @@ import {
   updateManagedUser,
   updateUserStatus,
 } from "../services/user-management";
+import { recordOperationLog } from "../services/operation-logs";
 
 interface IdParams {
   id: string;
@@ -32,6 +33,14 @@ export default async function userManagementRoutes(
 
   app.post("/users", async (request: FastifyRequest, reply: FastifyReply) => {
     const user = await createManagedUser(request.body, actorId(request));
+    await recordOperationLog({
+      operatorId: actorId(request),
+      moduleCode: "USER",
+      operationType: "CREATE",
+      requestMethod: request.method,
+      requestPath: request.url,
+      requestParams: request.body,
+    });
     return reply.send(sendSuccess(user));
   });
 
@@ -56,6 +65,14 @@ export default async function userManagementRoutes(
         request.body,
         actorId(request)
       );
+      await recordOperationLog({
+        operatorId: actorId(request),
+        moduleCode: "USER",
+        operationType: "UPDATE",
+        requestMethod: request.method,
+        requestPath: request.url,
+        requestParams: { id: request.params.id, body: request.body },
+      });
       return reply.send(sendSuccess(user));
     }
   );
@@ -71,6 +88,14 @@ export default async function userManagementRoutes(
         request.body?.status,
         actorId(request)
       );
+      await recordOperationLog({
+        operatorId: actorId(request),
+        moduleCode: "USER",
+        operationType: "STATUS",
+        requestMethod: request.method,
+        requestPath: request.url,
+        requestParams: { id: request.params.id, body: request.body },
+      });
       return reply.send(sendSuccess(user));
     }
   );
@@ -86,6 +111,14 @@ export default async function userManagementRoutes(
         request.body,
         actorId(request)
       );
+      await recordOperationLog({
+        operatorId: actorId(request),
+        moduleCode: "USER",
+        operationType: "RESET_PASSWORD",
+        requestMethod: request.method,
+        requestPath: request.url,
+        requestParams: { id: request.params.id, body: request.body },
+      });
       return reply.send(sendSuccess(result));
     }
   );
@@ -97,6 +130,14 @@ export default async function userManagementRoutes(
       reply: FastifyReply
     ) => {
       await deleteManagedUser(Number(request.params.id), actorId(request));
+      await recordOperationLog({
+        operatorId: actorId(request),
+        moduleCode: "USER",
+        operationType: "DELETE",
+        requestMethod: request.method,
+        requestPath: request.url,
+        requestParams: { id: request.params.id },
+      });
       return reply.send(sendSuccess({ message: "删除成功" }));
     }
   );

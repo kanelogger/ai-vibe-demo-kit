@@ -10,6 +10,7 @@ import {
   updateRoleStatus,
   updateRoleUsers,
 } from "../services/role-management";
+import { recordOperationLog } from "../services/operation-logs";
 
 interface IdParams {
   id: string;
@@ -30,6 +31,14 @@ export default async function roleManagementRoutes(
 
   app.post("/roles", async (request: FastifyRequest, reply: FastifyReply) => {
     const role = await createRole(request.body, actorId(request));
+    await recordOperationLog({
+      operatorId: actorId(request),
+      moduleCode: "ROLE",
+      operationType: "CREATE",
+      requestMethod: request.method,
+      requestPath: request.url,
+      requestParams: request.body,
+    });
     return reply.send(sendSuccess(role));
   });
 
@@ -54,6 +63,14 @@ export default async function roleManagementRoutes(
         request.body,
         actorId(request)
       );
+      await recordOperationLog({
+        operatorId: actorId(request),
+        moduleCode: "ROLE",
+        operationType: "UPDATE",
+        requestMethod: request.method,
+        requestPath: request.url,
+        requestParams: { id: request.params.id, body: request.body },
+      });
       return reply.send(sendSuccess(role));
     }
   );
@@ -69,6 +86,14 @@ export default async function roleManagementRoutes(
         request.body?.status,
         actorId(request)
       );
+      await recordOperationLog({
+        operatorId: actorId(request),
+        moduleCode: "ROLE",
+        operationType: "STATUS",
+        requestMethod: request.method,
+        requestPath: request.url,
+        requestParams: { id: request.params.id, body: request.body },
+      });
       return reply.send(sendSuccess(role));
     }
   );
@@ -80,6 +105,14 @@ export default async function roleManagementRoutes(
       reply: FastifyReply
     ) => {
       await deleteRole(Number(request.params.id), actorId(request));
+      await recordOperationLog({
+        operatorId: actorId(request),
+        moduleCode: "ROLE",
+        operationType: "DELETE",
+        requestMethod: request.method,
+        requestPath: request.url,
+        requestParams: { id: request.params.id },
+      });
       return reply.send(sendSuccess({ message: "删除成功" }));
     }
   );
@@ -112,6 +145,14 @@ export default async function roleManagementRoutes(
         request.body,
         actorId(request)
       );
+      await recordOperationLog({
+        operatorId: actorId(request),
+        moduleCode: "ROLE",
+        operationType: "ASSIGN_USERS",
+        requestMethod: request.method,
+        requestPath: request.url,
+        requestParams: { id: request.params.id, body: request.body },
+      });
       return reply.send(sendSuccess(users));
     }
   );

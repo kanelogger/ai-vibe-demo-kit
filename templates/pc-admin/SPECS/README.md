@@ -2,6 +2,17 @@
 
 ai-vibe-demo-kit maps the older SDD document list into this structure.
 
+## Relationship to Workflow
+
+`workflow/` records stage decisions. `SPECS/` records the implementation contract that survives after a stage advances.
+
+- Draft and confirm the user problem in `workflow/requirements.md`.
+- Compare exactly three approaches in `workflow/solution-options.md`.
+- Record the user's selected approach in `workflow/solution-selected.md`.
+- After the selected approach is stable, use `frontend/SPECS/` and `backend/SPECS/` to write the SDD implementation contract.
+
+Use `kit sdd <feature-slug>` to create a feature-specific SDD skeleton. The CLI only creates files; it does not execute Agent skills or choose a solution.
+
 ## SDD Mapping
 
 | Old SDD artifact | New destination |

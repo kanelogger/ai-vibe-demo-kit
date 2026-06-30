@@ -1,6 +1,6 @@
 # Frontend SPECS
 
-Future local artifacts:
+Local SDD artifacts:
 
 - `PRD.md`
 - `ARCHITECTURE.md`
@@ -9,3 +9,5 @@ Future local artifacts:
 - `FEATURES/<feature-slug>/tasks.md`
 
 `API.md` references the root API contract. Do not duplicate the cross-end API contract here.
+
+Use `kit sdd <feature-slug>` from the project root to create a feature skeleton. Keep feature specs aligned with `workflow/solution-selected.md` and root `SPECS/API.md`.

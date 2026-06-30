@@ -7,7 +7,14 @@
 ## 命令
 
 - `pnpm kit:check`：校验当前流程状态。
+- `pnpm kit:skills`：列出 `.agents/skills.json` 中的 skill alias 和当前阶段推荐。
+- `pnpm kit:next`：根据 `workflow-state.json` 输出下一步、推荐 skill 和应创建文件。
+- `pnpm kit:propose`：创建 `workflow/requirements.md` 草稿骨架。
+- `pnpm kit:options`：创建或校验 `workflow/solution-options.md`，要求正好 3 个方案。
+- `pnpm kit:sdd -- <feature-slug>`：创建前后端 SDD 骨架。
 - `pnpm kit:stage -- advance <stage> --by user --quote "<用户原话>"`：用户确认后，只推进一个阶段。
+
+这些命令只做文件和状态编排，不执行 Agent skill，不替用户选择方案。`kit options` 只能在 `requirements-confirmed` 后创建方案文件；`kit sdd` 只能在 `solution-selected` 后创建 feature SDD。
 
 ## 阶段顺序
 

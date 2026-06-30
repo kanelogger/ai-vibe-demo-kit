@@ -73,6 +73,18 @@ pnpm kit:stage -- advance <stage> --by user --quote "<用户原话>"
 
 `tasks/backlog.md` 只能在 `requirements-confirmed` 后创建。`tasks/sprint-01.md` 只能在 `implementation-ready` 后创建。
 
+辅助命令：
+
+| 命令 | 作用 |
+| --- | --- |
+| `pnpm kit:skills` | 读取 `.agents/skills.json`，列出 skill alias 和当前阶段推荐 |
+| `pnpm kit:next` | 读取 `workflow-state.json`，输出下一步、推荐 skill 和应创建文件 |
+| `pnpm kit:propose` | 创建 `workflow/requirements.md` 草稿骨架 |
+| `pnpm kit:options` | 创建或校验 `workflow/solution-options.md`，要求正好 3 个方案 |
+| `pnpm kit:sdd -- <feature-slug>` | 创建前后端 SDD 骨架 |
+
+这些命令只做文件和状态编排，不执行 Agent skill，不替用户选择方案。`kit options` 只能在 `requirements-confirmed` 后创建方案文件；`kit sdd` 只能在 `solution-selected` 后创建 feature SDD。
+
 ## 控制文件合同
 
 - `AGENTS.md`：阶段锁、硬停顿、共享 API 契约和默认 skill 链路。
@@ -81,6 +93,8 @@ pnpm kit:stage -- advance <stage> --by user --quote "<用户原话>"
 - `SPECS/API.md`：唯一前后端共享 API 契约。
 - `SPECS/DATABASE.md`：数据库设计事实源。
 - `frontend/SPECS/API.md` 与 `backend/SPECS/API.md` 只能保留 `Source: ../../SPECS/API.md`。
+- `frontend/SPECS/PRD.md`、`frontend/SPECS/ARCHITECTURE.md` 和 `frontend/SPECS/FEATURES/<feature-slug>/` 承接前端 SDD。
+- `backend/SPECS/PRD.md`、`backend/SPECS/ARCHITECTURE.md` 和 `backend/SPECS/FEATURES/<feature-slug>/` 承接后端 SDD。
 
 如果 API 字段、前端 VO 或后端响应有变化，先更新 `SPECS/API.md`，再改前后端代码。
 
@@ -159,6 +173,8 @@ backend/src/
 ```sh
 pnpm install
 pnpm kit:check
+pnpm kit:next
+pnpm kit:skills
 pnpm kit:stage -- advance requirements-draft --by user --quote "<用户原话>"
 pnpm dev
 pnpm build

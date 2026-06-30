@@ -8,7 +8,12 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "kit:check": "node scripts/kit.mjs check",
-    "kit:stage": "node scripts/kit.mjs stage"
+    "kit:stage": "node scripts/kit.mjs stage",
+    "kit:skills": "node scripts/kit.mjs skills",
+    "kit:next": "node scripts/kit.mjs next",
+    "kit:propose": "node scripts/kit.mjs propose",
+    "kit:options": "node scripts/kit.mjs options",
+    "kit:sdd": "node scripts/kit.mjs sdd"
   },
   "engines": {
     "node": "^20.19.0 || >=22.13.0",

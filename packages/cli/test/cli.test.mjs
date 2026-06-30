@@ -131,6 +131,16 @@ test("init creates scaffold and initialized check passes", async () => {
       "workflow/implementation-ready.template.md",
       "tasks/backlog.template.md",
       "tasks/sprint-01.template.md",
+      "frontend/SPECS/PRD.md",
+      "frontend/SPECS/ARCHITECTURE.md",
+      "frontend/SPECS/FEATURES/.gitkeep",
+      "frontend/SPECS/FEATURES/example-feature/spec.md",
+      "frontend/SPECS/FEATURES/example-feature/tasks.md",
+      "backend/SPECS/PRD.md",
+      "backend/SPECS/ARCHITECTURE.md",
+      "backend/SPECS/FEATURES/.gitkeep",
+      "backend/SPECS/FEATURES/example-feature/spec.md",
+      "backend/SPECS/FEATURES/example-feature/tasks.md",
     ]) {
       assert.equal(existsSync(join(project, path)), true, path);
     }
@@ -152,6 +162,11 @@ test("init creates scaffold and initialized check passes", async () => {
 
     const check = run(["check"], { cwd: project });
     assert.equal(check.status, 0, check.stderr);
+
+    const localNext = run(["next"], { cwd: project });
+    assert.equal(localNext.status, 0, localNext.stderr);
+    assert.match(localNext.stdout, /Stage: initialized/);
+    assert.match(localNext.stdout, /workflow\/requirements\.md/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -380,6 +395,120 @@ test("immediate target artifacts are allowed but not validated as current state"
     await write(project, "workflow/solution-options.md", "---\nstatus: proposed\noptionIds: [a, b, c]\n---\n# Options\n");
     const check = run(["check"], { cwd: project });
     assert.equal(check.status, 0, check.stderr);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("skill orchestration commands read skills index and workflow state", async () => {
+  const { root, project } = await tempProject();
+  try {
+    const skills = run(["skills"], { cwd: project });
+    assert.equal(skills.status, 0, skills.stderr);
+    assert.match(skills.stdout, /Stage: initialized/);
+    assert.match(skills.stdout, /\* requirement-clarification -> ce-brainstorm/);
+    assert.match(skills.stdout, /inputs: user request, workflow-state\.json, SPECS\/requirements\//);
+    assert.match(skills.stdout, /outputs: workflow\/requirements\.md/);
+
+    const skill = run(["skill", "api-design"], { cwd: project });
+    assert.equal(skill.status, 0, skill.stderr);
+    assert.match(skill.stdout, /Alias: api-design/);
+    assert.match(skill.stdout, /Skill: api-and-interface-design/);
+    assert.match(skill.stdout, /Inputs: workflow\/solution-selected\.md, SPECS\/API\.md, frontend\/SPECS\/, backend\/SPECS\//);
+    assert.match(skill.stdout, /Outputs: updated SPECS\/API\.md, frontend\/backend API boundary notes/);
+    assert.match(skill.stdout, /does not execute Agent skills/);
+
+    const next = run(["next"], { cwd: project });
+    assert.equal(next.status, 0, next.stderr);
+    assert.match(next.stdout, /Next stage: requirements-draft/);
+    assert.match(next.stdout, /Recommended skills: requirement-clarification, requirement-grilling/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("propose and options commands create workflow skeletons without advancing state", async () => {
+  const { root, project } = await tempProject();
+  try {
+    const propose = run(["propose", "--title", "User Import"], { cwd: project });
+    assert.equal(propose.status, 0, propose.stderr);
+    assert.match(await readFile(join(project, "workflow/requirements.md"), "utf8"), /# User Import/);
+
+    const duplicate = run(["propose"], { cwd: project });
+    assert.notEqual(duplicate.status, 0);
+    assert.match(duplicate.stderr, /already exists/);
+
+    const earlyOptions = run(["options", "--ids", "minimal,balanced,robust"], { cwd: project });
+    assert.notEqual(earlyOptions.status, 0);
+    assert.match(earlyOptions.stderr, /only allowed after requirements-confirmed/);
+
+    const state = await readJson(join(project, "workflow-state.json"));
+    assert.equal(state.stage, "initialized");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("options command creates workflow skeleton after requirements are confirmed", async () => {
+  const { root, project } = await buildProjectAt("requirements-confirmed");
+  try {
+    const options = run(["options", "--ids", "minimal,balanced,robust"], { cwd: project });
+    assert.equal(options.status, 0, options.stderr);
+    assert.match(await readFile(join(project, "workflow/solution-options.md"), "utf8"), /optionIds: \[minimal, balanced, robust\]/);
+
+    const optionsCheck = run(["options", "--check"], { cwd: project });
+    assert.equal(optionsCheck.status, 0, optionsCheck.stderr);
+    assert.match(optionsCheck.stdout, /has 3 optionIds/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("options command rejects anything other than three option ids", async () => {
+  const { root, project } = await buildProjectAt("requirements-confirmed");
+  try {
+    const create = run(["options", "--ids", "only-one"], { cwd: project });
+    assert.notEqual(create.status, 0);
+    assert.match(create.stderr, /exactly 3/);
+
+    await write(project, "workflow/solution-options.md", "---\nstatus: proposed\noptionIds: [a, b]\n---\n# Options\n");
+    const check = run(["options", "--check"], { cwd: project });
+    assert.notEqual(check.status, 0);
+    assert.match(check.stderr, /exactly 3 optionIds/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("sdd command creates feature-specific frontend and backend skeletons", async () => {
+  const { root, project } = await buildProjectAt("solution-selected");
+  try {
+    const sdd = run(["sdd", "user-import"], { cwd: project });
+    assert.equal(sdd.status, 0, sdd.stderr);
+    assert.equal(existsSync(join(project, "frontend/SPECS/FEATURES/user-import/spec.md")), true);
+    assert.equal(existsSync(join(project, "frontend/SPECS/FEATURES/user-import/tasks.md")), true);
+    assert.equal(existsSync(join(project, "backend/SPECS/FEATURES/user-import/spec.md")), true);
+    assert.equal(existsSync(join(project, "backend/SPECS/FEATURES/user-import/tasks.md")), true);
+    assert.match(await readFile(join(project, "backend/SPECS/FEATURES/user-import/spec.md"), "utf8"), /feature: user-import/);
+    assert.match(await readFile(join(project, "backend/SPECS/FEATURES/user-import/spec.md"), "utf8"), /\.\.\/\.\.\/\.\.\/\.\.\/SPECS\/API\.md/);
+
+    const duplicate = run(["sdd", "user-import"], { cwd: project });
+    assert.notEqual(duplicate.status, 0);
+    assert.match(duplicate.stderr, /already exists/);
+
+    const check = run(["check"], { cwd: project });
+    assert.equal(check.status, 0, check.stderr);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("sdd command rejects early feature skeleton creation", async () => {
+  const { root, project } = await tempProject();
+  try {
+    const sdd = run(["sdd", "user-import"], { cwd: project });
+    assert.notEqual(sdd.status, 0);
+    assert.match(sdd.stderr, /only allowed after solution-selected/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

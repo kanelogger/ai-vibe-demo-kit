@@ -53,201 +53,454 @@
       "skill": "ce-brainstorm",
       "level": "L1",
       "stage": "requirements",
-      "description": "多轮澄清后产出结构化需求文档"
+      "description": "多轮澄清后产出结构化需求文档",
+      "inputs": [
+        "user request",
+        "workflow-state.json",
+        "SPECS/requirements/"
+      ],
+      "outputs": [
+        "workflow/requirements.md"
+      ]
     },
     {
       "alias": "requirement-grilling",
       "skill": "grilling",
       "level": "L1",
       "stage": "requirements",
-      "description": "追问边界、异常、验收标准，把态度转成事实"
+      "description": "追问边界、异常、验收标准，把态度转成事实",
+      "inputs": [
+        "workflow/requirements.md",
+        "user constraints"
+      ],
+      "outputs": [
+        "open questions",
+        "acceptance criteria"
+      ]
     },
     {
       "alias": "doc-iteration",
       "skill": "doc-coauthoring",
       "level": "L1",
       "stage": "requirements",
-      "description": "与用户协同修改 workflow/requirements.md"
+      "description": "与用户协同修改 workflow/requirements.md",
+      "inputs": [
+        "workflow/requirements.md",
+        "user feedback"
+      ],
+      "outputs": [
+        "updated workflow/requirements.md"
+      ]
     },
     {
       "alias": "spec-lock",
       "skill": "spec-driven-development",
       "level": "L1",
       "stage": "requirements",
-      "description": "将需求转成可执行规格，先 spec 后代码"
+      "description": "将需求转成可执行规格，先 spec 后代码",
+      "inputs": [
+        "workflow/requirements.md"
+      ],
+      "outputs": [
+        "confirmed requirements",
+        "implementation constraints"
+      ]
     },
     {
       "alias": "domain-modeling",
       "skill": "domain-modeling",
       "level": "L1",
       "stage": "requirements",
-      "description": "统一术语、实体、流程边界"
+      "description": "统一术语、实体、流程边界",
+      "inputs": [
+        "workflow/requirements.md",
+        "SPECS/requirements/"
+      ],
+      "outputs": [
+        "domain terms",
+        "entity boundaries"
+      ]
     },
     {
       "alias": "ubiquitous-language",
       "skill": "ubiquitous-language",
       "level": "L1",
       "stage": "requirements",
-      "description": "统一领域术语表"
+      "description": "统一领域术语表",
+      "inputs": [
+        "workflow/requirements.md",
+        "domain terms"
+      ],
+      "outputs": [
+        "ubiquitous language glossary"
+      ]
     },
     {
       "alias": "solution-options",
       "skill": "design-an-interface",
       "level": "L1",
       "stage": "solution-options",
-      "description": "产出 3 个技术方案和推荐理由"
+      "description": "产出 3 个技术方案和推荐理由",
+      "inputs": [
+        "workflow/requirements.md",
+        "SPECS/API.md",
+        "SPECS/DATABASE.md"
+      ],
+      "outputs": [
+        "workflow/solution-options.md"
+      ]
     },
     {
       "alias": "tech-plan-generator",
       "skill": "planning-and-task-breakdown",
       "level": "L1",
       "stage": "solution-selected",
-      "description": "方案选定后拆实施计划"
+      "description": "方案选定后拆实施计划",
+      "inputs": [
+        "workflow/solution-selected.md",
+        "SPECS/API.md",
+        "SPECS/DATABASE.md"
+      ],
+      "outputs": [
+        "workflow/implementation-ready.md",
+        "tasks/sprint-01.md"
+      ]
     },
     {
       "alias": "api-design",
       "skill": "api-and-interface-design",
       "level": "L1",
       "stage": "solution-selected",
-      "description": "前后端契约、模块边界、API 路由"
+      "description": "前后端契约、模块边界、API 路由",
+      "inputs": [
+        "workflow/solution-selected.md",
+        "SPECS/API.md",
+        "frontend/SPECS/",
+        "backend/SPECS/"
+      ],
+      "outputs": [
+        "updated SPECS/API.md",
+        "frontend/backend API boundary notes"
+      ]
     },
     {
       "alias": "security-review",
       "skill": "security-and-hardening",
       "level": "L1",
       "stage": "implementation-ready",
-      "description": "输入、鉴权、存储、外部调用"
+      "description": "输入、鉴权、存储、外部调用",
+      "inputs": [
+        "workflow/implementation-ready.md",
+        "SPECS/API.md",
+        "backend/src/"
+      ],
+      "outputs": [
+        "security findings",
+        "hardening tasks"
+      ]
     },
     {
       "alias": "shell-implementation",
       "skill": "implement",
       "level": "L1",
       "stage": "implementation-ready",
-      "description": "按方案编码"
+      "description": "按方案编码",
+      "inputs": [
+        "workflow/implementation-ready.md",
+        "tasks/sprint-01.md",
+        "frontend/SPECS/",
+        "backend/SPECS/"
+      ],
+      "outputs": [
+        "code changes",
+        "verification evidence"
+      ]
     },
     {
       "alias": "tdd",
       "skill": "tdd",
       "level": "L1",
       "stage": "implementation-ready",
-      "description": "行为验收、单元和集成测试"
+      "description": "行为验收、单元和集成测试",
+      "inputs": [
+        "tasks/sprint-01.md",
+        "acceptance criteria"
+      ],
+      "outputs": [
+        "tests",
+        "red-green-refactor evidence"
+      ]
     },
     {
       "alias": "webapp-testing",
       "skill": "webapp-testing",
       "level": "L1",
       "stage": "implementation-ready",
-      "description": "真实浏览器验证主业务闭环"
+      "description": "真实浏览器验证主业务闭环",
+      "inputs": [
+        "running app",
+        "acceptance criteria"
+      ],
+      "outputs": [
+        "browser smoke evidence",
+        "screenshots or logs"
+      ]
     },
     {
       "alias": "code-review",
       "skill": "code-review-and-quality",
       "level": "L1",
       "stage": "implementation-ready",
-      "description": "实现后唯一 review gate"
+      "description": "实现后唯一 review gate",
+      "inputs": [
+        "code diff",
+        "tests",
+        "specs"
+      ],
+      "outputs": [
+        "review findings",
+        "merge risks"
+      ]
     },
     {
       "alias": "documentation",
       "skill": "documentation-and-adrs",
       "level": "L1",
       "stage": "implementation-ready",
-      "description": "记录 ADR、方案选择、技能追踪"
+      "description": "记录 ADR、方案选择、技能追踪",
+      "inputs": [
+        "selected solution",
+        "code changes",
+        "verification evidence"
+      ],
+      "outputs": [
+        "memory/decisions.md",
+        "ADR or docs updates"
+      ]
     },
     {
       "alias": "idea-exploration",
       "skill": "ce-ideate",
       "level": "L2",
-      "trigger": "需求极模糊，需要先发散多个方向"
+      "trigger": "需求极模糊，需要先发散多个方向",
+      "inputs": [
+        "vague user request"
+      ],
+      "outputs": [
+        "candidate directions",
+        "tradeoff notes"
+      ]
     },
     {
       "alias": "solution-stress-test",
       "skill": "grilling",
       "level": "L2",
-      "trigger": "方案确定前需要压力测试"
+      "trigger": "方案确定前需要压力测试",
+      "inputs": [
+        "workflow/solution-options.md"
+      ],
+      "outputs": [
+        "risks",
+        "challenge questions"
+      ]
     },
     {
       "alias": "architecture-diagram",
       "skill": "architecture-diagram",
       "level": "L2",
-      "trigger": "技术方案需要架构图、流程图或时序图"
+      "trigger": "技术方案需要架构图、流程图或时序图",
+      "inputs": [
+        "architecture notes",
+        "system boundaries"
+      ],
+      "outputs": [
+        "architecture diagram artifact"
+      ]
     },
     {
       "alias": "deep-module-design",
       "skill": "codebase-design",
       "level": "L2",
-      "trigger": "需要强调深度模块设计时"
+      "trigger": "需要强调深度模块设计时",
+      "inputs": [
+        "module responsibilities",
+        "callers"
+      ],
+      "outputs": [
+        "interface options",
+        "module boundary recommendation"
+      ]
     },
     {
       "alias": "prototype",
       "skill": "prototype",
       "level": "L2",
-      "trigger": "技术方案不确定，先做可丢弃原型"
+      "trigger": "技术方案不确定，先做可丢弃原型",
+      "inputs": [
+        "uncertain technical approach"
+      ],
+      "outputs": [
+        "throwaway prototype",
+        "learning notes"
+      ]
     },
     {
       "alias": "debug",
       "skill": "ce-debug",
       "level": "L2",
-      "trigger": "调试复杂问题，定位根因"
+      "trigger": "调试复杂问题，定位根因",
+      "inputs": [
+        "error output",
+        "reproduction steps"
+      ],
+      "outputs": [
+        "root cause",
+        "fix plan"
+      ]
     },
     {
       "alias": "debug-flow",
       "skill": "debugging-and-error-recovery",
       "level": "L2",
-      "trigger": "构建、运行、测试失败时"
+      "trigger": "构建、运行、测试失败时",
+      "inputs": [
+        "failed command",
+        "logs",
+        "reproduction steps"
+      ],
+      "outputs": [
+        "debug trace",
+        "recovery steps"
+      ]
     },
     {
       "alias": "frontend-ui",
       "skill": "frontend-ui-engineering",
       "level": "L2",
-      "trigger": "需要生成高质量后台 UI"
+      "trigger": "需要生成高质量后台 UI",
+      "inputs": [
+        "frontend/SPECS/",
+        "design constraints"
+      ],
+      "outputs": [
+        "UI implementation",
+        "visual verification"
+      ]
     },
     {
       "alias": "frontend-ui-design",
       "skill": "ce-frontend-design",
       "level": "L2",
-      "trigger": "需要产出前端设计方案"
+      "trigger": "需要产出前端设计方案",
+      "inputs": [
+        "frontend requirements",
+        "existing UI patterns"
+      ],
+      "outputs": [
+        "UI design direction",
+        "component plan"
+      ]
     },
     {
       "alias": "ui-guidelines",
       "skill": "web-design-guidelines",
       "level": "L2",
-      "trigger": "检查 UI 可用性、可访问性、一致性"
+      "trigger": "检查 UI 可用性、可访问性、一致性",
+      "inputs": [
+        "UI implementation",
+        "screenshots"
+      ],
+      "outputs": [
+        "UX/accessibility findings"
+      ]
     },
     {
       "alias": "context-engineering",
       "skill": "context-engineering",
       "level": "L3",
-      "description": "配置 AGENTS.md、SPEC、RULES、SKILLS 等项目控制文件"
+      "description": "配置 AGENTS.md、SPEC、RULES、SKILLS 等项目控制文件",
+      "inputs": [
+        "AGENTS.md",
+        "TEMPLATE.md",
+        "rules/",
+        ".agents/skills.json"
+      ],
+      "outputs": [
+        "updated control files",
+        "context routing notes"
+      ]
     },
     {
       "alias": "agent-native-arch",
       "skill": "ce-agent-native-architecture",
       "level": "L3",
-      "description": "设计阶段锁、workflow-state.json、硬停顿协议、Agent 可中断续跑机制"
+      "description": "设计阶段锁、workflow-state.json、硬停顿协议、Agent 可中断续跑机制",
+      "inputs": [
+        "workflow-state.json",
+        "stage rules",
+        "Agent workflow constraints"
+      ],
+      "outputs": [
+        "workflow protocol",
+        "hard-stop rules"
+      ]
     },
     {
       "alias": "skill-routing",
       "skill": "using-agent-skills",
       "level": "L3",
-      "description": "自动路由到正确技能"
+      "description": "自动路由到正确技能",
+      "inputs": [
+        ".agents/skills.json",
+        "user request",
+        "workflow-state.json"
+      ],
+      "outputs": [
+        "recommended skill aliases"
+      ]
     },
     {
       "alias": "skill-craft",
       "skill": "skill-creator",
       "level": "L3",
-      "description": "现成技能不够时定制新技能"
+      "description": "现成技能不够时定制新技能",
+      "inputs": [
+        "capability gap",
+        "examples",
+        "eval cases"
+      ],
+      "outputs": [
+        "new or updated skill"
+      ]
     },
     {
       "alias": "skill-optimize",
       "skill": "skill-optimizer",
       "level": "L3",
-      "description": "优化现有技能"
+      "description": "优化现有技能",
+      "inputs": [
+        "existing skill",
+        "failure cases",
+        "eval results"
+      ],
+      "outputs": [
+        "optimized skill",
+        "eval plan"
+      ]
     },
     {
       "alias": "handoff",
       "skill": "handoff",
       "level": "L3",
-      "description": "阶段间切换 Agent/LLM 的交接协议"
+      "description": "阶段间切换 Agent/LLM 的交接协议",
+      "inputs": [
+        "current task state",
+        "diff",
+        "verification results"
+      ],
+      "outputs": [
+        "handoff document"
+      ]
     }
   ]
 }

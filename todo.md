@@ -15,7 +15,7 @@
 
 剩余影响：无。根目录维护者视角的 `TEMPLATE.md` 已判断为不需要；生成项目侧的模板地图已经补齐。
 
-### 2. 技能索引已机器化，编排入口仍缺失
+### 2. 技能索引已机器化，Hook 路由仍缺失
 
 当前有：
 
@@ -35,24 +35,24 @@
 - `kit check` 已校验技能索引存在、JSON 结构、alias 引用和真实 `SKILL.md` 文件。
 - `templates/pc-admin/AGENTS.md` 已要求选择 skill 时读取 `.agents/skills.json`。
 
-剩余影响：CLI 仍没有 `kit skills` / `kit next` 一类编排入口，Agent 还需要自己读取索引后执行判断。
+剩余影响：无。CLI 已提供 `kit skills` / `kit skill <alias>` / `kit next` 编排入口，Agent 不再需要手动解析技能索引。
 
 ### 3. SDD 骨架文件未落地
 
-`templates/pc-admin/SPECS/README.md` 已说明旧 SDD 到新目录的映射，但实际模板中仍缺少这些骨架：
+`templates/pc-admin/SPECS/README.md` 已说明旧 SDD 到新目录的映射，实际模板已补齐前后端 SDD 骨架：
 
 | 目标文件 | 状态 |
 | --- | --- |
-| `frontend/SPECS/PRD.md` | 缺失 |
-| `frontend/SPECS/ARCHITECTURE.md` | 缺失 |
-| `frontend/SPECS/FEATURES/<feature-slug>/spec.md` | 缺失 |
-| `frontend/SPECS/FEATURES/<feature-slug>/tasks.md` | 缺失 |
-| `backend/SPECS/PRD.md` | 缺失 |
-| `backend/SPECS/ARCHITECTURE.md` | 缺失 |
-| `backend/SPECS/FEATURES/<feature-slug>/spec.md` | 缺失 |
-| `backend/SPECS/FEATURES/<feature-slug>/tasks.md` | 缺失 |
+| `frontend/SPECS/PRD.md` | 已落地 |
+| `frontend/SPECS/ARCHITECTURE.md` | 已落地 |
+| `frontend/SPECS/FEATURES/<feature-slug>/spec.md` | 已落地 example，并可由 `kit sdd <feature-slug>` 生成 |
+| `frontend/SPECS/FEATURES/<feature-slug>/tasks.md` | 已落地 example，并可由 `kit sdd <feature-slug>` 生成 |
+| `backend/SPECS/PRD.md` | 已落地 |
+| `backend/SPECS/ARCHITECTURE.md` | 已落地 |
+| `backend/SPECS/FEATURES/<feature-slug>/spec.md` | 已落地 example，并可由 `kit sdd <feature-slug>` 生成 |
+| `backend/SPECS/FEATURES/<feature-slug>/tasks.md` | 已落地 example，并可由 `kit sdd <feature-slug>` 生成 |
 
-影响：进入 `implementation-ready` 后，Agent 仍要自行判断 SDD 文件形态，容易写散。
+剩余影响：无。`kit check` 已把基础 SDD 模板纳入控制文件校验，`kit sdd` 可创建 feature 级前后端 SDD 骨架。
 
 ### 4. workflow/tasks 模板已落地
 
@@ -81,20 +81,20 @@
 
 影响：skill 触发概率仍主要依赖提示词，不够稳定。
 
-### 6. CLI 与 skill 没有编排入口
+### 6. CLI 与 skill 编排入口已落地
 
-当前 `kit` 只负责 scaffold、check、stage advance。
+当前 `kit` 已负责 scaffold、check、stage advance，并补齐轻量编排入口。
 
-尚未实现：
+当前状态：
 
-- `kit skills`
-- `kit next`
-- `kit propose`
-- `kit options`
-- `kit sdd`
-- `kit skill <alias>`
+- `kit skills`：读取 `.agents/skills.json`，列出 alias、真实 skill、阶段和当前 stage 推荐。
+- `kit skill <alias>`：查看单个 alias 的路由元数据。
+- `kit next`：读取 `workflow-state.json`，输出下一阶段、推荐技能和应创建文件。
+- `kit propose`：创建 `workflow/requirements.md` 草稿骨架。
+- `kit options`：创建 `workflow/solution-options.md`，并可用 `--check` 校验正好 3 个方案。
+- `kit sdd`：根据 feature slug 创建前后端 SDD 骨架。
 
-影响：第 6-9 步用户旅程还没有形成“阶段 -> 推荐技能 -> 产物模板 -> check -> 用户确认 -> stage advance”的闭环。
+剩余影响：无。CLI 明确只做文件/状态编排，不伪装成真正执行 Agent skill。
 
 ### 7. README 仍偏最小用法
 
@@ -130,26 +130,26 @@
 
 ### P3 - SDD 模板
 
-- [ ] 新增 `frontend/SPECS/PRD.md`。
-- [ ] 新增 `frontend/SPECS/ARCHITECTURE.md`。
-- [ ] 新增 `frontend/SPECS/FEATURES/.gitkeep`。
-- [ ] 新增 `frontend/SPECS/FEATURES/example-feature/spec.md`。
-- [ ] 新增 `frontend/SPECS/FEATURES/example-feature/tasks.md`。
-- [ ] 新增 `backend/SPECS/PRD.md`。
-- [ ] 新增 `backend/SPECS/ARCHITECTURE.md`。
-- [ ] 新增 `backend/SPECS/FEATURES/.gitkeep`。
-- [ ] 新增 `backend/SPECS/FEATURES/example-feature/spec.md`。
-- [ ] 新增 `backend/SPECS/FEATURES/example-feature/tasks.md`。
-- [ ] 更新 `SPECS/README.md`，明确这些文件和 `workflow/` 的关系。
+- [x] 新增 `frontend/SPECS/PRD.md`。
+- [x] 新增 `frontend/SPECS/ARCHITECTURE.md`。
+- [x] 新增 `frontend/SPECS/FEATURES/.gitkeep`。
+- [x] 新增 `frontend/SPECS/FEATURES/example-feature/spec.md`。
+- [x] 新增 `frontend/SPECS/FEATURES/example-feature/tasks.md`。
+- [x] 新增 `backend/SPECS/PRD.md`。
+- [x] 新增 `backend/SPECS/ARCHITECTURE.md`。
+- [x] 新增 `backend/SPECS/FEATURES/.gitkeep`。
+- [x] 新增 `backend/SPECS/FEATURES/example-feature/spec.md`。
+- [x] 新增 `backend/SPECS/FEATURES/example-feature/tasks.md`。
+- [x] 更新 `SPECS/README.md`，明确这些文件和 `workflow/` 的关系。
 
 ### P4 - CLI 与 skill 编排
 
-- [ ] 设计 `kit skills`：读取 `.agents/skills.json`，列出可用 alias、stage、输入、输出。
-- [ ] 设计 `kit next`：读取 `workflow-state.json`，输出当前阶段下一步建议、应调用技能、应创建文件。
-- [ ] 设计 `kit propose`：辅助创建 `workflow/requirements.md` 初稿。
-- [ ] 设计 `kit options`：辅助创建 `workflow/solution-options.md`，并校验正好 3 个方案。
-- [ ] 设计 `kit sdd`：根据选定方案生成前后端 SDD 骨架。
-- [ ] 明确 CLI 只做文件/状态编排，不伪装成真正执行 Agent skill。
+- [x] 设计 `kit skills`：读取 `.agents/skills.json`，列出可用 alias、stage、输入、输出。
+- [x] 设计 `kit next`：读取 `workflow-state.json`，输出当前阶段下一步建议、应调用技能、应创建文件。
+- [x] 设计 `kit propose`：辅助创建 `workflow/requirements.md` 初稿。
+- [x] 设计 `kit options`：辅助创建 `workflow/solution-options.md`，并校验正好 3 个方案。
+- [x] 设计 `kit sdd`：根据选定方案生成前后端 SDD 骨架。
+- [x] 明确 CLI 只做文件/状态编排，不伪装成真正执行 Agent skill。
 
 ### P5 - Hook 机制
 
@@ -169,10 +169,10 @@
 
 ## 五、建议下一步
 
-推荐继续做 P3 + P4：
+推荐继续做 P5 + P6：
 
-1. 补齐前后端 SDD 模板骨架。
-2. 再设计 `kit skills` / `kit next`，读取 `.agents/skills.json` 输出阶段建议。
-3. 最后预研 hook 路由增强。
+1. 补 hook 路由增强，把“当前 stage + 用户消息 -> 推荐 skill alias”做成可复现输出。
+2. 再打磨 README 的完整用户旅程和发布前检查说明。
+3. 最后处理 npm cache 权限、`npm pack --dry-run` 和 `npm publish --dry-run`。
 
-理由：`TEMPLATE.md`、`.agents/skills.json`、workflow/tasks 模板已经补齐；剩余风险主要是进入 `implementation-ready` 后缺少前后端 SDD 文件形态，以及 CLI 尚未提供读取索引后的下一步建议。
+理由：`TEMPLATE.md`、`.agents/skills.json`、workflow/tasks 模板、SDD 骨架和 CLI 编排入口已经补齐；剩余风险主要是 skill 触发仍依赖提示词，以及发布文档和发布前检查还不完整。

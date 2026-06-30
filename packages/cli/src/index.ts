@@ -30,6 +30,23 @@ type CheckIssue = {
   repair: string;
 };
 
+type SkillEntry = {
+  alias?: string;
+  skill?: string;
+  level?: string;
+  stage?: string;
+  trigger?: string;
+  description?: string;
+  inputs?: string[];
+  outputs?: string[];
+};
+
+type SkillsIndex = {
+  version?: number;
+  stageDefaults?: Record<string, unknown>;
+  skills?: unknown;
+};
+
 const NEXT_STAGE: Record<Stage, Stage[]> = {
   initialized: ["requirements-draft"],
   "requirements-draft": ["requirements-confirmed"],
@@ -64,6 +81,19 @@ const INITIAL_STATE: WorkflowState = {
   selection: null,
   history: [],
 };
+
+const REQUIRED_SDD_FILES = [
+  "frontend/SPECS/PRD.md",
+  "frontend/SPECS/ARCHITECTURE.md",
+  "frontend/SPECS/FEATURES/.gitkeep",
+  "frontend/SPECS/FEATURES/example-feature/spec.md",
+  "frontend/SPECS/FEATURES/example-feature/tasks.md",
+  "backend/SPECS/PRD.md",
+  "backend/SPECS/ARCHITECTURE.md",
+  "backend/SPECS/FEATURES/.gitkeep",
+  "backend/SPECS/FEATURES/example-feature/spec.md",
+  "backend/SPECS/FEATURES/example-feature/tasks.md",
+];
 
 const TEXT_EXTENSIONS = new Set([
   ".json",
@@ -102,6 +132,36 @@ async function main(argv: string[]): Promise<void> {
 
   if (command === "check") {
     await checkCommand(rest);
+    return;
+  }
+
+  if (command === "skills") {
+    await skillsCommand(rest);
+    return;
+  }
+
+  if (command === "skill") {
+    await skillCommand(rest);
+    return;
+  }
+
+  if (command === "next") {
+    await nextCommand(rest);
+    return;
+  }
+
+  if (command === "propose") {
+    await proposeCommand(rest);
+    return;
+  }
+
+  if (command === "options") {
+    await optionsCommand(rest);
+    return;
+  }
+
+  if (command === "sdd") {
+    await sddCommand(rest);
     return;
   }
 
@@ -160,6 +220,156 @@ async function checkCommand(args: string[]): Promise<void> {
 
   const state = await readState(root);
   console.log(`✅ kit check passed: stage "${state.stage}"`);
+}
+
+async function skillsCommand(args: string[]): Promise<void> {
+  const root = resolve(args[0] ?? process.cwd());
+  const state = await readState(root);
+  const index = await readSkillsIndex(root);
+  const skills = normalizeSkillEntries(index.skills);
+  const recommended = new Set(getStageSkillAliases(index, state.stage));
+
+  console.log(`Stage: ${state.stage}`);
+  console.log("Skills:");
+  for (const skill of skills) {
+    const marker = skill.alias && recommended.has(skill.alias) ? "*" : "-";
+    const stage = skill.stage ? ` stage=${skill.stage}` : "";
+    const level = skill.level ? ` level=${skill.level}` : "";
+    const mapsTo = skill.skill ? ` -> ${skill.skill}` : "";
+    const description = skill.description ?? skill.trigger ?? "";
+    console.log(`${marker} ${skill.alias ?? "<missing-alias>"}${mapsTo}${level}${stage}`);
+    if (description) console.log(`  ${description}`);
+    console.log(`  inputs: ${(skill.inputs && skill.inputs.length > 0) ? skill.inputs.join(", ") : "(none)"}`);
+    console.log(`  outputs: ${(skill.outputs && skill.outputs.length > 0) ? skill.outputs.join(", ") : "(none)"}`);
+  }
+}
+
+async function skillCommand(args: string[]): Promise<void> {
+  const alias = args[0];
+  if (!alias) {
+    fail("Missing skill alias.", "Run `kit skill <alias>` or `kit skills`.");
+  }
+
+  const root = resolve(args[1] ?? process.cwd());
+  const index = await readSkillsIndex(root);
+  const skill = normalizeSkillEntries(index.skills).find((entry) => entry.alias === alias);
+  if (!skill) {
+    fail(`Unknown skill alias: ${alias}`, "Run `kit skills` to list available aliases.");
+  }
+
+  console.log(`Alias: ${skill.alias}`);
+  console.log(`Skill: ${skill.skill ?? ""}`);
+  if (skill.level) console.log(`Level: ${skill.level}`);
+  if (skill.stage) console.log(`Stage: ${skill.stage}`);
+  if (skill.description) console.log(`Description: ${skill.description}`);
+  if (skill.trigger) console.log(`Trigger: ${skill.trigger}`);
+  console.log(`Inputs: ${(skill.inputs && skill.inputs.length > 0) ? skill.inputs.join(", ") : "(none)"}`);
+  console.log(`Outputs: ${(skill.outputs && skill.outputs.length > 0) ? skill.outputs.join(", ") : "(none)"}`);
+  console.log("Note: kit reports routing metadata only; it does not execute Agent skills.");
+}
+
+async function nextCommand(args: string[]): Promise<void> {
+  const root = resolve(args[0] ?? process.cwd());
+  const state = await readState(root);
+  const index = await readSkillsIndex(root);
+  const next = NEXT_STAGE[state.stage][0] ?? null;
+  const skills = getStageSkillAliases(index, state.stage);
+  const docs = suggestedFilesForStage(state.stage);
+
+  console.log(`Stage: ${state.stage}`);
+  console.log(`Next stage: ${next ?? "done"}`);
+  console.log(`Recommended skills: ${skills.length > 0 ? skills.join(", ") : "(none)"}`);
+  console.log("Suggested files:");
+  for (const doc of docs) console.log(`- ${doc}`);
+
+  if (state.stage === "implementation-ready") {
+    console.log("SDD command: kit sdd [feature-slug]");
+  }
+}
+
+async function proposeCommand(args: string[]): Promise<void> {
+  const root = process.cwd();
+  const options = parseOptions(args);
+  const state = await readState(root);
+  if (stageIndex(state.stage) > stageIndex("requirements-draft")) {
+    fail("`kit propose` is only allowed before requirements are confirmed.", "Use the existing workflow/requirements.md for later stages.");
+  }
+
+  const target = join(root, "workflow", "requirements.md");
+  const content = renderRequirementsDraft(options.title || "Requirements");
+  await writeIfAllowed(target, content, options.force === "true");
+  console.log("✅ Created workflow/requirements.md");
+  console.log("Next: fill open questions, then advance with `kit stage advance requirements-draft --by user --quote \"...\"`.");
+}
+
+async function optionsCommand(args: string[]): Promise<void> {
+  const root = process.cwd();
+  const options = parseOptions(args);
+  const target = join(root, "workflow", "solution-options.md");
+
+  if (options.check === "true") {
+    const meta = await readFrontmatterForAdvance(root, "workflow/solution-options.md");
+    const optionIds = meta.optionIds;
+    if (!Array.isArray(optionIds) || optionIds.length !== 3) {
+      fail("workflow/solution-options.md must contain exactly 3 optionIds.", "Set frontmatter `optionIds: [option-a, option-b, option-c]`.");
+    }
+    console.log(`✅ workflow/solution-options.md has 3 optionIds: ${optionIds.join(", ")}`);
+    return;
+  }
+
+  const state = await readState(root);
+  if (stageIndex(state.stage) < stageIndex("requirements-confirmed")) {
+    fail("`kit options` is only allowed after requirements-confirmed.", "Confirm requirements first, then rerun `kit options`.");
+  }
+
+  if (stageIndex(state.stage) > stageIndex("solution-options")) {
+    fail("`kit options` cannot create a new options artifact after solution-options.", "Use the existing workflow/solution-options.md or inspect the selected solution.");
+  }
+
+  const optionIds = parseOptionIds(options.ids);
+  const content = renderSolutionOptions(optionIds);
+  await writeIfAllowed(target, content, options.force === "true");
+  console.log("✅ Created workflow/solution-options.md");
+  console.log("Next: fill all three options, then advance with `kit stage advance solution-options --by user --quote \"...\"`.");
+}
+
+async function sddCommand(args: string[]): Promise<void> {
+  const slug = args.find((arg) => !arg.startsWith("--")) ?? "example-feature";
+  if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
+    fail(`Invalid feature slug: ${slug}`, "Use lowercase letters, numbers, and hyphens, for example `user-import`.");
+  }
+
+  const options = parseOptions(args);
+  const root = process.cwd();
+  const state = await readState(root);
+  if (stageIndex(state.stage) < stageIndex("solution-selected")) {
+    fail("`kit sdd` is only allowed after solution-selected.", "Record the user's selected solution before creating feature SDD files.");
+  }
+
+  const baseFiles: Array<[string, string]> = [
+    ["frontend/SPECS/PRD.md", renderSddPrd("frontend")],
+    ["frontend/SPECS/ARCHITECTURE.md", renderSddArchitecture("frontend")],
+    ["backend/SPECS/PRD.md", renderSddPrd("backend")],
+    ["backend/SPECS/ARCHITECTURE.md", renderSddArchitecture("backend")],
+  ];
+  const featureFiles: Array<[string, string]> = [
+    [`frontend/SPECS/FEATURES/${slug}/spec.md`, renderFeatureSpec("frontend", slug)],
+    [`frontend/SPECS/FEATURES/${slug}/tasks.md`, renderFeatureTasks("frontend", slug)],
+    [`backend/SPECS/FEATURES/${slug}/spec.md`, renderFeatureSpec("backend", slug)],
+    [`backend/SPECS/FEATURES/${slug}/tasks.md`, renderFeatureTasks("backend", slug)],
+  ];
+
+  for (const [relPath, content] of baseFiles) {
+    if (!options.force && (await exists(join(root, relPath)))) continue;
+    await writeIfAllowed(join(root, relPath), content, options.force === "true");
+  }
+
+  for (const [relPath, content] of featureFiles) {
+    await writeIfAllowed(join(root, relPath), content, options.force === "true");
+  }
+
+  console.log(`✅ Created SDD skeleton for ${slug}`);
+  for (const [relPath] of [...baseFiles, ...featureFiles]) console.log(`- ${relPath}`);
 }
 
 async function advanceCommand(args: string[]): Promise<void> {
@@ -302,6 +512,7 @@ async function validateCommonControlFiles(root: string, issues: CheckIssue[]): P
     "backend/AGENTS.md",
     "backend/SPECS/README.md",
     "backend/SPECS/API.md",
+    ...REQUIRED_SDD_FILES,
   ];
 
   for (const file of files) {
@@ -360,6 +571,9 @@ async function validateSkillsIndex(root: string, issues: CheckIssue[]): Promise<
       issues.push(issue(relPath, `skills[${entryIndex}] is missing skill.`, "Point every alias to a real .agents/skills/<skill>/SKILL.md file."));
       continue;
     }
+
+    validateStringArray(entry.inputs, `skills[${entryIndex}].inputs`, relPath, issues);
+    validateStringArray(entry.outputs, `skills[${entryIndex}].outputs`, relPath, issues);
 
     const skillPath = join(root, ".agents", "skills", skill, "SKILL.md");
     if (!(await exists(skillPath))) {
@@ -608,6 +822,289 @@ async function readState(root: string): Promise<WorkflowState> {
   return JSON.parse(raw) as WorkflowState;
 }
 
+async function readSkillsIndex(root: string): Promise<SkillsIndex> {
+  const fullPath = join(root, ".agents", "skills.json");
+  const raw = await readFile(fullPath, "utf8");
+  const parsed = JSON.parse(raw) as unknown;
+  if (!isRecord(parsed)) {
+    fail(".agents/skills.json must be a JSON object.", "Restore .agents/skills.json from the kit template.");
+  }
+  return parsed as SkillsIndex;
+}
+
+function normalizeSkillEntries(value: unknown): SkillEntry[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord).map((entry) => ({
+    alias: typeof entry.alias === "string" ? entry.alias : undefined,
+    skill: typeof entry.skill === "string" ? entry.skill : undefined,
+    level: typeof entry.level === "string" ? entry.level : undefined,
+    stage: typeof entry.stage === "string" ? entry.stage : undefined,
+    trigger: typeof entry.trigger === "string" ? entry.trigger : undefined,
+    description: typeof entry.description === "string" ? entry.description : undefined,
+    inputs: Array.isArray(entry.inputs) ? entry.inputs.filter((item): item is string => typeof item === "string") : undefined,
+    outputs: Array.isArray(entry.outputs) ? entry.outputs.filter((item): item is string => typeof item === "string") : undefined,
+  }));
+}
+
+function getStageSkillAliases(index: SkillsIndex, stage: Stage): string[] {
+  const stageDefaults = isRecord(index.stageDefaults) ? index.stageDefaults : {};
+  const aliases = stageDefaults[stage];
+  return Array.isArray(aliases) ? aliases.filter((alias): alias is string => typeof alias === "string") : [];
+}
+
+function suggestedFilesForStage(stage: Stage): string[] {
+  switch (stage) {
+    case "initialized":
+      return ["workflow/requirements.md"];
+    case "requirements-draft":
+      return ["workflow/requirements.md"];
+    case "requirements-confirmed":
+      return ["tasks/backlog.md", "workflow/solution-options.md"];
+    case "solution-options":
+      return ["workflow/solution-selected.md", "memory/decisions.md"];
+    case "solution-selected":
+      return ["workflow/implementation-ready.md", "frontend/SPECS/PRD.md", "backend/SPECS/PRD.md"];
+    case "implementation-ready":
+      return [
+        "tasks/sprint-01.md",
+        "frontend/SPECS/ARCHITECTURE.md",
+        "backend/SPECS/ARCHITECTURE.md",
+        "frontend/SPECS/FEATURES/<feature-slug>/spec.md",
+        "frontend/SPECS/FEATURES/<feature-slug>/tasks.md",
+        "backend/SPECS/FEATURES/<feature-slug>/spec.md",
+        "backend/SPECS/FEATURES/<feature-slug>/tasks.md",
+      ];
+  }
+}
+
+async function writeIfAllowed(path: string, content: string, force: boolean): Promise<void> {
+  if (!force && (await exists(path))) {
+    fail(`${path} already exists.`, "Rerun with `--force true` if you intentionally want to overwrite it.");
+  }
+
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, content, "utf8");
+}
+
+function parseOptionIds(value: string | undefined): string[] {
+  if (!value) return ["minimal", "balanced", "robust"];
+  const ids = value.split(",").map((item) => item.trim()).filter(Boolean);
+  if (ids.length !== 3) {
+    fail("`--ids` must contain exactly 3 comma-separated ids.", "Example: `kit options --ids minimal,balanced,robust`.");
+  }
+  return ids;
+}
+
+function renderRequirementsDraft(title: string): string {
+  return `---
+status: draft
+---
+# ${title}
+
+## User Request
+
+> Paste the user's exact request here.
+
+## Background
+
+- Current workflow stage:
+- Relevant existing modules:
+- Constraints already confirmed:
+
+## Goals
+
+- Goal 1:
+- Goal 2:
+
+## Non-Goals
+
+- Out of scope:
+
+## Open Questions
+
+- [ ] Question:
+
+## Requirements
+
+| ID | Requirement | Evidence / Source |
+| --- | --- | --- |
+| REQ-001 |  |  |
+
+## Acceptance Criteria
+
+- [ ] Criterion:
+`;
+}
+
+function renderSolutionOptions(optionIds: string[]): string {
+  const sections = optionIds.map((id) => `## Option: ${id}
+
+### Summary
+
+### Files / Modules
+
+### Tradeoffs
+
+### Verification
+`).join("\n");
+
+  return `---
+status: proposed
+optionIds: [${optionIds.join(", ")}]
+---
+# Solution Options
+
+Provide exactly three options. Keep \`optionIds\` in frontmatter synchronized with the section IDs below.
+
+${sections}
+## Recommendation
+
+- Recommended option:
+- Reason:
+- Risks:
+`;
+}
+
+function renderSddPrd(scope: "frontend" | "backend"): string {
+  const title = scope === "frontend" ? "Frontend PRD" : "Backend PRD";
+  const extraSource = scope === "backend" ? "- Database contract: `../../SPECS/DATABASE.md`\n" : "";
+  return `---
+scope: ${scope}
+status: draft
+---
+# ${title}
+
+## Source
+
+- Workflow requirements: \`../../workflow/requirements.md\`
+- Selected solution: \`../../workflow/solution-selected.md\`
+- Shared API contract: \`../../SPECS/API.md\`
+${extraSource}
+## Goals
+
+- Goal 1:
+- Goal 2:
+
+## Non-Goals
+
+- Out of scope:
+
+## Acceptance Criteria
+
+- [ ] Criteria:
+`;
+}
+
+function renderSddArchitecture(scope: "frontend" | "backend"): string {
+  if (scope === "frontend") {
+    return `---
+scope: frontend
+status: draft
+---
+# Frontend Architecture
+
+## Runtime Shape
+
+- Framework: Vue 3 + Vite
+- UI: Element Plus
+- State: Pinia
+- Routing: Vue Router with backend-driven async routes
+
+## Module Boundaries
+
+| Area | Location | Notes |
+| --- | --- | --- |
+| Pages | \`src/views/\` |  |
+| API clients | \`src/api/\` |  |
+| Store | \`src/store/\` |  |
+
+## Verification
+
+- [ ] \`pnpm typecheck\`
+- [ ] \`pnpm build\`
+`;
+  }
+
+  return `---
+scope: backend
+status: draft
+---
+# Backend Architecture
+
+## Runtime Shape
+
+- Runtime: Node.js + TypeScript
+- HTTP framework: Fastify
+- Database: MySQL via \`mysql2/promise\`
+- Response style: \`{ success, data }\`
+
+## Module Boundaries
+
+| Area | Location | Notes |
+| --- | --- | --- |
+| Routes | \`src/routes/\` |  |
+| Services | \`src/services/\` |  |
+| DB | \`src/db/\` |  |
+
+## Verification
+
+- [ ] \`pnpm typecheck\`
+- [ ] \`pnpm build\`
+`;
+}
+
+function renderFeatureSpec(scope: "frontend" | "backend", slug: string): string {
+  const title = scope === "frontend" ? "Frontend Feature Spec" : "Backend Feature Spec";
+  const extraSource = scope === "backend" ? "- Database contract: `../../../../SPECS/DATABASE.md`\n" : "";
+  return `---
+scope: ${scope}
+feature: ${slug}
+status: draft
+---
+# ${title}: ${slug}
+
+## Source
+
+- Workflow requirements: \`../../../../workflow/requirements.md\`
+- Selected solution: \`../../../../workflow/solution-selected.md\`
+- ${scope === "frontend" ? "Frontend" : "Backend"} PRD: \`../../PRD.md\`
+- Shared API contract: \`../../../../SPECS/API.md\`
+${extraSource}
+## Contract
+
+| Item | Location | Notes |
+| --- | --- | --- |
+|  |  |  |
+
+## Acceptance Criteria
+
+- [ ] Criteria:
+`;
+}
+
+function renderFeatureTasks(scope: "frontend" | "backend", slug: string): string {
+  const title = scope === "frontend" ? "Frontend Feature Tasks" : "Backend Feature Tasks";
+  const implementation =
+    scope === "frontend"
+      ? "- [ ] Confirm root `SPECS/API.md` contains every consumed field.\n- [ ] Add or update API client functions under `src/api/`.\n- [ ] Add or update view components under `src/views/`.\n"
+      : "- [ ] Confirm root `SPECS/API.md` contains request and response fields.\n- [ ] Confirm root `SPECS/DATABASE.md` contains required table changes.\n- [ ] Add or update route handlers under `src/routes/`.\n- [ ] Add or update services under `src/services/`.\n";
+  return `---
+scope: ${scope}
+feature: ${slug}
+status: draft
+---
+# ${title}: ${slug}
+
+## Implementation
+
+${implementation}
+## Verification
+
+- [ ] \`pnpm typecheck\`
+- [ ] \`pnpm build\`
+`;
+}
+
 async function copyTemplate(sourceRoot: string, targetRoot: string, replacements: Record<string, string>): Promise<void> {
   await mkdir(targetRoot, { recursive: true });
   for (const entry of await readdir(sourceRoot, { withFileTypes: true })) {
@@ -750,8 +1247,13 @@ function parseOptions(args: string[]): Record<string, string> {
       continue;
     }
 
-    result[arg.slice(2)] = args[index + 1] ?? "";
-    index += 1;
+    const next = args[index + 1];
+    if (!next || next.startsWith("--")) {
+      result[arg.slice(2)] = "true";
+    } else {
+      result[arg.slice(2)] = next;
+      index += 1;
+    }
   }
   return result;
 }
@@ -766,6 +1268,17 @@ function validateAliasList(value: unknown, aliases: Set<string>, fieldPath: stri
     if (typeof alias !== "string" || !aliases.has(alias)) {
       issues.push(issue(relPath, `${fieldPath} references unknown alias "${String(alias)}".`, "Use aliases declared in the skills array."));
     }
+  }
+}
+
+function validateStringArray(value: unknown, fieldPath: string, relPath: string, issues: CheckIssue[]): void {
+  if (!Array.isArray(value)) {
+    issues.push(issue(relPath, `${fieldPath} must be an array.`, `Set ${fieldPath} to an array of strings.`));
+    return;
+  }
+
+  if (value.some((item) => typeof item !== "string" || item.trim() === "")) {
+    issues.push(issue(relPath, `${fieldPath} must contain only non-empty strings.`, `Repair ${fieldPath} in .agents/skills.json.`));
   }
 }
 
@@ -840,6 +1353,12 @@ function printHelp(): void {
 Commands:
   kit init <project-name>
   kit check [project-root]
+  kit skills [project-root]
+  kit skill <alias> [project-root]
+  kit next [project-root]
+  kit propose [--title "..."] [--force]
+  kit options [--ids a,b,c] [--check] [--force]
+  kit sdd [feature-slug] [--force]
   kit stage advance <stage> --by user --quote "<user exact quote>"
 `);
 }

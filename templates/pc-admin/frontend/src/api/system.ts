@@ -207,3 +207,58 @@ export const deleteRole = (id: number) => {
 export const getMenuTree = () => {
   return http.request<ApiResult<MenuDetail[]>>("get", "/menus/tree");
 };
+
+export type MenuPayload = {
+  menuName: string;
+  menuCode: string;
+  parentId: number | null;
+  icon?: string;
+  sortOrder: number;
+  routePath: string;
+  componentPath?: string;
+  visible: number;
+  status: number;
+  roleIds: number[];
+};
+
+export const getMenu = (id: number) => {
+  return http.request<ApiResult<MenuDetail>>("get", `/menus/${id}`);
+};
+
+export const createMenu = (data: MenuPayload) => {
+  return http.request<ApiResult<MenuDetail>>("post", "/menus", { data });
+};
+
+export const updateMenu = (id: number, data: MenuPayload) => {
+  return http.request<ApiResult<MenuDetail>>("patch", `/menus/${id}`, {
+    data
+  });
+};
+
+export const updateMenuStatus = (id: number, status: number) => {
+  return http.request<ApiResult<MenuDetail>>(
+    "patch",
+    `/menus/${id}/status`,
+    { data: { status } }
+  );
+};
+
+export const updateMenuRoles = (id: number, roleIds: number[]) => {
+  return http.request<ApiResult<MenuDetail>>("put", `/menus/${id}/roles`, {
+    data: { roleIds }
+  });
+};
+
+export const sortMenuTree = (
+  items: Array<{ id: number; parentId?: number | null; sortOrder: number }>
+) => {
+  return http.request<ApiResult<{ message: string }>>(
+    "patch",
+    "/menus/tree/sort",
+    { data: { items } }
+  );
+};
+
+export const deleteMenu = (id: number) => {
+  return http.request<ApiResult<{ message: string }>>("delete", `/menus/${id}`);
+};

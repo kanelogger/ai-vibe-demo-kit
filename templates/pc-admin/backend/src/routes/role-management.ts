@@ -4,7 +4,6 @@ import {
   createRole,
   deleteRole,
   getRoleDetail,
-  listMenuTree,
   listRoles,
   listRoleUsers,
   updateRole,
@@ -116,8 +115,4 @@ export default async function roleManagementRoutes(
       return reply.send(sendSuccess(users));
     }
   );
-
-  app.get("/menus/tree", async (_request, reply) => {
-    return reply.send(sendSuccess(await listMenuTree()));
-  });
 }

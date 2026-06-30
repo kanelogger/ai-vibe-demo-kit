@@ -501,6 +501,41 @@ export type ExceptionLogQuery = {
   pageSize?: number;
 };
 
+export type OperationLogSummary = {
+  id: number;
+  operatorName: string | null;
+  moduleCode: string;
+  operationType: string;
+  requestParams: string | null;
+  operationResult: number;
+  operatedAt: string;
+};
+
+export type MessageSummary = {
+  id: number;
+  title: string;
+  summary: string | null;
+  messageType: string;
+  readStatus: number;
+  sentAt: string;
+};
+
+export type AdminStats = {
+  userCount: number;
+  roleCount: number;
+  menuCount: number;
+  todayLoginCount: number;
+  apiErrorCount: number;
+};
+
+export type DashboardOverview = {
+  todoCount: number;
+  unreadMessageCount: number;
+  recentOperations: OperationLogSummary[];
+  announcements: MessageSummary[];
+  adminStats: AdminStats | null;
+};
+
 export const getMenu = (id: number) => {
   return http.request<ApiResult<MenuDetail>>("get", `/menus/${id}`);
 };
@@ -849,4 +884,8 @@ export const getExceptionLog = (id: number) => {
     "get",
     `/logs/exception/${id}`
   );
+};
+
+export const getDashboardOverview = () => {
+  return http.request<ApiResult<DashboardOverview>>("get", "/dashboard/overview");
 };

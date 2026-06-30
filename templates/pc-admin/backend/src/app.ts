@@ -15,6 +15,7 @@ import configManagementRoutes from "./routes/config-management";
 import profileRoutes from "./routes/profile";
 import attachmentRoutes from "./routes/attachments";
 import messageRoutes from "./routes/messages";
+import dashboardRoutes from "./routes/dashboard";
 import asyncRoutes from "./routes/async-routes";
 import { recordExceptionLog } from "./services/log-management";
 import Logger from "./loaders/logger";
@@ -44,6 +45,7 @@ export function buildApp() {
   app.register(profileRoutes);
   app.register(attachmentRoutes);
   app.register(messageRoutes);
+  app.register(dashboardRoutes);
   app.register(userRoutes);
   app.register(asyncRoutes);
 

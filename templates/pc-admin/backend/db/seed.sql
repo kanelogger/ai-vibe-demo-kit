@@ -135,4 +135,14 @@ INSERT INTO `dict_items` (`id`, `dict_type_id`, `item_value`, `item_label`, `sor
 (8, 3, 'LOGIN', '登录', 3, 1),
 (9, 3, 'LOGOUT', '退出', 4, 1);
 
+-- ---------------------------------------------------------
+-- 11. 默认站内消息
+-- ---------------------------------------------------------
+INSERT INTO `messages`
+  (`id`, `receiver_id`, `sender_id`, `title`, `summary`, `content`, `message_type`, `read_status`) VALUES
+(1, 1, NULL, '系统初始化完成', 'PC Admin 模板已完成基础初始化', '默认账号、角色、菜单、字典和系统配置已经初始化完成。', 'NOTICE', 0),
+(2, 1, NULL, 'Sprint 04 任务提醒', '请关注附件、消息、日志和首页概览模块', 'Sprint 04 将补齐运营与审计闭环，请按任务文档逐项验收。', 'ANNOUNCEMENT', 0),
+(3, 2, 1, '运营权限已开通', '你的运营菜单权限已经生效', '当前账号可以访问运营管理和个人中心相关菜单。', 'NOTICE', 0),
+(4, 3, 1, '欢迎使用系统', '请完善个人信息并定期修改密码', '首次登录后建议进入个人中心检查手机号、邮箱和头像信息。', 'NOTICE', 1);
+
 SET FOREIGN_KEY_CHECKS = 1;

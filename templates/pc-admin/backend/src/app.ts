@@ -14,6 +14,7 @@ import dictManagementRoutes from "./routes/dict-management";
 import configManagementRoutes from "./routes/config-management";
 import profileRoutes from "./routes/profile";
 import attachmentRoutes from "./routes/attachments";
+import messageRoutes from "./routes/messages";
 import asyncRoutes from "./routes/async-routes";
 import Logger from "./loaders/logger";
 
@@ -41,6 +42,7 @@ export function buildApp() {
   app.register(configManagementRoutes);
   app.register(profileRoutes);
   app.register(attachmentRoutes);
+  app.register(messageRoutes);
   app.register(userRoutes);
   app.register(asyncRoutes);
 

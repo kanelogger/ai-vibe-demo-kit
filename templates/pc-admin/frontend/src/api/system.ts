@@ -410,6 +410,31 @@ export type AttachmentQuery = {
   pageSize?: number;
 };
 
+export type MessageListItem = {
+  id: number;
+  title: string;
+  messageType: string;
+  summary: string | null;
+  readStatus: number;
+  sentAt: string;
+  readAt: string | null;
+};
+
+export type MessageDetail = MessageListItem & {
+  content: string;
+  senderId: number | null;
+};
+
+export type MessageQuery = {
+  title?: string;
+  messageType?: string;
+  readStatus?: number | "";
+  sentStartAt?: string;
+  sentEndAt?: string;
+  page?: number;
+  pageSize?: number;
+};
+
 export const getMenu = (id: number) => {
   return http.request<ApiResult<MenuDetail>>("get", `/menus/${id}`);
 };
@@ -688,4 +713,32 @@ export const deleteAttachment = (id: number) => {
     "delete",
     `/attachments/${id}`
   );
+};
+
+export const getMessages = (params: MessageQuery) => {
+  return http.request<ApiResult<PageResult<MessageListItem>>>(
+    "get",
+    "/messages",
+    { params }
+  );
+};
+
+export const getMessage = (id: number) => {
+  return http.request<ApiResult<MessageDetail>>("get", `/messages/${id}`);
+};
+
+export const markMessageRead = (id: number) => {
+  return http.request<ApiResult<MessageDetail>>("patch", `/messages/${id}/read`);
+};
+
+export const markMessagesRead = (data: { ids?: number[]; all?: boolean }) => {
+  return http.request<ApiResult<{ message: string; count: number }>>(
+    "patch",
+    "/messages/read",
+    { data }
+  );
+};
+
+export const getUnreadMessageCount = () => {
+  return http.request<ApiResult<{ count: number }>>("get", "/messages/unread-count");
 };

@@ -125,6 +125,8 @@ test("init creates scaffold and initialized check passes", async () => {
       "AGENTS.md",
       "TEMPLATE.md",
       "workflow-state.json",
+      ".agents/hooks/README.md",
+      ".agents/hooks/route-skill.mjs",
       "workflow/requirements.template.md",
       "workflow/solution-options.template.md",
       "workflow/solution-selected.template.md",
@@ -147,6 +149,7 @@ test("init creates scaffold and initialized check passes", async () => {
     assert.equal(existsSync(join(project, ".agents/skills.json")), true);
     assert.equal(existsSync(join(project, ".agents/skills/implement/SKILL.md")), true);
     assert.equal(existsSync(join(project, ".agents/skills/spec-driven-development/SKILL.md")), true);
+    assert.equal(existsSync(join(project, ".agents/hooks/route-skill.mjs")), true);
     assert.equal(existsSync(join(project, "scripts/kit-runtime.mjs")), true);
     assert.equal(existsSync(join(project, "workflow/requirements.md")), false);
     assert.equal(existsSync(join(project, "frontend/node_modules")), false);
@@ -167,6 +170,16 @@ test("init creates scaffold and initialized check passes", async () => {
     assert.equal(localNext.status, 0, localNext.stderr);
     assert.match(localNext.stdout, /Stage: initialized/);
     assert.match(localNext.stdout, /workflow\/requirements\.md/);
+
+    const route = spawnSync(process.execPath, [join(project, ".agents/hooks/route-skill.mjs"), "--message", "接口报错，帮我定位"], {
+      cwd: project,
+      encoding: "utf8",
+    });
+    assert.equal(route.status, 0, route.stderr);
+    const routePayload = JSON.parse(route.stdout);
+    assert.equal(routePayload.stage, "initialized");
+    assert.deepEqual(routePayload.aliases.slice(0, 3), ["debug-flow", "api-design", "requirement-clarification"]);
+    assert.deepEqual(routePayload.skills[0], { alias: "debug-flow", skill: "debugging-and-error-recovery", reason: "message-debug" });
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -336,6 +349,12 @@ test("invalid fixtures fail with repair actions", async () => {
       stage: "initialized",
       mutate: async (project) => rm(join(project, ".agents/skills.json"), { force: true }),
       expected: /\.agents\/skills\.json: Required control file is missing/,
+    },
+    {
+      name: "missing route hook",
+      stage: "initialized",
+      mutate: async (project) => rm(join(project, ".agents/hooks/route-skill.mjs"), { force: true }),
+      expected: /\.agents\/hooks\/route-skill\.mjs: Required control file is missing/,
     },
     {
       name: "missing workflow template",

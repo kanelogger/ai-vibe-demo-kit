@@ -11,6 +11,7 @@
     "kit:stage": "node scripts/kit.mjs stage",
     "kit:skills": "node scripts/kit.mjs skills",
     "kit:next": "node scripts/kit.mjs next",
+    "kit:route": "node .agents/hooks/route-skill.mjs",
     "kit:propose": "node scripts/kit.mjs propose",
     "kit:options": "node scripts/kit.mjs options",
     "kit:sdd": "node scripts/kit.mjs sdd"

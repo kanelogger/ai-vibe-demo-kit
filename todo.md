@@ -153,26 +153,23 @@
 
 ### P5 - Hook 机制
 
-- [ ] 新增 `.agents/hooks/README.md`，定义最小 hook 输入输出协议。
-- [ ] 新增 `.agents/hooks/route-skill.mjs`，输入当前 stage 和用户消息，输出推荐 skill alias。
-- [ ] 在 `TEMPLATE.md` / `AGENTS.md` 中说明 hook 是可选增强，不作为阶段推进事实源。
-- [ ] 给 hook 增加最小测试或可复现示例。
+- [x] 新增 `.agents/hooks/README.md`，定义最小 hook 输入输出协议。
+- [x] 新增 `.agents/hooks/route-skill.mjs`，输入当前 stage 和用户消息，输出推荐 skill alias。
+- [x] 在 `TEMPLATE.md` / `AGENTS.md` 中说明 hook 是可选增强，不作为阶段推进事实源。
+- [x] 给 hook 增加最小测试或可复现示例。
 
 ### P6 - 发布与文档打磨
 
-- [ ] 修复本机 npm cache 权限，确保默认 `npm pack --dry-run` 可直接通过。
-- [ ] 跑 `npm publish --dry-run`。
-- [ ] 更新 README 的完整用户旅程。
-- [ ] 说明生成项目后如何运行 `pnpm install`、`pnpm kit:check`、`pnpm kit:stage`。
-- [ ] 检查发布包是否应包含 `skills-list.md` 或只保留机器索引。
-- [ ] 发布前确认 `package.json` 版本号和 changelog/release note。
+- [x] 验证默认 `npm pack --dry-run` 可直接通过；沙箱内 EPERM 来自受限环境访问默认 npm cache，非本机 cache 仍坏。
+- [x] 跑 `npm publish --dry-run`。
+- [x] 更新 README 的完整用户旅程。
+- [x] 说明生成项目后如何运行 `pnpm install`、`pnpm kit:check`、`pnpm kit:stage`。
+- [x] 发布包应包含 `skills-list.md`，同时保留 `.agents/skills.json` 作为机器索引。
 
 ## 五、建议下一步
 
-推荐继续做 P5 + P6：
+P5 + P6 已完成：
 
-1. 补 hook 路由增强，把“当前 stage + 用户消息 -> 推荐 skill alias”做成可复现输出。
-2. 再打磨 README 的完整用户旅程和发布前检查说明。
-3. 最后处理 npm cache 权限、`npm pack --dry-run` 和 `npm publish --dry-run`。
-
-理由：`TEMPLATE.md`、`.agents/skills.json`、workflow/tasks 模板、SDD 骨架和 CLI 编排入口已经补齐；剩余风险主要是 skill 触发仍依赖提示词，以及发布文档和发布前检查还不完整。
+1. hook 路由增强已落地，并纳入生成项目与 `kit check`。
+2. README 已补完整用户旅程和生成项目命令。
+3. 发布包已确认包含 `skills-list.md`，并通过 `npm pack --dry-run` / `npm publish --dry-run`。

@@ -79,6 +79,7 @@ pnpm kit:stage -- advance <stage> --by user --quote "<用户原话>"
 | --- | --- |
 | `pnpm kit:skills` | 读取 `.agents/skills.json`，列出 skill alias 和当前阶段推荐 |
 | `pnpm kit:next` | 读取 `workflow-state.json`，输出下一步、推荐 skill 和应创建文件 |
+| `pnpm kit:route -- --message "<用户消息>"` | 调用 `.agents/hooks/route-skill.mjs`，输出可复现的 skill alias 推荐 |
 | `pnpm kit:propose` | 创建 `workflow/requirements.md` 草稿骨架 |
 | `pnpm kit:options` | 创建或校验 `workflow/solution-options.md`，要求正好 3 个方案 |
 | `pnpm kit:sdd -- <feature-slug>` | 创建前后端 SDD 骨架 |
@@ -89,6 +90,7 @@ pnpm kit:stage -- advance <stage> --by user --quote "<用户原话>"
 
 - `AGENTS.md`：阶段锁、硬停顿、共享 API 契约和默认 skill 链路。
 - `TEMPLATE.md`：模板结构、扩展位置和文件边界。
+- `.agents/hooks/`：可选 Agent 路由增强，只能输出建议，不能作为阶段推进事实源。
 - `rules/*.md`：工程规则。改代码前按任务类型读取对应规则。
 - `SPECS/API.md`：唯一前后端共享 API 契约。
 - `SPECS/DATABASE.md`：数据库设计事实源。
@@ -175,6 +177,7 @@ pnpm install
 pnpm kit:check
 pnpm kit:next
 pnpm kit:skills
+pnpm kit:route -- --message "<用户消息>"
 pnpm kit:stage -- advance requirements-draft --by user --quote "<用户原话>"
 pnpm dev
 pnpm build

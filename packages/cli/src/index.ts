@@ -116,6 +116,7 @@ const REPO_ROOT = resolve(dirname(CLI_PATH), "../../..");
 const TEMPLATE_ROOT = join(REPO_ROOT, "templates", "pc-admin");
 const KIT_SKILLS_INDEX = join(REPO_ROOT, ".agents", "skills.json");
 const KIT_SKILLS_ROOT = join(REPO_ROOT, ".agents", "skills");
+const KIT_HOOKS_ROOT = join(REPO_ROOT, ".agents", "hooks");
 
 async function main(argv: string[]): Promise<void> {
   const [command, ...rest] = argv;
@@ -192,6 +193,7 @@ async function initCommand(args: string[]): Promise<void> {
   await mkdir(join(targetRoot, ".agents"), { recursive: true });
   await copyFile(KIT_SKILLS_INDEX, join(targetRoot, ".agents", "skills.json"));
   await copyDirectory(KIT_SKILLS_ROOT, join(targetRoot, ".agents", "skills"));
+  await copyDirectory(KIT_HOOKS_ROOT, join(targetRoot, ".agents", "hooks"));
 
   await mkdir(join(targetRoot, "frontend"), { recursive: true });
   await mkdir(join(targetRoot, "backend"), { recursive: true });
@@ -496,6 +498,8 @@ async function validateCommonControlFiles(root: string, issues: CheckIssue[]): P
     "AGENTS.md",
     "TEMPLATE.md",
     ".agents/skills.json",
+    ".agents/hooks/README.md",
+    ".agents/hooks/route-skill.mjs",
     "workflow/README.md",
     "workflow/requirements.template.md",
     "workflow/solution-options.template.md",

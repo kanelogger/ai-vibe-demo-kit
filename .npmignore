@@ -24,7 +24,6 @@ templates/**/.env.*
 !templates/**/.env*.example
 
 ref.md
-skills-list.md
 docker-compose.yml
 pnpm-lock.yaml
 pnpm-workspace.yaml

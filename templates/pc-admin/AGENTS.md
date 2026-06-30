@@ -9,6 +9,7 @@
 - `pnpm kit:check`：校验当前流程状态。
 - `pnpm kit:skills`：列出 `.agents/skills.json` 中的 skill alias 和当前阶段推荐。
 - `pnpm kit:next`：根据 `workflow-state.json` 输出下一步、推荐 skill 和应创建文件。
+- `pnpm kit:route -- --message "<用户消息>"`：调用可选 hook，根据当前 stage 和用户消息输出推荐 skill alias。
 - `pnpm kit:propose`：创建 `workflow/requirements.md` 草稿骨架。
 - `pnpm kit:options`：创建或校验 `workflow/solution-options.md`，要求正好 3 个方案。
 - `pnpm kit:sdd -- <feature-slug>`：创建前后端 SDD 骨架。
@@ -59,6 +60,8 @@ initialized
 ## 技能路由
 
 `.agents/skills.json` 是技能别名、默认链路和阶段推荐的机器可读事实源。不要只凭本节文字选择 skill。
+
+`.agents/hooks/route-skill.mjs` 是可选增强：它读取当前 stage 和用户消息，输出推荐 skill alias，便于复现路由判断。hook 只提供建议，不执行 skill，不修改文件，不推进阶段；阶段事实源仍然只有 `workflow-state.json`。
 
 默认链路：
 

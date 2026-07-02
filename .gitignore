@@ -56,3 +56,4 @@ desktop.ini
 *.tsbuildinfo
 vite.config.*.timestamp*
 draft/
+private-*

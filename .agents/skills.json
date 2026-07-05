@@ -18,12 +18,16 @@
   "stageDefaults": {
     "initialized": [
       "requirement-clarification",
-      "requirement-grilling"
+      "requirement-grilling",
+      "setup-matt-pocock-skills"
     ],
     "requirements-draft": [
       "requirement-clarification",
       "doc-iteration",
-      "spec-lock"
+      "spec-lock",
+      "grill-me",
+      "grill-with-docs",
+      "to-prd"
     ],
     "requirements-confirmed": [
       "solution-options",
@@ -32,19 +36,28 @@
     ],
     "solution-options": [
       "solution-options",
-      "solution-stress-test"
+      "solution-stress-test",
+      "triage"
     ],
     "solution-selected": [
       "tech-plan-generator",
       "api-design",
-      "security-review"
+      "security-review",
+      "to-issues",
+      "triage"
     ],
     "implementation-ready": [
       "shell-implementation",
       "tdd",
       "webapp-testing",
       "code-review",
-      "documentation"
+      "documentation",
+      "diagnose",
+      "improve-codebase-architecture",
+      "git-guardrails-claude-code",
+      "migrate-to-shoehorn",
+      "scaffold-exercises",
+      "setup-pre-commit"
     ]
   },
   "skills": [
@@ -486,6 +499,178 @@
       "outputs": [
         "optimized skill",
         "eval plan"
+      ]
+    },
+    {
+      "alias": "grill-me",
+      "skill": "grill-me",
+      "level": "L1",
+      "stage": "requirements",
+      "description": "通用版逼问：把模糊需求变成共享理解",
+      "inputs": [
+        "user request",
+        "workflow-state.json"
+      ],
+      "outputs": [
+        "problem statement",
+        "shared understanding"
+      ]
+    },
+    {
+      "alias": "grill-with-docs",
+      "skill": "grill-with-docs",
+      "level": "L1",
+      "stage": "requirements",
+      "description": "工程版逼问：对照代码库发现矛盾，并产出 ADR 和 glossary",
+      "inputs": [
+        "user request",
+        "codebase",
+        "workflow-state.json"
+      ],
+      "outputs": [
+        "problem statement",
+        "ADR and glossary drafts"
+      ]
+    },
+    {
+      "alias": "diagnose",
+      "skill": "diagnosing-bugs",
+      "level": "L2",
+      "stage": "implementation-ready",
+      "description": "复现→最小化→假设→修：硬 bug 和性能回归的诊断循环",
+      "inputs": [
+        "error output",
+        "reproduction steps",
+        "codebase"
+      ],
+      "outputs": [
+        "root cause",
+        "fix plan"
+      ]
+    },
+    {
+      "alias": "to-prd",
+      "skill": "to-prd",
+      "level": "L1",
+      "stage": "requirements",
+      "description": "从对话到 PRD：不追问，只合成已讨论内容",
+      "inputs": [
+        "conversation context",
+        "codebase understanding"
+      ],
+      "outputs": [
+        "PRD document",
+        "issue tracker entry"
+      ]
+    },
+    {
+      "alias": "to-issues",
+      "skill": "to-issues",
+      "level": "L1",
+      "stage": "solution-selected",
+      "description": "PRD → 工单：用 tracer-bullet 垂直切片拆成可并行任务",
+      "inputs": [
+        "workflow/solution-selected.md",
+        "PRD"
+      ],
+      "outputs": [
+        "issue tracker issues",
+        "dependency DAG"
+      ]
+    },
+    {
+      "alias": "triage",
+      "skill": "triage",
+      "level": "L1",
+      "stage": "solution-selected",
+      "description": "优先级分类：把 issue 和外部 PR 推过 triage 状态机",
+      "inputs": [
+        "issue tracker items"
+      ],
+      "outputs": [
+        "categorised issues",
+        "agent-ready briefs"
+      ]
+    },
+    {
+      "alias": "improve-codebase-architecture",
+      "skill": "improve-codebase-architecture",
+      "level": "L2",
+      "stage": "implementation-ready",
+      "description": "周期性救火：扫描代码库，以 HTML 报告展示深化机会并推进",
+      "inputs": [
+        "codebase"
+      ],
+      "outputs": [
+        "HTML report",
+        "refactor plan"
+      ]
+    },
+    {
+      "alias": "setup-matt-pocock-skills",
+      "skill": "setup-matt-pocock-skills",
+      "level": "L3",
+      "stage": "initialized",
+      "description": "一键安装工程技能集：配置 issue tracker、triage 标签和领域文档布局",
+      "inputs": [
+        "repo root"
+      ],
+      "outputs": [
+        "issue tracker config",
+        "triage labels",
+        "domain doc layout"
+      ]
+    },
+    {
+      "alias": "git-guardrails-claude-code",
+      "skill": "git-guardrails-claude-code",
+      "level": "L2",
+      "stage": "implementation-ready",
+      "description": "设置 Claude Code 的 git 安全护栏，拦截危险 git 命令",
+      "inputs": [
+        "repo root"
+      ],
+      "outputs": [
+        "git guardrails hooks"
+      ]
+    },
+    {
+      "alias": "migrate-to-shoehorn",
+      "skill": "migrate-to-shoehorn",
+      "level": "L2",
+      "stage": "implementation-ready",
+      "description": "把测试文件中的 `as` 类型断言迁移到 @total-typescript/shoehorn",
+      "inputs": [
+        "test files"
+      ],
+      "outputs": [
+        "migrated tests"
+      ]
+    },
+    {
+      "alias": "scaffold-exercises",
+      "skill": "scaffold-exercises",
+      "level": "L2",
+      "stage": "implementation-ready",
+      "description": "创建带章节、题目、解答和讲解的练习目录结构",
+      "inputs": [
+        "course outline"
+      ],
+      "outputs": [
+        "exercise directory structure"
+      ]
+    },
+    {
+      "alias": "setup-pre-commit",
+      "skill": "setup-pre-commit",
+      "level": "L2",
+      "stage": "implementation-ready",
+      "description": "配置 Husky + lint-staged 的 pre-commit hooks（格式化、类型检查、测试）",
+      "inputs": [
+        "repo root"
+      ],
+      "outputs": [
+        "pre-commit hooks"
       ]
     },
     {

@@ -120,6 +120,8 @@ backend/SPECS/FEATURES/admin-user-list/tasks.md
 workflow/implementation-ready.md
 ```
 
+Each feature spec must record `Harness References`, such as the closest existing frontend view/API client, backend route/service, and database table or seed. If no close reference exists, record that explicitly before implementation.
+
 `SPECS/API.md` must contain the request and response fields used by both sides:
 
 ```md
@@ -166,3 +168,5 @@ pnpm kit:check
 ```
 
 Only now may Agents implement feature code.
+
+During implementation Review, list implicit behaviors inherited from the reference module, such as form reset, default values, soft delete, sorting, permission filtering, and date/null handling. Keep only behaviors that match the confirmed requirements and specs.

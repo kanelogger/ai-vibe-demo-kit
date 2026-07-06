@@ -4,6 +4,8 @@
 
 先读 `TEMPLATE.md` 获取模板地图、扩展位置和文件边界；需要选择 skill 时读取 `.agents/skills.json`；再按任务类型读取 `rules/`、`frontend/AGENTS.md` 或 `backend/AGENTS.md`。
 
+实现功能或创建 feature SDD 时，必须读取 `rules/ai-implementation.md`，先记录相近参考模块，再更新共享契约。
+
 ## 命令
 
 - `pnpm kit:check`：校验当前流程状态。
@@ -54,6 +56,8 @@ initialized
 - `SPECS/API.md` 是唯一的前后端共享 API 契约。
 - `frontend/SPECS/API.md` 与 `backend/SPECS/API.md` 只能引用 `../../SPECS/API.md`。
 - 前端 VO 字段和后端响应 JSON 字段都必须体现在根目录 `SPECS/API.md` 中。
+- feature spec 必须记录 `Harness References`：相近前端页面/API、后端 route/service、数据库表或“无可用参考”的原因。
+- 代码 Review 必须检查从参考模块继承的隐性行为，例如默认值、软删除、排序、权限过滤、表单重置和日期转换。
 - 前端工作限制在 `frontend/` 内，除非当前阶段明确要求更新根目录 workflow/API/tasks。
 - 后端工作限制在 `backend/` 内，除非当前阶段明确要求更新根目录 workflow/API/tasks。
 

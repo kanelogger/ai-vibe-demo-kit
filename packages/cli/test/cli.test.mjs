@@ -133,6 +133,7 @@ test("init creates scaffold and initialized check passes", async () => {
       "workflow/implementation-ready.template.md",
       "tasks/backlog.template.md",
       "tasks/sprint-01.template.md",
+      "rules/ai-implementation.md",
       "frontend/SPECS/PRD.md",
       "frontend/SPECS/ARCHITECTURE.md",
       "frontend/SPECS/FEATURES/.gitkeep",
@@ -363,6 +364,12 @@ test("invalid fixtures fail with repair actions", async () => {
       expected: /workflow\/requirements\.template\.md: Required control file is missing/,
     },
     {
+      name: "missing AI implementation rule",
+      stage: "initialized",
+      mutate: async (project) => rm(join(project, "rules/ai-implementation.md"), { force: true }),
+      expected: /rules\/ai-implementation\.md: Required control file is missing/,
+    },
+    {
       name: "missing referenced skill",
       stage: "initialized",
       mutate: async (project) => write(project, ".agents/skills.json", "{\n  \"version\": 1,\n  \"defaultChain\": [\"ghost\"],\n  \"stageDefaults\": {\n    \"initialized\": [\"ghost\"],\n    \"requirements-draft\": [\"ghost\"],\n    \"requirements-confirmed\": [\"ghost\"],\n    \"solution-options\": [\"ghost\"],\n    \"solution-selected\": [\"ghost\"],\n    \"implementation-ready\": [\"ghost\"]\n  },\n  \"skills\": [{ \"alias\": \"ghost\", \"skill\": \"ghost-skill\" }]\n}\n"),
@@ -510,6 +517,8 @@ test("sdd command creates feature-specific frontend and backend skeletons", asyn
     assert.equal(existsSync(join(project, "backend/SPECS/FEATURES/user-import/tasks.md")), true);
     assert.match(await readFile(join(project, "backend/SPECS/FEATURES/user-import/spec.md"), "utf8"), /feature: user-import/);
     assert.match(await readFile(join(project, "backend/SPECS/FEATURES/user-import/spec.md"), "utf8"), /\.\.\/\.\.\/\.\.\/\.\.\/SPECS\/API\.md/);
+    assert.match(await readFile(join(project, "frontend/SPECS/FEATURES/user-import/spec.md"), "utf8"), /Harness References/);
+    assert.match(await readFile(join(project, "backend/SPECS/FEATURES/user-import/tasks.md"), "utf8"), /Implicit behavior review completed/);
 
     const duplicate = run(["sdd", "user-import"], { cwd: project });
     assert.notEqual(duplicate.status, 0);

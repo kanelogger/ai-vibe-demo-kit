@@ -6,6 +6,7 @@
 
 - 维护 `frontend/SPECS/` 下的前端本地规格。
 - 读取 `../SPECS/API.md` 中的共享 API 契约。
+- 实现前读取 `../rules/ai-implementation.md`，并在 feature spec 中记录前端参考实现。
 - 保持 `frontend/SPECS/API.md` 只引用 `../../SPECS/API.md`。
 - 不要修改后端代码。
 - 根目录阶段进入 `implementation-ready` 前，不得实现功能代码。

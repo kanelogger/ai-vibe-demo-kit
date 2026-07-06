@@ -13,6 +13,14 @@ status: example
 - Shared API contract: `../../../../SPECS/API.md`
 - Database contract: `../../../../SPECS/DATABASE.md`
 
+## Harness References
+
+| Reference | Location | Reused Pattern | Deliberate Differences |
+| --- | --- | --- | --- |
+| Closest backend route |  |  |  |
+| Closest service |  |  |  |
+| Closest database table or seed |  |  |  |
+
 ## Capability
 
 Describe the backend behavior needed for the selected feature.
@@ -22,6 +30,12 @@ Describe the backend behavior needed for the selected feature.
 | Endpoint | Method | Request | Response |
 | --- | --- | --- | --- |
 |  |  |  |  |
+
+## Field Alignment
+
+| Endpoint | Request Fields | Backend JSON Fields | Frontend VO Fields | Mapping Notes |
+| --- | --- | --- | --- | --- |
+|  |  |  |  |  |
 
 ## Data Model
 
@@ -35,6 +49,14 @@ Describe the backend behavior needed for the selected feature.
 - Auth:
 - Not found:
 - Conflict:
+
+## Implicit Behaviors To Review
+
+- Defaults:
+- Soft delete / status transitions:
+- Sorting / pagination:
+- Permissions:
+- Date and null handling:
 
 ## Acceptance Criteria
 

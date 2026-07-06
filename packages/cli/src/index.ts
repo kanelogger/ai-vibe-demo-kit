@@ -506,6 +506,7 @@ async function validateCommonControlFiles(root: string, issues: CheckIssue[]): P
     "workflow/solution-selected.template.md",
     "workflow/implementation-ready.template.md",
     "SPECS/API.md",
+    "rules/ai-implementation.md",
     "tasks/README.md",
     "tasks/backlog.template.md",
     "tasks/sprint-01.template.md",
@@ -1074,11 +1075,33 @@ status: draft
 - ${scope === "frontend" ? "Frontend" : "Backend"} PRD: \`../../PRD.md\`
 - Shared API contract: \`../../../../SPECS/API.md\`
 ${extraSource}
+## Harness References
+
+| Reference | Location | Reused Pattern | Deliberate Differences |
+| --- | --- | --- | --- |
+| Closest ${scope === "frontend" ? "frontend view" : "backend route"} |  |  |  |
+| Closest ${scope === "frontend" ? "API client" : "service"} |  |  |  |
+| Closest ${scope === "frontend" ? "UI state or component" : "database table or seed"} |  |  |  |
+
 ## Contract
 
 | Item | Location | Notes |
 | --- | --- | --- |
 |  |  |  |
+
+## Field Alignment
+
+| Endpoint | Request Fields | Backend JSON Fields | Frontend VO Fields | Mapping Notes |
+| --- | --- | --- | --- | --- |
+|  |  |  |  |  |
+
+## Implicit Behaviors To Review
+
+- Defaults:
+- Soft delete / status transitions:
+- Sorting / pagination:
+- Permissions:
+- Date and null handling:
 
 ## Acceptance Criteria
 
@@ -1090,8 +1113,8 @@ function renderFeatureTasks(scope: "frontend" | "backend", slug: string): string
   const title = scope === "frontend" ? "Frontend Feature Tasks" : "Backend Feature Tasks";
   const implementation =
     scope === "frontend"
-      ? "- [ ] Confirm root `SPECS/API.md` contains every consumed field.\n- [ ] Add or update API client functions under `src/api/`.\n- [ ] Add or update view components under `src/views/`.\n"
-      : "- [ ] Confirm root `SPECS/API.md` contains request and response fields.\n- [ ] Confirm root `SPECS/DATABASE.md` contains required table changes.\n- [ ] Add or update route handlers under `src/routes/`.\n- [ ] Add or update services under `src/services/`.\n";
+      ? "- [ ] Record closest frontend references in the feature spec `Harness References`.\n- [ ] Confirm root `SPECS/API.md` contains every consumed field and mapping.\n- [ ] Derive Mock data from root `SPECS/API.md` and a similar real/template response.\n- [ ] Add or update API client functions under `src/api/`.\n- [ ] Add or update view components under `src/views/`.\n- [ ] Document UI behaviors inherited from references, including reset, loading, empty, error, permissions, and sorting.\n"
+      : "- [ ] Record closest backend references in the feature spec `Harness References`.\n- [ ] Confirm root `SPECS/API.md` contains request and response fields.\n- [ ] Confirm root `SPECS/DATABASE.md` contains required table changes.\n- [ ] Add or update route handlers under `src/routes/`.\n- [ ] Add or update services under `src/services/`.\n- [ ] Document backend behaviors inherited from references, including defaults, soft delete, sorting, audit fields, date transforms, and null handling.\n";
   return `---
 scope: ${scope}
 feature: ${slug}
@@ -1106,6 +1129,7 @@ ${implementation}
 
 - [ ] \`pnpm typecheck\`
 - [ ] \`pnpm build\`
+- [ ] Implicit behavior review completed
 `;
 }
 

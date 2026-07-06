@@ -36,9 +36,10 @@
 | --- | --- |
 | 判断当前能做什么 | `workflow-state.json`、`AGENTS.md`、`workflow/README.md` |
 | 写需求或方案 | `SPECS/requirements/`、`SPECS/API.md`、`workflow/README.md` |
-| 改前端页面 | `frontend/AGENTS.md`、`rules/frontend.md`、`rules/vue.md`、对应 `frontend/src/views/**` |
-| 改前端接口 | `SPECS/API.md`、`frontend/src/api/**`、`frontend/src/utils/http/index.ts` |
-| 改后端接口 | `SPECS/API.md`、`backend/AGENTS.md`、`rules/backend.md`、对应 `backend/src/routes/**` 与 `backend/src/services/**` |
+| 实现功能代码 | `rules/ai-implementation.md`、对应 feature spec/tasks、相近已有模块 |
+| 改前端页面 | `frontend/AGENTS.md`、`rules/ai-implementation.md`、`rules/frontend.md`、`rules/vue.md`、对应 `frontend/src/views/**` |
+| 改前端接口 | `SPECS/API.md`、`rules/ai-implementation.md`、`frontend/src/api/**`、`frontend/src/utils/http/index.ts` |
+| 改后端接口 | `SPECS/API.md`、`backend/AGENTS.md`、`rules/ai-implementation.md`、`rules/backend.md`、对应 `backend/src/routes/**` 与 `backend/src/services/**` |
 | 改数据库 | `SPECS/DATABASE.md`、`backend/db/schema.sql`、`backend/db/seed.sql` |
 | 调整流程控制 | `AGENTS.md`、`workflow-state.json`、`scripts/kit.mjs`、`scripts/kit-runtime.mjs` |
 
@@ -92,6 +93,7 @@ pnpm kit:stage -- advance <stage> --by user --quote "<用户原话>"
 - `TEMPLATE.md`：模板结构、扩展位置和文件边界。
 - `.agents/hooks/`：可选 Agent 路由增强，只能输出建议，不能作为阶段推进事实源。
 - `rules/*.md`：工程规则。改代码前按任务类型读取对应规则。
+- `rules/ai-implementation.md`：实现阶段的参考实现、共享契约、并行分工和隐性行为审查规则。
 - `SPECS/API.md`：唯一前后端共享 API 契约。
 - `SPECS/DATABASE.md`：数据库设计事实源。
 - `frontend/SPECS/API.md` 与 `backend/SPECS/API.md` 只能保留 `Source: ../../SPECS/API.md`。
@@ -120,7 +122,7 @@ pnpm kit:stage -- advance <stage> --by user --quote "<用户原话>"
 | 系统配置 | `frontend/src/views/system/config/` | `backend/src/routes/config-management.ts`、`backend/src/services/config-management.ts` |
 | 个人信息 | `frontend/src/views/profile/` | `backend/src/routes/profile.ts` |
 
-新增业务模块时，优先复制相近模块的目录形态，不新建平行架构。
+新增业务模块时，优先复制相近模块的目录形态，不新建平行架构，并在 feature spec 的 `Harness References` 中记录参考模块。
 
 ## 前端扩展合同
 

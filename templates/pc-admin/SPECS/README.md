@@ -13,6 +13,8 @@ ai-vibe-demo-kit maps the older SDD document list into this structure.
 
 Use `kit sdd <feature-slug>` to create a feature-specific SDD skeleton. The CLI only creates files; it does not execute Agent skills or choose a solution.
 
+Before implementation, each feature spec must name its `Harness References`: the closest existing frontend view/API client, backend route/service, and database table or seed. If no close reference exists, record that explicitly and explain why.
+
 ## SDD Mapping
 
 | Old SDD artifact | New destination |
@@ -36,3 +38,5 @@ For every endpoint, root `SPECS/API.md` must list:
 - frontend VO field names when they consume response fields.
 
 Frontend VO field names and backend response JSON fields must match unless root `SPECS/API.md` explicitly documents a mapping.
+
+Mock data used for frontend self-checks must be derived from this root contract and a similar real/template response shape, not invented independently.

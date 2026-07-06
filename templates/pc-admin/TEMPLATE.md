@@ -11,6 +11,18 @@
 - 根目录阶段锁、共享契约、任务板、决策记录和规则文件。
 - 已落地的基础后台模块，供后续业务功能按同一结构扩展。
 
+## AI 上下文层
+
+本模板把 AI 可执行上下文分成三层，不引入第二套控制中心：
+
+| 层级 | 当前项目载体 | 作用 |
+| --- | --- | --- |
+| 门禁层 | `workflow-state.json`、`AGENTS.md`、`workflow/`、`tasks/` | 决定当前阶段能做什么、不能做什么。 |
+| 契约层 | `SPECS/API.md`、`SPECS/DATABASE.md`、前后端 feature spec | 固化需求、接口、字段、数据模型和验收口径。 |
+| 示范层 | 已有前后端模块、`Harness References`、Element Plus 后台页面形态 | 告诉 Agent 标准产出长什么样。 |
+
+需求、方案和 SDD 文档必须维护 `Source Register`，记录用户原话、PRD/接口/设计/测试/日志等信息源。没有可用来源时写明“无可用来源”和原因，不要让 Agent 凭空补齐。
+
 ## 顶层结构
 
 ```text
@@ -101,6 +113,7 @@ pnpm kit:stage -- advance <stage> --by user --quote "<用户原话>"
 - `backend/SPECS/PRD.md`、`backend/SPECS/ARCHITECTURE.md` 和 `backend/SPECS/FEATURES/<feature-slug>/` 承接后端 SDD。
 
 如果 API 字段、前端 VO 或后端响应有变化，先更新 `SPECS/API.md`，再改前后端代码。
+如果实现中发现可复用的踩坑、废弃 API、字段错配或阶段误用，把结论回写到 `rules/`、`SPECS/`、`tasks/` 或 `scripts/check-*`；不要只留在对话里。
 
 ## 已有模块
 

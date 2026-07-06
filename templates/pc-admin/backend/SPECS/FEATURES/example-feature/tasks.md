@@ -7,6 +7,7 @@ status: example
 
 ## Implementation
 
+- [ ] Confirm feature spec `Source Register` records user request, API contract, database contract, and backend reference status.
 - [ ] Record closest backend references in the feature spec `Harness References`.
 - [ ] Confirm root `SPECS/API.md` contains request and response fields.
 - [ ] Confirm root `SPECS/DATABASE.md` contains required table changes.
@@ -20,4 +21,5 @@ status: example
 - [ ] `pnpm typecheck`
 - [ ] `pnpm build`
 - [ ] Implicit behavior review completed
+- [ ] Rule or check candidate recorded when a reusable pitfall is found
 - [ ] API smoke path:

@@ -13,6 +13,16 @@ status: example
 - Shared API contract: `../../../../SPECS/API.md`
 - Database contract: `../../../../SPECS/DATABASE.md`
 
+## Source Register
+
+| Source Type | Location / Quote | Used For | Status |
+| --- | --- | --- | --- |
+| User request | `../../../../workflow/requirements.md` | Problem boundary | required |
+| Selected solution | `../../../../workflow/solution-selected.md` | Scope and tradeoff | required |
+| Shared API contract | `../../../../SPECS/API.md` | Endpoint and field alignment | required when API changes |
+| Database contract | `../../../../SPECS/DATABASE.md` | Schema and seed alignment | required when schema changes |
+| Existing backend module |  | Harness candidate | required when similar module exists |
+
 ## Harness References
 
 | Reference | Location | Reused Pattern | Deliberate Differences |

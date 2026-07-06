@@ -11,6 +11,15 @@ status: template
 - Shared API contract: `../../SPECS/API.md`
 - Database contract: `../../SPECS/DATABASE.md`
 
+## Source Register
+
+| Source Type | Location / Quote | Used For | Status |
+| --- | --- | --- | --- |
+| User request | `../../workflow/requirements.md` | Problem boundary | required |
+| API documentation | `../../SPECS/API.md` | Endpoint and field facts | required when API changes |
+| Existing backend module |  | Harness candidate | required when similar module exists |
+| Test / log / incident |  | Acceptance evidence | optional |
+
 ## Problem
 
 Describe the backend capability required by the selected solution.

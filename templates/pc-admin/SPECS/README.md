@@ -15,6 +15,29 @@ Use `kit sdd <feature-slug>` to create a feature-specific SDD skeleton. The CLI 
 
 Before implementation, each feature spec must name its `Harness References`: the closest existing frontend view/API client, backend route/service, and database table or seed. If no close reference exists, record that explicitly and explain why.
 
+## Context Layers
+
+Use three context layers when writing or reviewing specs:
+
+| Layer | Files | Purpose |
+| --- | --- | --- |
+| Gate | `workflow-state.json`, `workflow/`, `tasks/` | Stage permission and selected work. |
+| Contract | `SPECS/API.md`, `SPECS/DATABASE.md`, feature specs | Cross-end facts that implementation must obey. |
+| Harness | Existing frontend/backend modules and `Harness References` | Local shape, naming, UI behavior, and implicit behavior examples. |
+
+## Source Register
+
+Every requirements, solution, PRD, architecture, and feature spec should record the sources it used:
+
+- user request or confirmation quote;
+- PRD, issue, ticket, or product document;
+- API documentation or root `SPECS/API.md`;
+- design source, prototype, screenshot, or “无可用来源”;
+- test case, log, incident, or release note when relevant;
+- closest existing module references.
+
+Do not invent missing fields, enum values, permissions, or visual behavior. Mark missing sources explicitly and keep them as open questions or risks.
+
 ## SDD Mapping
 
 | Old SDD artifact | New destination |
@@ -40,3 +63,12 @@ For every endpoint, root `SPECS/API.md` must list:
 Frontend VO field names and backend response JSON fields must match unless root `SPECS/API.md` explicitly documents a mapping.
 
 Mock data used for frontend self-checks must be derived from this root contract and a similar real/template response shape, not invented independently.
+
+## Rule Feedback Loop
+
+When implementation or review uncovers a repeatable pitfall, record it in the durable layer:
+
+- `rules/` for Agent behavior and coding constraints;
+- `SPECS/API.md` or `SPECS/DATABASE.md` for contract facts;
+- `tasks/` for sprint-level verification work;
+- `scripts/check-*` when the pitfall can be validated deterministically.

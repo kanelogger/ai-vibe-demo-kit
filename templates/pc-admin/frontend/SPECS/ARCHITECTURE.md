@@ -10,6 +10,15 @@ status: template
 - Shared API contract: `../../SPECS/API.md`
 - Feature specs: `FEATURES/<feature-slug>/spec.md`
 
+## Source Register
+
+| Source Type | Location / Quote | Used For | Status |
+| --- | --- | --- | --- |
+| Frontend PRD | `PRD.md` | User flow and acceptance | required |
+| Shared API contract | `../../SPECS/API.md` | Field alignment | required when API changes |
+| Existing frontend module |  | Component, state, and routing shape | required when similar module exists |
+| Design / prototype / screenshot |  | Layout and interaction | required when UI changes |
+
 ## Runtime Shape
 
 - Framework: Vue 3 + Vite

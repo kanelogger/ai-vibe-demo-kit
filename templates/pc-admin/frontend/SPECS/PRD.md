@@ -10,6 +10,15 @@ status: template
 - Selected solution: `../../workflow/solution-selected.md`
 - Shared API contract: `../../SPECS/API.md`
 
+## Source Register
+
+| Source Type | Location / Quote | Used For | Status |
+| --- | --- | --- | --- |
+| User request | `../../workflow/requirements.md` | Problem boundary | required |
+| Design / prototype / screenshot |  | UI behavior and layout | required when UI changes |
+| Existing frontend module |  | Harness candidate | required when similar module exists |
+| Test / log / incident |  | Acceptance evidence | optional |
+
 ## Problem
 
 Describe the user-facing problem and the frontend behavior required to solve it.

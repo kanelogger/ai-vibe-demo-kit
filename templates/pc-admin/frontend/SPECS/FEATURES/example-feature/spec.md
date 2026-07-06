@@ -12,6 +12,16 @@ status: example
 - Frontend PRD: `../../PRD.md`
 - Shared API contract: `../../../../SPECS/API.md`
 
+## Source Register
+
+| Source Type | Location / Quote | Used For | Status |
+| --- | --- | --- | --- |
+| User request | `../../../../workflow/requirements.md` | Problem boundary | required |
+| Selected solution | `../../../../workflow/solution-selected.md` | Scope and tradeoff | required |
+| Shared API contract | `../../../../SPECS/API.md` | Field alignment | required when API changes |
+| Design / prototype / screenshot |  | Layout and interaction | required when UI changes |
+| Existing frontend module |  | Harness candidate | required when similar module exists |
+
 ## Harness References
 
 | Reference | Location | Reused Pattern | Deliberate Differences |

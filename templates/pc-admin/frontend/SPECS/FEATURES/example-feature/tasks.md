@@ -7,6 +7,7 @@ status: example
 
 ## Implementation
 
+- [ ] Confirm feature spec `Source Register` records user request, API contract, design source, and frontend reference status.
 - [ ] Record closest frontend references in the feature spec `Harness References`.
 - [ ] Confirm root `SPECS/API.md` contains every consumed field and mapping.
 - [ ] Derive Mock data from root `SPECS/API.md` and a similar real/template response.
@@ -21,4 +22,5 @@ status: example
 - [ ] `pnpm typecheck`
 - [ ] `pnpm build`
 - [ ] Implicit behavior review completed
+- [ ] Rule or check candidate recorded when a reusable pitfall is found
 - [ ] Browser smoke path:

@@ -916,6 +916,17 @@ status: draft
 - Relevant existing modules:
 - Constraints already confirmed:
 
+## Source Register
+
+| Source Type | Location / Quote | Used For | Status |
+| --- | --- | --- | --- |
+| User request |  | Problem boundary | required |
+| PRD / issue / ticket |  | Requirements detail | optional |
+| API documentation | \`SPECS/API.md\` | Endpoint and field facts | required when API changes |
+| Design / prototype / screenshot |  | UI behavior and layout | required when UI changes |
+| Test / log / incident |  | Reproduction or acceptance evidence | optional |
+| Existing module reference |  | Harness candidate | required when similar module exists |
+
 ## Goals
 
 - Goal 1:
@@ -961,6 +972,15 @@ optionIds: [${optionIds.join(", ")}]
 
 Provide exactly three options. Keep \`optionIds\` in frontmatter synchronized with the section IDs below.
 
+## Information Sources Used
+
+- Requirements: \`workflow/requirements.md\`
+- API contract: \`SPECS/API.md\`
+- Database contract: \`SPECS/DATABASE.md\`
+- Design source:
+- Existing module references:
+- Missing sources / risks:
+
 ${sections}
 ## Recommendation
 
@@ -985,6 +1005,15 @@ status: draft
 - Selected solution: \`../../workflow/solution-selected.md\`
 - Shared API contract: \`../../SPECS/API.md\`
 ${extraSource}
+## Source Register
+
+| Source Type | Location / Quote | Used For | Status |
+| --- | --- | --- | --- |
+| User request | \`../../workflow/requirements.md\` | Problem boundary | required |
+| ${scope === "frontend" ? "Design / prototype / screenshot" : "API documentation"} | ${scope === "frontend" ? "" : "`../../SPECS/API.md`"} | ${scope === "frontend" ? "UI behavior and layout" : "Endpoint and field facts"} | required when ${scope === "frontend" ? "UI" : "API"} changes |
+| Existing ${scope} module |  | Harness candidate | required when similar module exists |
+| Test / log / incident |  | Acceptance evidence | optional |
+
 ## Goals
 
 - Goal 1:
@@ -1007,6 +1036,21 @@ scope: frontend
 status: draft
 ---
 # Frontend Architecture
+
+## Source
+
+- Frontend PRD: \`PRD.md\`
+- Shared API contract: \`../../SPECS/API.md\`
+- Feature specs: \`FEATURES/<feature-slug>/spec.md\`
+
+## Source Register
+
+| Source Type | Location / Quote | Used For | Status |
+| --- | --- | --- | --- |
+| Frontend PRD | \`PRD.md\` | User flow and acceptance | required |
+| Shared API contract | \`../../SPECS/API.md\` | Field alignment | required when API changes |
+| Existing frontend module |  | Component, state, and routing shape | required when similar module exists |
+| Design / prototype / screenshot |  | Layout and interaction | required when UI changes |
 
 ## Runtime Shape
 
@@ -1035,6 +1079,22 @@ scope: backend
 status: draft
 ---
 # Backend Architecture
+
+## Source
+
+- Backend PRD: \`PRD.md\`
+- Shared API contract: \`../../SPECS/API.md\`
+- Database contract: \`../../SPECS/DATABASE.md\`
+- Feature specs: \`FEATURES/<feature-slug>/spec.md\`
+
+## Source Register
+
+| Source Type | Location / Quote | Used For | Status |
+| --- | --- | --- | --- |
+| Backend PRD | \`PRD.md\` | Capability boundary | required |
+| Shared API contract | \`../../SPECS/API.md\` | Endpoint and field alignment | required when API changes |
+| Database contract | \`../../SPECS/DATABASE.md\` | Schema and seed alignment | required when schema changes |
+| Existing backend module |  | Route, service, response, and SQL shape | required when similar module exists |
 
 ## Runtime Shape
 
@@ -1075,6 +1135,15 @@ status: draft
 - ${scope === "frontend" ? "Frontend" : "Backend"} PRD: \`../../PRD.md\`
 - Shared API contract: \`../../../../SPECS/API.md\`
 ${extraSource}
+## Source Register
+
+| Source Type | Location / Quote | Used For | Status |
+| --- | --- | --- | --- |
+| User request | \`../../../../workflow/requirements.md\` | Problem boundary | required |
+| Selected solution | \`../../../../workflow/solution-selected.md\` | Scope and tradeoff | required |
+| Shared API contract | \`../../../../SPECS/API.md\` | ${scope === "frontend" ? "Field alignment" : "Endpoint and field alignment"} | required when API changes |
+${scope === "backend" ? "| Database contract | `../../../../SPECS/DATABASE.md` | Schema and seed alignment | required when schema changes |\n" : "| Design / prototype / screenshot |  | Layout and interaction | required when UI changes |\n"}| Existing ${scope} module |  | Harness candidate | required when similar module exists |
+
 ## Harness References
 
 | Reference | Location | Reused Pattern | Deliberate Differences |
@@ -1113,8 +1182,8 @@ function renderFeatureTasks(scope: "frontend" | "backend", slug: string): string
   const title = scope === "frontend" ? "Frontend Feature Tasks" : "Backend Feature Tasks";
   const implementation =
     scope === "frontend"
-      ? "- [ ] Record closest frontend references in the feature spec `Harness References`.\n- [ ] Confirm root `SPECS/API.md` contains every consumed field and mapping.\n- [ ] Derive Mock data from root `SPECS/API.md` and a similar real/template response.\n- [ ] Add or update API client functions under `src/api/`.\n- [ ] Add or update view components under `src/views/`.\n- [ ] Document UI behaviors inherited from references, including reset, loading, empty, error, permissions, and sorting.\n"
-      : "- [ ] Record closest backend references in the feature spec `Harness References`.\n- [ ] Confirm root `SPECS/API.md` contains request and response fields.\n- [ ] Confirm root `SPECS/DATABASE.md` contains required table changes.\n- [ ] Add or update route handlers under `src/routes/`.\n- [ ] Add or update services under `src/services/`.\n- [ ] Document backend behaviors inherited from references, including defaults, soft delete, sorting, audit fields, date transforms, and null handling.\n";
+      ? "- [ ] Confirm feature spec `Source Register` records user request, API contract, design source, and frontend reference status.\n- [ ] Record closest frontend references in the feature spec `Harness References`.\n- [ ] Confirm root `SPECS/API.md` contains every consumed field and mapping.\n- [ ] Derive Mock data from root `SPECS/API.md` and a similar real/template response.\n- [ ] Add or update API client functions under `src/api/`.\n- [ ] Add or update view components under `src/views/`.\n- [ ] Document UI behaviors inherited from references, including reset, loading, empty, error, permissions, and sorting.\n"
+      : "- [ ] Confirm feature spec `Source Register` records user request, API contract, database contract, and backend reference status.\n- [ ] Record closest backend references in the feature spec `Harness References`.\n- [ ] Confirm root `SPECS/API.md` contains request and response fields.\n- [ ] Confirm root `SPECS/DATABASE.md` contains required table changes.\n- [ ] Add or update route handlers under `src/routes/`.\n- [ ] Add or update services under `src/services/`.\n- [ ] Document backend behaviors inherited from references, including defaults, soft delete, sorting, audit fields, date transforms, and null handling.\n";
   return `---
 scope: ${scope}
 feature: ${slug}
@@ -1130,6 +1199,7 @@ ${implementation}
 - [ ] \`pnpm typecheck\`
 - [ ] \`pnpm build\`
 - [ ] Implicit behavior review completed
+- [ ] Rule or check candidate recorded when a reusable pitfall is found
 `;
 }
 

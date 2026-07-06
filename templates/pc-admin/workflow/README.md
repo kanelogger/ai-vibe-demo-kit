@@ -17,3 +17,5 @@ Use the `*.template.md` files as copy sources. Do not edit template files as act
 | `implementation-ready.template.md` | `implementation-ready.md` | Only after `solution-selected` and before implementation starts. |
 
 Use `pnpm kit:check` before and after stage work. Use `pnpm kit:stage -- advance <stage> --by user --quote "<user exact quote>"` to advance.
+
+Each active workflow artifact should keep its `Source Register` current. Record user quotes, PRD/API/design/test/log sources, closest existing modules, and missing sources. Missing sources are tracked as open questions or risks, not filled by guesswork.

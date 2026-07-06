@@ -11,6 +11,18 @@ confirmationQuote: "<exact user quote>"
 - Selected option:
 - User-confirmed implementation boundary:
 
+## Source Register Check
+
+| Source Type | Location / Quote | Status |
+| --- | --- | --- |
+| User confirmation |  | required |
+| Requirements | `workflow/requirements.md` | required |
+| Selected solution | `workflow/solution-selected.md` | required |
+| API contract | `SPECS/API.md` | required when API changes |
+| Database contract | `SPECS/DATABASE.md` | required when schema changes |
+| Design / prototype / screenshot |  | required when UI changes |
+| Test / log / incident |  | optional |
+
 ## Files To Change
 
 - Path:
@@ -30,6 +42,11 @@ confirmationQuote: "<exact user quote>"
 ## Risks
 
 - Risk:
+
+## Rule / Check Updates
+
+- New rule candidate:
+- New deterministic check candidate:
 
 ## Final Confirmation
 

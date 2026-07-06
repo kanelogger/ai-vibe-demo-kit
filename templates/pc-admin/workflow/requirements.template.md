@@ -13,6 +13,17 @@ status: draft
 - Relevant existing modules:
 - Constraints already confirmed:
 
+## Source Register
+
+| Source Type | Location / Quote | Used For | Status |
+| --- | --- | --- | --- |
+| User request |  | Problem boundary | required |
+| PRD / issue / ticket |  | Requirements detail | optional |
+| API documentation | `SPECS/API.md` | Endpoint and field facts | required when API changes |
+| Design / prototype / screenshot |  | UI behavior and layout | required when UI changes |
+| Test / log / incident |  | Reproduction or acceptance evidence | optional |
+| Existing module reference |  | Harness candidate | required when similar module exists |
+
 ## Goals
 
 - Goal 1:

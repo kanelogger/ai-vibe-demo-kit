@@ -459,6 +459,7 @@ test("propose and options commands create workflow skeletons without advancing s
     const propose = run(["propose", "--title", "User Import"], { cwd: project });
     assert.equal(propose.status, 0, propose.stderr);
     assert.match(await readFile(join(project, "workflow/requirements.md"), "utf8"), /# User Import/);
+    assert.match(await readFile(join(project, "workflow/requirements.md"), "utf8"), /Source Register/);
 
     const duplicate = run(["propose"], { cwd: project });
     assert.notEqual(duplicate.status, 0);
@@ -481,6 +482,7 @@ test("options command creates workflow skeleton after requirements are confirmed
     const options = run(["options", "--ids", "minimal,balanced,robust"], { cwd: project });
     assert.equal(options.status, 0, options.stderr);
     assert.match(await readFile(join(project, "workflow/solution-options.md"), "utf8"), /optionIds: \[minimal, balanced, robust\]/);
+    assert.match(await readFile(join(project, "workflow/solution-options.md"), "utf8"), /Information Sources Used/);
 
     const optionsCheck = run(["options", "--check"], { cwd: project });
     assert.equal(optionsCheck.status, 0, optionsCheck.stderr);
@@ -517,8 +519,10 @@ test("sdd command creates feature-specific frontend and backend skeletons", asyn
     assert.equal(existsSync(join(project, "backend/SPECS/FEATURES/user-import/tasks.md")), true);
     assert.match(await readFile(join(project, "backend/SPECS/FEATURES/user-import/spec.md"), "utf8"), /feature: user-import/);
     assert.match(await readFile(join(project, "backend/SPECS/FEATURES/user-import/spec.md"), "utf8"), /\.\.\/\.\.\/\.\.\/\.\.\/SPECS\/API\.md/);
+    assert.match(await readFile(join(project, "backend/SPECS/FEATURES/user-import/spec.md"), "utf8"), /Source Register/);
     assert.match(await readFile(join(project, "frontend/SPECS/FEATURES/user-import/spec.md"), "utf8"), /Harness References/);
     assert.match(await readFile(join(project, "backend/SPECS/FEATURES/user-import/tasks.md"), "utf8"), /Implicit behavior review completed/);
+    assert.match(await readFile(join(project, "frontend/SPECS/FEATURES/user-import/tasks.md"), "utf8"), /Rule or check candidate recorded/);
 
     const duplicate = run(["sdd", "user-import"], { cwd: project });
     assert.notEqual(duplicate.status, 0);

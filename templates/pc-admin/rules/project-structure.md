@@ -67,12 +67,14 @@ SPECS/
 
 - `frontend/SPECS/API.md` 和 `backend/SPECS/API.md` **只能引用** `../../SPECS/API.md`，不得独立描述 API。
 - 前端 VO 字段名和后端响应 JSON 字段名必须与 `SPECS/API.md` 一致。
+- 需求、方案、PRD、架构和 feature spec 必须维护 `Source Register`，记录用户原话、PRD/API/设计/测试/日志来源和参考模块。
 
 ## rules 目录
 
 - `core.md`：通用回复和风格规则。
 - `project-structure.md`：目录边界和文件归属规则。
 - `ai-implementation.md`：实现阶段必须遵守的参考实现、共享契约、并行分工和隐性行为审查规则。
+- 可复用的踩坑和 Agent 执行约束优先沉淀到 `rules/`；能自动检查的再补到 `scripts/check-*`。
 
 ## workflow 目录
 

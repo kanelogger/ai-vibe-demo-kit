@@ -45,6 +45,17 @@ confirmationQuote: "需求内容确认"
 ---
 ```
 
+The requirements document must include a `Source Register`. Minimal example:
+
+```md
+| Source Type | Location / Quote | Used For | Status |
+| --- | --- | --- | --- |
+| User request | "需要用户列表支持搜索和分页" | Problem boundary | confirmed |
+| API documentation | `SPECS/API.md` | Endpoint and field facts | required |
+| Design / prototype / screenshot | 无可用来源：沿用用户管理页形态 | UI behavior and layout | accepted risk |
+| Existing module reference | `frontend/src/views/system/user/`, `backend/src/routes/user-management.ts` | Harness candidate | confirmed |
+```
+
 Then the user advances:
 
 ```sh
@@ -122,6 +133,8 @@ workflow/implementation-ready.md
 
 Each feature spec must record `Harness References`, such as the closest existing frontend view/API client, backend route/service, and database table or seed. If no close reference exists, record that explicitly before implementation.
 
+Each PRD, architecture document, feature spec, and implementation-ready plan must keep the same source facts in `Source Register`, with narrower status notes for that scope.
+
 `SPECS/API.md` must contain the request and response fields used by both sides:
 
 ```md
@@ -170,3 +183,5 @@ pnpm kit:check
 Only now may Agents implement feature code.
 
 During implementation Review, list implicit behaviors inherited from the reference module, such as form reset, default values, soft delete, sorting, permission filtering, and date/null handling. Keep only behaviors that match the confirmed requirements and specs.
+
+If review finds a repeatable pitfall, write it back to the durable layer: `rules/` for Agent constraints, `SPECS/` for contract facts, `tasks/` for sprint verification, or `scripts/check-*` when it can be checked deterministically.

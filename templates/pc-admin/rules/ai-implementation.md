@@ -8,6 +8,19 @@ alwaysApply: false
 
 适用于创建 feature SDD、进入 `implementation-ready` 后实现功能、或前后端并行开发。
 
+## 三层上下文
+
+- 门禁层：先看 `workflow-state.json`、`AGENTS.md`、`workflow/` 和 `tasks/`，确认当前阶段允许做什么。
+- 契约层：接口、字段、数据库和验收口径只以 `SPECS/` 与 feature spec 为准。
+- 示范层：实现形态参考已有前后端模块、Element Plus 后台页面形态和 feature spec 的 `Harness References`。
+
+## 信息源登记
+
+- 需求、方案、PRD、架构、feature spec 和 implementation-ready 都要维护 `Source Register`。
+- 至少记录：用户原话、需求/PRD 来源、API 契约来源、设计来源、测试或日志来源、参考模块。
+- 没有可用来源时写明“无可用来源”和原因，并把缺口保留为 open question 或 risk。
+- 不要凭空发明字段、枚举、权限点、视觉行为或测试前提。
+
 ## 参考实现先行
 
 - 实现前必须先找最相似的已有模块，并在 feature spec 的 `Harness References` 中记录。
@@ -36,3 +49,9 @@ alwaysApply: false
 - Review 时必须列出从参考模块继承或复制的隐性行为，并判断保留、修改或删除。
 - 重点检查：表单重置、默认值补齐、软删除、排序、权限过滤、审计字段、日期转换、空值处理、错误提示。
 - 保留的隐性行为必须写回 spec、tasks 或 `SPECS/API.md`；不符合需求的隐性行为必须删除。
+
+## 踩坑回写
+
+- 发现可复用的构建失败、废弃 API、字段错配、权限遗漏、动态菜单遗漏或阶段误用时，必须沉淀到持久文件。
+- Agent 行为约束写入 `rules/`；接口或数据库事实写入 `SPECS/`；本轮验证事项写入 `tasks/`。
+- 能由脚本稳定检查的问题，优先补到 `scripts/check-*` 或 CLI 校验里。

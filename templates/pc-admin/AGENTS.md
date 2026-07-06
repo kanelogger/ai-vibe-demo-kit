@@ -6,6 +6,8 @@
 
 实现功能或创建 feature SDD 时，必须读取 `rules/ai-implementation.md`，先记录相近参考模块，再更新共享契约。
 
+需求、方案、SDD 和实现计划必须维护 `Source Register`：用户原话、需求/PRD 来源、API 契约来源、设计来源、测试/日志来源、参考模块。没有来源时显式写“无可用来源”和原因。
+
 ## 命令
 
 - `pnpm kit:check`：校验当前流程状态。
@@ -60,6 +62,7 @@ initialized
 - 代码 Review 必须检查从参考模块继承的隐性行为，例如默认值、软删除、排序、权限过滤、表单重置和日期转换。
 - 前端工作限制在 `frontend/` 内，除非当前阶段明确要求更新根目录 workflow/API/tasks。
 - 后端工作限制在 `backend/` 内，除非当前阶段明确要求更新根目录 workflow/API/tasks。
+- 新发现的可复用约束、废弃 API、字段错配、阶段误用或构建踩坑，必须回写到 `rules/`、`SPECS/`、`tasks/` 或 `scripts/check-*` 的合适位置。
 
 ## 技能路由
 

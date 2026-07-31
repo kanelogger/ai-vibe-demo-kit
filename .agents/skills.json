@@ -8,18 +8,15 @@
     "spec-lock",
     "solution-options",
     "tech-plan-generator",
-    "api-design",
     "shell-implementation",
     "tdd",
-    "webapp-testing",
     "code-review",
     "documentation"
   ],
   "stageDefaults": {
     "initialized": [
       "requirement-clarification",
-      "requirement-grilling",
-      "setup-matt-pocock-skills"
+      "requirement-grilling"
     ],
     "requirements-draft": [
       "requirement-clarification",
@@ -31,8 +28,7 @@
     ],
     "requirements-confirmed": [
       "solution-options",
-      "domain-modeling",
-      "api-design"
+      "domain-modeling"
     ],
     "solution-options": [
       "solution-options",
@@ -40,24 +36,13 @@
       "triage"
     ],
     "solution-selected": [
-      "tech-plan-generator",
-      "api-design",
-      "security-review",
-      "to-issues",
-      "triage"
+      "tech-plan-generator"
     ],
     "implementation-ready": [
       "shell-implementation",
       "tdd",
-      "webapp-testing",
       "code-review",
-      "documentation",
-      "diagnose",
-      "improve-codebase-architecture",
-      "git-guardrails-claude-code",
-      "migrate-to-shoehorn",
-      "scaffold-exercises",
-      "setup-pre-commit"
+      "documentation"
     ]
   },
   "skills": [
@@ -70,7 +55,7 @@
       "inputs": [
         "user request",
         "workflow-state.json",
-        "SPECS/requirements/"
+        "SPECS/"
       ],
       "outputs": [
         "workflow/requirements.md"
@@ -127,7 +112,7 @@
       "description": "统一术语、实体、流程边界",
       "inputs": [
         "workflow/requirements.md",
-        "SPECS/requirements/"
+        "SPECS/"
       ],
       "outputs": [
         "domain terms",
@@ -156,8 +141,8 @@
       "description": "产出 3 个技术方案和推荐理由",
       "inputs": [
         "workflow/requirements.md",
-        "SPECS/API.md",
-        "SPECS/DATABASE.md"
+        "SPECS/ARCHITECTURE.md",
+        "relevant durable contracts"
       ],
       "outputs": [
         "workflow/solution-options.md"
@@ -171,8 +156,8 @@
       "description": "方案选定后拆实施计划",
       "inputs": [
         "workflow/solution-selected.md",
-        "SPECS/API.md",
-        "SPECS/DATABASE.md"
+        "SPECS/ARCHITECTURE.md",
+        "SPECS/FEATURES/"
       ],
       "outputs": [
         "workflow/implementation-ready.md",
@@ -184,16 +169,15 @@
       "skill": "api-and-interface-design",
       "level": "L1",
       "stage": "solution-selected",
-      "description": "前后端契约、模块边界、API 路由",
+      "description": "公共接口、模块边界与跨模块契约",
       "inputs": [
         "workflow/solution-selected.md",
-        "SPECS/API.md",
-        "frontend/SPECS/",
-        "backend/SPECS/"
+        "SPECS/ARCHITECTURE.md",
+        "relevant source modules"
       ],
       "outputs": [
-        "updated SPECS/API.md",
-        "frontend/backend API boundary notes"
+        "updated durable contract",
+        "module boundary notes"
       ]
     },
     {
@@ -204,8 +188,8 @@
       "description": "输入、鉴权、存储、外部调用",
       "inputs": [
         "workflow/implementation-ready.md",
-        "SPECS/API.md",
-        "backend/src/"
+        "SPECS/FEATURES/",
+        "changed source files"
       ],
       "outputs": [
         "security findings",
@@ -221,8 +205,8 @@
       "inputs": [
         "workflow/implementation-ready.md",
         "tasks/sprint-01.md",
-        "frontend/SPECS/",
-        "backend/SPECS/"
+        "SPECS/FEATURES/",
+        "SPECS/ARCHITECTURE.md"
       ],
       "outputs": [
         "code changes",
@@ -390,9 +374,9 @@
       "alias": "frontend-ui",
       "skill": "frontend-ui-engineering",
       "level": "L2",
-      "trigger": "需要生成高质量后台 UI",
+      "trigger": "需要实现高质量用户界面",
       "inputs": [
-        "frontend/SPECS/",
+        "relevant feature spec",
         "design constraints"
       ],
       "outputs": [

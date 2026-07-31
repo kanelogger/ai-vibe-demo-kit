@@ -1,7 +1,7 @@
 {
   "name": "ai-vibe-demo-kit",
-  "version": "0.1.2",
-  "description": "Agent-friendly PC 后台项目快速搭建工具",
+  "version": "0.2.0",
+  "description": "为现有代码库安装上下文、门禁与反馈闭环的 vibe coding 套件",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kanelogger/ai-vibe-demo-kit.git"
@@ -13,9 +13,10 @@
   "keywords": [
     "agent",
     "ai-coding",
-    "admin",
-    "scaffold",
-    "vibe-coding"
+    "vibe-coding",
+    "agent-native",
+    "workflow",
+    "developer-tools"
   ],
   "bin": {
     "ai-vibe-demo-kit": "packages/cli/dist/index.js",
@@ -28,7 +29,7 @@
     "skills-list.md",
     "packages/cli/package.json",
     "packages/cli/dist/",
-    "templates/pc-admin/",
+    "templates/vibe-coding/",
     "README.md"
   ],
   "publishConfig": {
@@ -46,10 +47,7 @@
     "prepack": "pnpm build",
     "prepublishOnly": "pnpm build && pnpm test && pnpm typecheck",
     "pack:dry": "npm pack --dry-run",
-    "clean": "pnpm -r exec rimraf dist node_modules && rimraf node_modules pnpm-lock.yaml",
-    "template:install": "cd templates/pc-admin && pnpm install",
-    "template:dev": "cd templates/pc-admin && pnpm dev",
-    "template:mysql": "docker compose up -d mysql"
+    "clean": "pnpm -r exec rimraf dist node_modules && rimraf node_modules pnpm-lock.yaml"
   },
   "devDependencies": {
     "rimraf": "^6.0.1",

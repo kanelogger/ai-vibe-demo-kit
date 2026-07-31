@@ -18,9 +18,12 @@ function run(args, options = {}) {
 
 async function tempProject() {
   const root = await mkdtemp(join(tmpdir(), "ai-vibe-demo-kit-"));
-  const result = run(["init", "demo-admin"], { cwd: root });
+  const project = join(root, "existing-app");
+  await mkdir(project, { recursive: true });
+  await writeFile(join(project, "package.json"), '{"name":"existing-app","private":true}\n', "utf8");
+  const result = run(["init", "existing-app"], { cwd: root });
   assert.equal(result.status, 0, result.stderr);
-  return { root, project: join(root, "demo-admin") };
+  return { root, project };
 }
 
 async function write(relRoot, path, content) {
@@ -112,12 +115,10 @@ async function buildProjectAt(stage) {
   return { root, project };
 }
 
-test("init creates scaffold and initialized check passes", async () => {
+test("init overlays an existing project and initialized check passes", async () => {
   const { root, project } = await tempProject();
   try {
     for (const path of [
-      "frontend",
-      "backend",
       "SPECS",
       "workflow",
       "tasks",
@@ -134,16 +135,12 @@ test("init creates scaffold and initialized check passes", async () => {
       "tasks/backlog.template.md",
       "tasks/sprint-01.template.md",
       "rules/ai-implementation.md",
-      "frontend/SPECS/PRD.md",
-      "frontend/SPECS/ARCHITECTURE.md",
-      "frontend/SPECS/FEATURES/.gitkeep",
-      "frontend/SPECS/FEATURES/example-feature/spec.md",
-      "frontend/SPECS/FEATURES/example-feature/tasks.md",
-      "backend/SPECS/PRD.md",
-      "backend/SPECS/ARCHITECTURE.md",
-      "backend/SPECS/FEATURES/.gitkeep",
-      "backend/SPECS/FEATURES/example-feature/spec.md",
-      "backend/SPECS/FEATURES/example-feature/tasks.md",
+      "SPECS/README.md",
+      "SPECS/ARCHITECTURE.md",
+      "SPECS/FEATURES/.gitkeep",
+      "memory/adr/.gitkeep",
+      "rules/testing.md",
+      "rules/security.md",
     ]) {
       assert.equal(existsSync(join(project, path)), true, path);
     }
@@ -153,16 +150,13 @@ test("init creates scaffold and initialized check passes", async () => {
     assert.equal(existsSync(join(project, ".agents/hooks/route-skill.mjs")), true);
     assert.equal(existsSync(join(project, "scripts/kit-runtime.mjs")), true);
     assert.equal(existsSync(join(project, "workflow/requirements.md")), false);
-    assert.equal(existsSync(join(project, "frontend/node_modules")), false);
-    assert.equal(existsSync(join(project, "backend/node_modules")), false);
-    assert.equal(existsSync(join(project, "frontend/dist")), false);
-    assert.equal(existsSync(join(project, "frontend/.env.example")), true);
-    assert.equal(existsSync(join(project, "frontend/.env")), true);
-    assert.equal(existsSync(join(project, "frontend/.env.development.example")), true);
-    assert.equal(existsSync(join(project, "frontend/.env.development")), true);
-    assert.equal(existsSync(join(project, "backend/.env.example")), true);
-    assert.equal(existsSync(join(project, "backend/.env")), true);
-    assert.match(await readFile(join(project, "frontend/SPECS/API.md"), "utf8"), /^Source: \.\.\/\.\.\/SPECS\/API\.md\n?$/);
+    assert.equal(existsSync(join(project, "frontend")), false);
+    assert.equal(existsSync(join(project, "backend")), false);
+    assert.deepEqual(JSON.parse(await readFile(join(project, "package.json"), "utf8")), {
+      name: "existing-app",
+      private: true,
+    });
+    assert.match(await readFile(join(project, "SPECS/ARCHITECTURE.md"), "utf8"), /Project Architecture/);
 
     const check = run(["check"], { cwd: project });
     assert.equal(check.status, 0, check.stderr);
@@ -181,6 +175,55 @@ test("init creates scaffold and initialized check passes", async () => {
     assert.equal(routePayload.stage, "initialized");
     assert.deepEqual(routePayload.aliases.slice(0, 3), ["debug-flow", "api-design", "requirement-clarification"]);
     assert.deepEqual(routePayload.skills[0], { alias: "debug-flow", skill: "debugging-and-error-recovery", reason: "message-debug" });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("init requires an existing project and refuses control-file conflicts", async () => {
+  const root = await mkdtemp(join(tmpdir(), "ai-vibe-demo-kit-init-"));
+  try {
+    const missing = run(["init", "missing-app"], { cwd: root });
+    assert.notEqual(missing.status, 0);
+    assert.match(missing.stderr, /Target project does not exist/);
+    assert.equal(existsSync(join(root, "missing-app")), false);
+
+    const project = join(root, "existing-app");
+    await mkdir(project, { recursive: true });
+    await writeFile(join(project, "AGENTS.md"), "# Existing instructions\n", "utf8");
+    const conflict = run(["init", "existing-app"], { cwd: root });
+    assert.notEqual(conflict.status, 0);
+    assert.match(conflict.stderr, /would overwrite existing files/);
+    assert.equal(existsSync(join(project, "workflow-state.json")), false);
+    assert.equal(await readFile(join(project, "AGENTS.md"), "utf8"), "# Existing instructions\n");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("init defaults to the current project and only overwrites with explicit force", async () => {
+  const root = await mkdtemp(join(tmpdir(), "ai-vibe-demo-kit-current-"));
+  try {
+    await writeFile(join(root, "package.json"), '{"name":"current-app","private":true}\n', "utf8");
+
+    const initial = run(["init"], { cwd: root });
+    assert.equal(initial.status, 0, initial.stderr);
+    assert.equal(existsSync(join(root, "workflow-state.json")), true);
+    assert.equal(existsSync(join(root, "frontend")), false);
+    assert.equal(existsSync(join(root, "backend")), false);
+
+    await writeFile(join(root, "AGENTS.md"), "# Locally changed\n", "utf8");
+    const conflict = run(["init"], { cwd: root });
+    assert.notEqual(conflict.status, 0);
+    assert.equal(await readFile(join(root, "AGENTS.md"), "utf8"), "# Locally changed\n");
+
+    const forced = run(["init", "--force", "true"], { cwd: root });
+    assert.equal(forced.status, 0, forced.stderr);
+    assert.match(await readFile(join(root, "AGENTS.md"), "utf8"), /Agent 指南/);
+    assert.deepEqual(JSON.parse(await readFile(join(root, "package.json"), "utf8")), {
+      name: "current-app",
+      private: true,
+    });
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -334,40 +377,40 @@ test("invalid fixtures fail with repair actions", async () => {
       expected: /not allowed at stage "initialized"/,
     },
     {
-      name: "missing source line",
+      name: "missing testing rule",
       stage: "initialized",
-      mutate: async (project) => write(project, "frontend/SPECS/API.md", "# duplicate API\n"),
-      expected: /Missing exact root API source line/,
+      mutate: async (project) => rm(join(project, "rules/testing.md"), { force: true }),
+      expected: /rules\/testing\.md: Required control path is missing/,
     },
     {
       name: "missing template map",
       stage: "initialized",
       mutate: async (project) => rm(join(project, "TEMPLATE.md"), { force: true }),
-      expected: /TEMPLATE\.md: Required control file is missing/,
+      expected: /TEMPLATE\.md: Required control path is missing/,
     },
     {
       name: "missing skill index",
       stage: "initialized",
       mutate: async (project) => rm(join(project, ".agents/skills.json"), { force: true }),
-      expected: /\.agents\/skills\.json: Required control file is missing/,
+      expected: /\.agents\/skills\.json: Required control path is missing/,
     },
     {
       name: "missing route hook",
       stage: "initialized",
       mutate: async (project) => rm(join(project, ".agents/hooks/route-skill.mjs"), { force: true }),
-      expected: /\.agents\/hooks\/route-skill\.mjs: Required control file is missing/,
+      expected: /\.agents\/hooks\/route-skill\.mjs: Required control path is missing/,
     },
     {
       name: "missing workflow template",
       stage: "initialized",
       mutate: async (project) => rm(join(project, "workflow/requirements.template.md"), { force: true }),
-      expected: /workflow\/requirements\.template\.md: Required control file is missing/,
+      expected: /workflow\/requirements\.template\.md: Required control path is missing/,
     },
     {
       name: "missing AI implementation rule",
       stage: "initialized",
       mutate: async (project) => rm(join(project, "rules/ai-implementation.md"), { force: true }),
-      expected: /rules\/ai-implementation\.md: Required control file is missing/,
+      expected: /rules\/ai-implementation\.md: Required control path is missing/,
     },
     {
       name: "missing referenced skill",
@@ -433,15 +476,15 @@ test("skill orchestration commands read skills index and workflow state", async 
     assert.equal(skills.status, 0, skills.stderr);
     assert.match(skills.stdout, /Stage: initialized/);
     assert.match(skills.stdout, /\* requirement-clarification -> ce-brainstorm/);
-    assert.match(skills.stdout, /inputs: user request, workflow-state\.json, SPECS\/requirements\//);
+    assert.match(skills.stdout, /inputs: user request, workflow-state\.json, SPECS\//);
     assert.match(skills.stdout, /outputs: workflow\/requirements\.md/);
 
     const skill = run(["skill", "api-design"], { cwd: project });
     assert.equal(skill.status, 0, skill.stderr);
     assert.match(skill.stdout, /Alias: api-design/);
     assert.match(skill.stdout, /Skill: api-and-interface-design/);
-    assert.match(skill.stdout, /Inputs: workflow\/solution-selected\.md, SPECS\/API\.md, frontend\/SPECS\/, backend\/SPECS\//);
-    assert.match(skill.stdout, /Outputs: updated SPECS\/API\.md, frontend\/backend API boundary notes/);
+    assert.match(skill.stdout, /Inputs: workflow\/solution-selected\.md, SPECS\/ARCHITECTURE\.md, relevant source modules/);
+    assert.match(skill.stdout, /Outputs: updated durable contract, module boundary notes/);
     assert.match(skill.stdout, /does not execute Agent skills/);
 
     const next = run(["next"], { cwd: project });
@@ -508,21 +551,23 @@ test("options command rejects anything other than three option ids", async () =>
   }
 });
 
-test("sdd command creates feature-specific frontend and backend skeletons", async () => {
+test("sdd command creates a technology-neutral feature skeleton", async () => {
   const { root, project } = await buildProjectAt("solution-selected");
   try {
     const sdd = run(["sdd", "user-import"], { cwd: project });
     assert.equal(sdd.status, 0, sdd.stderr);
-    assert.equal(existsSync(join(project, "frontend/SPECS/FEATURES/user-import/spec.md")), true);
-    assert.equal(existsSync(join(project, "frontend/SPECS/FEATURES/user-import/tasks.md")), true);
-    assert.equal(existsSync(join(project, "backend/SPECS/FEATURES/user-import/spec.md")), true);
-    assert.equal(existsSync(join(project, "backend/SPECS/FEATURES/user-import/tasks.md")), true);
-    assert.match(await readFile(join(project, "backend/SPECS/FEATURES/user-import/spec.md"), "utf8"), /feature: user-import/);
-    assert.match(await readFile(join(project, "backend/SPECS/FEATURES/user-import/spec.md"), "utf8"), /\.\.\/\.\.\/\.\.\/\.\.\/SPECS\/API\.md/);
-    assert.match(await readFile(join(project, "backend/SPECS/FEATURES/user-import/spec.md"), "utf8"), /Source Register/);
-    assert.match(await readFile(join(project, "frontend/SPECS/FEATURES/user-import/spec.md"), "utf8"), /Harness References/);
-    assert.match(await readFile(join(project, "backend/SPECS/FEATURES/user-import/tasks.md"), "utf8"), /Implicit behavior review completed/);
-    assert.match(await readFile(join(project, "frontend/SPECS/FEATURES/user-import/tasks.md"), "utf8"), /Rule or check candidate recorded/);
+    const specPath = join(project, "SPECS/FEATURES/user-import/spec.md");
+    const tasksPath = join(project, "SPECS/FEATURES/user-import/tasks.md");
+    assert.equal(existsSync(specPath), true);
+    assert.equal(existsSync(tasksPath), true);
+    assert.equal(existsSync(join(project, "frontend")), false);
+    assert.equal(existsSync(join(project, "backend")), false);
+    assert.match(await readFile(specPath, "utf8"), /feature: user-import/);
+    assert.match(await readFile(specPath, "utf8"), /Project architecture: `\.\.\/\.\.\/ARCHITECTURE\.md`/);
+    assert.match(await readFile(specPath, "utf8"), /Source Register/);
+    assert.match(await readFile(specPath, "utf8"), /Harness References/);
+    assert.match(await readFile(tasksPath, "utf8"), /risk-matched unit, integration, contract, or E2E/);
+    assert.match(await readFile(tasksPath, "utf8"), /reusable findings back/);
 
     const duplicate = run(["sdd", "user-import"], { cwd: project });
     assert.notEqual(duplicate.status, 0);

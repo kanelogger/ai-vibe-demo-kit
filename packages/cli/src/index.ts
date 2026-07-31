@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { access, copyFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { access, copyFile, mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -82,19 +82,6 @@ const INITIAL_STATE: WorkflowState = {
   history: [],
 };
 
-const REQUIRED_SDD_FILES = [
-  "frontend/SPECS/PRD.md",
-  "frontend/SPECS/ARCHITECTURE.md",
-  "frontend/SPECS/FEATURES/.gitkeep",
-  "frontend/SPECS/FEATURES/example-feature/spec.md",
-  "frontend/SPECS/FEATURES/example-feature/tasks.md",
-  "backend/SPECS/PRD.md",
-  "backend/SPECS/ARCHITECTURE.md",
-  "backend/SPECS/FEATURES/.gitkeep",
-  "backend/SPECS/FEATURES/example-feature/spec.md",
-  "backend/SPECS/FEATURES/example-feature/tasks.md",
-];
-
 const TEXT_EXTENSIONS = new Set([
   ".json",
   ".md",
@@ -113,7 +100,7 @@ const TEXT_EXTENSIONS = new Set([
 
 const CLI_PATH = fileURLToPath(import.meta.url);
 const REPO_ROOT = resolve(dirname(CLI_PATH), "../../..");
-const TEMPLATE_ROOT = join(REPO_ROOT, "templates", "pc-admin");
+const TEMPLATE_ROOT = join(REPO_ROOT, "templates", "vibe-coding");
 const KIT_SKILLS_INDEX = join(REPO_ROOT, ".agents", "skills.json");
 const KIT_SKILLS_ROOT = join(REPO_ROOT, ".agents", "skills");
 const KIT_HOOKS_ROOT = join(REPO_ROOT, ".agents", "hooks");
@@ -175,38 +162,41 @@ async function main(argv: string[]): Promise<void> {
 }
 
 async function initCommand(args: string[]): Promise<void> {
-  const projectName = args[0];
-  if (!projectName) {
-    fail("Missing project name.", "Run `kit init <project-name>`.");
+  const targetArg = args[0] && !args[0].startsWith("--") ? args[0] : ".";
+  const options = parseOptions(args);
+  const targetRoot = resolve(process.cwd(), targetArg);
+  if (!(await exists(targetRoot))) {
+    fail(
+      `Target project does not exist: ${targetRoot}`,
+      "Create or install the application project first, then run `kit init [project-root]`.",
+    );
+  }
+  if (!(await stat(targetRoot)).isDirectory()) {
+    fail(`Target project is not a directory: ${targetRoot}`, "Pass an existing project directory to `kit init`.");
   }
 
-  const targetRoot = resolve(process.cwd(), projectName);
-  if (await exists(targetRoot)) {
-    fail(`Target directory already exists: ${targetRoot}`, "Choose a new project name or remove the existing directory first.");
-  }
+  await assertInstallTargetsAvailable(targetRoot, options.force === "true");
 
   await copyTemplate(TEMPLATE_ROOT, targetRoot, {
-    projectName: basename(projectName),
+    projectName: basename(targetRoot),
     kitCliPath: CLI_PATH,
   });
-  await materializeEnvExamples(targetRoot);
   await mkdir(join(targetRoot, ".agents"), { recursive: true });
   await copyFile(KIT_SKILLS_INDEX, join(targetRoot, ".agents", "skills.json"));
   await copyDirectory(KIT_SKILLS_ROOT, join(targetRoot, ".agents", "skills"));
   await copyDirectory(KIT_HOOKS_ROOT, join(targetRoot, ".agents", "hooks"));
 
-  await mkdir(join(targetRoot, "frontend"), { recursive: true });
-  await mkdir(join(targetRoot, "backend"), { recursive: true });
   await mkdir(join(targetRoot, "SPECS"), { recursive: true });
   await mkdir(join(targetRoot, "workflow"), { recursive: true });
   await mkdir(join(targetRoot, "tasks"), { recursive: true });
   await mkdir(join(targetRoot, "memory"), { recursive: true });
+  await mkdir(join(targetRoot, "scripts"), { recursive: true });
   await writeJson(join(targetRoot, "workflow-state.json"), INITIAL_STATE);
   await copyFile(CLI_PATH, join(targetRoot, "scripts", "kit-runtime.mjs"));
   await writeFile(join(targetRoot, "scripts", "kit.mjs"), renderKitRunner(), "utf8");
 
-  console.log(`✅ Created ${projectName}`);
-  console.log(`Next: cd ${projectName} && node scripts/kit.mjs check`);
+  console.log(`✅ Installed vibe coding layer into ${targetRoot}`);
+  console.log("Next: review AGENTS.md and SPECS/ARCHITECTURE.md, then run `node scripts/kit.mjs check`.");
 }
 
 async function checkCommand(args: string[]): Promise<void> {
@@ -336,7 +326,7 @@ async function optionsCommand(args: string[]): Promise<void> {
 }
 
 async function sddCommand(args: string[]): Promise<void> {
-  const slug = args.find((arg) => !arg.startsWith("--")) ?? "example-feature";
+  const slug = args[0] && !args[0].startsWith("--") ? args[0] : "example-feature";
   if (!/^[a-z0-9][a-z0-9-]*$/.test(slug)) {
     fail(`Invalid feature slug: ${slug}`, "Use lowercase letters, numbers, and hyphens, for example `user-import`.");
   }
@@ -348,30 +338,17 @@ async function sddCommand(args: string[]): Promise<void> {
     fail("`kit sdd` is only allowed after solution-selected.", "Record the user's selected solution before creating feature SDD files.");
   }
 
-  const baseFiles: Array<[string, string]> = [
-    ["frontend/SPECS/PRD.md", renderSddPrd("frontend")],
-    ["frontend/SPECS/ARCHITECTURE.md", renderSddArchitecture("frontend")],
-    ["backend/SPECS/PRD.md", renderSddPrd("backend")],
-    ["backend/SPECS/ARCHITECTURE.md", renderSddArchitecture("backend")],
-  ];
   const featureFiles: Array<[string, string]> = [
-    [`frontend/SPECS/FEATURES/${slug}/spec.md`, renderFeatureSpec("frontend", slug)],
-    [`frontend/SPECS/FEATURES/${slug}/tasks.md`, renderFeatureTasks("frontend", slug)],
-    [`backend/SPECS/FEATURES/${slug}/spec.md`, renderFeatureSpec("backend", slug)],
-    [`backend/SPECS/FEATURES/${slug}/tasks.md`, renderFeatureTasks("backend", slug)],
+    [`SPECS/FEATURES/${slug}/spec.md`, renderFeatureSpec(slug)],
+    [`SPECS/FEATURES/${slug}/tasks.md`, renderFeatureTasks(slug)],
   ];
-
-  for (const [relPath, content] of baseFiles) {
-    if (!options.force && (await exists(join(root, relPath)))) continue;
-    await writeIfAllowed(join(root, relPath), content, options.force === "true");
-  }
 
   for (const [relPath, content] of featureFiles) {
     await writeIfAllowed(join(root, relPath), content, options.force === "true");
   }
 
   console.log(`✅ Created SDD skeleton for ${slug}`);
-  for (const [relPath] of [...baseFiles, ...featureFiles]) console.log(`- ${relPath}`);
+  for (const [relPath] of featureFiles) console.log(`- ${relPath}`);
 }
 
 async function advanceCommand(args: string[]): Promise<void> {
@@ -440,10 +417,8 @@ async function checkProject(root: string): Promise<CheckIssue[]> {
   validateStateShape(state, issues);
   if (!isStage(state.stage)) return issues;
 
-  await validateCommonControlFiles(root, issues);
+  await validateCommonControlPaths(root, issues);
   await validateSkillsIndex(root, issues);
-  await validateSourceLine(root, "frontend/SPECS/API.md", issues);
-  await validateSourceLine(root, "backend/SPECS/API.md", issues);
   await validateWorkflowFiles(root, state.stage, issues);
   await validateTaskTiming(root, state.stage, issues);
   await validateStageArtifacts(root, state, issues);
@@ -493,8 +468,8 @@ function validateStateShape(state: WorkflowState, issues: CheckIssue[]): void {
   }
 }
 
-async function validateCommonControlFiles(root: string, issues: CheckIssue[]): Promise<void> {
-  const files = [
+async function validateCommonControlPaths(root: string, issues: CheckIssue[]): Promise<void> {
+  const paths = [
     "AGENTS.md",
     "TEMPLATE.md",
     ".agents/skills.json",
@@ -505,24 +480,27 @@ async function validateCommonControlFiles(root: string, issues: CheckIssue[]): P
     "workflow/solution-options.template.md",
     "workflow/solution-selected.template.md",
     "workflow/implementation-ready.template.md",
-    "SPECS/API.md",
+    "SPECS/README.md",
+    "SPECS/ARCHITECTURE.md",
+    "SPECS/FEATURES",
+    "rules/core.md",
+    "rules/project-structure.md",
     "rules/ai-implementation.md",
+    "rules/testing.md",
+    "rules/security.md",
+    "rules/git.md",
     "tasks/README.md",
     "tasks/backlog.template.md",
     "tasks/sprint-01.template.md",
     "memory/decisions.md",
-    "frontend/AGENTS.md",
-    "frontend/SPECS/README.md",
-    "frontend/SPECS/API.md",
-    "backend/AGENTS.md",
-    "backend/SPECS/README.md",
-    "backend/SPECS/API.md",
-    ...REQUIRED_SDD_FILES,
+    "memory/adr",
+    "scripts/kit.mjs",
+    "scripts/kit-runtime.mjs",
   ];
 
-  for (const file of files) {
-    if (!(await exists(join(root, file)))) {
-      issues.push(issue(file, "Required control file is missing.", `Restore ${file} from the kit template.`));
+  for (const path of paths) {
+    if (!(await exists(join(root, path)))) {
+      issues.push(issue(path, "Required control path is missing.", `Restore ${path} from the kit template.`));
     }
   }
 }
@@ -596,17 +574,6 @@ async function validateSkillsIndex(root: string, issues: CheckIssue[]): Promise<
 
   for (const stage of STAGES) {
     validateAliasList(stageDefaults[stage], aliases, `stageDefaults.${stage}`, relPath, issues);
-  }
-}
-
-async function validateSourceLine(root: string, file: string, issues: CheckIssue[]): Promise<void> {
-  const fullPath = join(root, file);
-  if (!(await exists(fullPath))) return;
-
-  const content = await readFile(fullPath, "utf8");
-  const hasSourceLine = content.split(/\r?\n/).includes("Source: ../../SPECS/API.md");
-  if (!hasSourceLine) {
-    issues.push(issue(file, "Missing exact root API source line.", "Replace the file body with `Source: ../../SPECS/API.md`."));
   }
 }
 
@@ -868,16 +835,12 @@ function suggestedFilesForStage(stage: Stage): string[] {
     case "solution-options":
       return ["workflow/solution-selected.md", "memory/decisions.md"];
     case "solution-selected":
-      return ["workflow/implementation-ready.md", "frontend/SPECS/PRD.md", "backend/SPECS/PRD.md"];
+      return ["workflow/implementation-ready.md", "SPECS/ARCHITECTURE.md"];
     case "implementation-ready":
       return [
         "tasks/sprint-01.md",
-        "frontend/SPECS/ARCHITECTURE.md",
-        "backend/SPECS/ARCHITECTURE.md",
-        "frontend/SPECS/FEATURES/<feature-slug>/spec.md",
-        "frontend/SPECS/FEATURES/<feature-slug>/tasks.md",
-        "backend/SPECS/FEATURES/<feature-slug>/spec.md",
-        "backend/SPECS/FEATURES/<feature-slug>/tasks.md",
+        "SPECS/FEATURES/<feature-slug>/spec.md",
+        "SPECS/FEATURES/<feature-slug>/tasks.md",
       ];
   }
 }
@@ -922,7 +885,7 @@ status: draft
 | --- | --- | --- | --- |
 | User request |  | Problem boundary | required |
 | PRD / issue / ticket |  | Requirements detail | optional |
-| API documentation | \`SPECS/API.md\` | Endpoint and field facts | required when API changes |
+| Project facts / contracts | \`SPECS/\` | Architecture and behavior facts | required when affected |
 | Design / prototype / screenshot |  | UI behavior and layout | required when UI changes |
 | Test / log / incident |  | Reproduction or acceptance evidence | optional |
 | Existing module reference |  | Harness candidate | required when similar module exists |
@@ -975,8 +938,8 @@ Provide exactly three options. Keep \`optionIds\` in frontmatter synchronized wi
 ## Information Sources Used
 
 - Requirements: \`workflow/requirements.md\`
-- API contract: \`SPECS/API.md\`
-- Database contract: \`SPECS/DATABASE.md\`
+- Project architecture: \`SPECS/ARCHITECTURE.md\`
+- Durable project contracts: \`SPECS/\`
 - Design source:
 - Existing module references:
 - Missing sources / risks:
@@ -990,187 +953,58 @@ ${sections}
 `;
 }
 
-function renderSddPrd(scope: "frontend" | "backend"): string {
-  const title = scope === "frontend" ? "Frontend PRD" : "Backend PRD";
-  const extraSource = scope === "backend" ? "- Database contract: `../../SPECS/DATABASE.md`\n" : "";
+function renderFeatureSpec(slug: string): string {
   return `---
-scope: ${scope}
-status: draft
----
-# ${title}
-
-## Source
-
-- Workflow requirements: \`../../workflow/requirements.md\`
-- Selected solution: \`../../workflow/solution-selected.md\`
-- Shared API contract: \`../../SPECS/API.md\`
-${extraSource}
-## Source Register
-
-| Source Type | Location / Quote | Used For | Status |
-| --- | --- | --- | --- |
-| User request | \`../../workflow/requirements.md\` | Problem boundary | required |
-| ${scope === "frontend" ? "Design / prototype / screenshot" : "API documentation"} | ${scope === "frontend" ? "" : "`../../SPECS/API.md`"} | ${scope === "frontend" ? "UI behavior and layout" : "Endpoint and field facts"} | required when ${scope === "frontend" ? "UI" : "API"} changes |
-| Existing ${scope} module |  | Harness candidate | required when similar module exists |
-| Test / log / incident |  | Acceptance evidence | optional |
-
-## Goals
-
-- Goal 1:
-- Goal 2:
-
-## Non-Goals
-
-- Out of scope:
-
-## Acceptance Criteria
-
-- [ ] Criteria:
-`;
-}
-
-function renderSddArchitecture(scope: "frontend" | "backend"): string {
-  if (scope === "frontend") {
-    return `---
-scope: frontend
-status: draft
----
-# Frontend Architecture
-
-## Source
-
-- Frontend PRD: \`PRD.md\`
-- Shared API contract: \`../../SPECS/API.md\`
-- Feature specs: \`FEATURES/<feature-slug>/spec.md\`
-
-## Source Register
-
-| Source Type | Location / Quote | Used For | Status |
-| --- | --- | --- | --- |
-| Frontend PRD | \`PRD.md\` | User flow and acceptance | required |
-| Shared API contract | \`../../SPECS/API.md\` | Field alignment | required when API changes |
-| Existing frontend module |  | Component, state, and routing shape | required when similar module exists |
-| Design / prototype / screenshot |  | Layout and interaction | required when UI changes |
-
-## Runtime Shape
-
-- Framework: Vue 3 + Vite
-- UI: Element Plus
-- State: Pinia
-- Routing: Vue Router with backend-driven async routes
-
-## Module Boundaries
-
-| Area | Location | Notes |
-| --- | --- | --- |
-| Pages | \`src/views/\` |  |
-| API clients | \`src/api/\` |  |
-| Store | \`src/store/\` |  |
-
-## Verification
-
-- [ ] \`pnpm typecheck\`
-- [ ] \`pnpm build\`
-`;
-  }
-
-  return `---
-scope: backend
-status: draft
----
-# Backend Architecture
-
-## Source
-
-- Backend PRD: \`PRD.md\`
-- Shared API contract: \`../../SPECS/API.md\`
-- Database contract: \`../../SPECS/DATABASE.md\`
-- Feature specs: \`FEATURES/<feature-slug>/spec.md\`
-
-## Source Register
-
-| Source Type | Location / Quote | Used For | Status |
-| --- | --- | --- | --- |
-| Backend PRD | \`PRD.md\` | Capability boundary | required |
-| Shared API contract | \`../../SPECS/API.md\` | Endpoint and field alignment | required when API changes |
-| Database contract | \`../../SPECS/DATABASE.md\` | Schema and seed alignment | required when schema changes |
-| Existing backend module |  | Route, service, response, and SQL shape | required when similar module exists |
-
-## Runtime Shape
-
-- Runtime: Node.js + TypeScript
-- HTTP framework: Fastify
-- Database: MySQL via \`mysql2/promise\`
-- Response style: \`{ success, data }\`
-
-## Module Boundaries
-
-| Area | Location | Notes |
-| --- | --- | --- |
-| Routes | \`src/routes/\` |  |
-| Services | \`src/services/\` |  |
-| DB | \`src/db/\` |  |
-
-## Verification
-
-- [ ] \`pnpm typecheck\`
-- [ ] \`pnpm build\`
-`;
-}
-
-function renderFeatureSpec(scope: "frontend" | "backend", slug: string): string {
-  const title = scope === "frontend" ? "Frontend Feature Spec" : "Backend Feature Spec";
-  const extraSource = scope === "backend" ? "- Database contract: `../../../../SPECS/DATABASE.md`\n" : "";
-  return `---
-scope: ${scope}
 feature: ${slug}
 status: draft
 ---
-# ${title}: ${slug}
+# Feature Spec: ${slug}
 
 ## Source
 
-- Workflow requirements: \`../../../../workflow/requirements.md\`
-- Selected solution: \`../../../../workflow/solution-selected.md\`
-- ${scope === "frontend" ? "Frontend" : "Backend"} PRD: \`../../PRD.md\`
-- Shared API contract: \`../../../../SPECS/API.md\`
-${extraSource}
+- Workflow requirements: \`../../../workflow/requirements.md\`
+- Selected solution: \`../../../workflow/solution-selected.md\`
+- Project architecture: \`../../ARCHITECTURE.md\`
+
 ## Source Register
 
 | Source Type | Location / Quote | Used For | Status |
 | --- | --- | --- | --- |
-| User request | \`../../../../workflow/requirements.md\` | Problem boundary | required |
-| Selected solution | \`../../../../workflow/solution-selected.md\` | Scope and tradeoff | required |
-| Shared API contract | \`../../../../SPECS/API.md\` | ${scope === "frontend" ? "Field alignment" : "Endpoint and field alignment"} | required when API changes |
-${scope === "backend" ? "| Database contract | `../../../../SPECS/DATABASE.md` | Schema and seed alignment | required when schema changes |\n" : "| Design / prototype / screenshot |  | Layout and interaction | required when UI changes |\n"}| Existing ${scope} module |  | Harness candidate | required when similar module exists |
+| User request | \`../../../workflow/requirements.md\` | Problem boundary | required |
+| Selected solution | \`../../../workflow/solution-selected.md\` | Scope and tradeoff | required |
+| Project facts / contracts | \`../../\` | Architecture and interface facts | required when affected |
+| Design / prototype / screenshot |  | Observable behavior | required when UI changes |
+| Existing module |  | Harness candidate | required when similar behavior exists |
+| Test / log / incident |  | Reproduction or acceptance evidence | optional |
 
 ## Harness References
 
 | Reference | Location | Reused Pattern | Deliberate Differences |
 | --- | --- | --- | --- |
-| Closest ${scope === "frontend" ? "frontend view" : "backend route"} |  |  |  |
-| Closest ${scope === "frontend" ? "API client" : "service"} |  |  |  |
-| Closest ${scope === "frontend" ? "UI state or component" : "database table or seed"} |  |  |  |
+| Closest behavior |  |  |  |
+| Closest interface |  |  |  |
+| Closest verification |  |  |  |
 
-## Contract
+## Behavior Contract
 
-| Item | Location | Notes |
-| --- | --- | --- |
-|  |  |  |
+| ID | Observable Behavior | Evidence | Verification |
+| --- | --- | --- | --- |
+| BEH-001 |  |  |  |
 
-## Field Alignment
+## Boundaries
 
-| Endpoint | Request Fields | Backend JSON Fields | Frontend VO Fields | Mapping Notes |
-| --- | --- | --- | --- | --- |
-|  |  |  |  |  |
+- In scope:
+- Out of scope:
+- Dependencies:
+- Rollback boundary:
 
 ## Implicit Behaviors To Review
 
 - Defaults:
-- Soft delete / status transitions:
-- Sorting / pagination:
-- Permissions:
-- Date and null handling:
+- State transitions:
+- Permissions and data exposure:
+- Ordering, time and null handling:
+- Error, loading and recovery behavior:
 
 ## Acceptance Criteria
 
@@ -1178,29 +1012,72 @@ ${scope === "backend" ? "| Database contract | `../../../../SPECS/DATABASE.md` |
 `;
 }
 
-function renderFeatureTasks(scope: "frontend" | "backend", slug: string): string {
-  const title = scope === "frontend" ? "Frontend Feature Tasks" : "Backend Feature Tasks";
-  const implementation =
-    scope === "frontend"
-      ? "- [ ] Confirm feature spec `Source Register` records user request, API contract, design source, and frontend reference status.\n- [ ] Record closest frontend references in the feature spec `Harness References`.\n- [ ] Confirm root `SPECS/API.md` contains every consumed field and mapping.\n- [ ] Derive Mock data from root `SPECS/API.md` and a similar real/template response.\n- [ ] Add or update API client functions under `src/api/`.\n- [ ] Add or update view components under `src/views/`.\n- [ ] Document UI behaviors inherited from references, including reset, loading, empty, error, permissions, and sorting.\n"
-      : "- [ ] Confirm feature spec `Source Register` records user request, API contract, database contract, and backend reference status.\n- [ ] Record closest backend references in the feature spec `Harness References`.\n- [ ] Confirm root `SPECS/API.md` contains request and response fields.\n- [ ] Confirm root `SPECS/DATABASE.md` contains required table changes.\n- [ ] Add or update route handlers under `src/routes/`.\n- [ ] Add or update services under `src/services/`.\n- [ ] Document backend behaviors inherited from references, including defaults, soft delete, sorting, audit fields, date transforms, and null handling.\n";
+function renderFeatureTasks(slug: string): string {
   return `---
-scope: ${scope}
 feature: ${slug}
 status: draft
 ---
-# ${title}: ${slug}
+# Feature Tasks: ${slug}
 
 ## Implementation
 
-${implementation}
+- [ ] Confirm the Source Register anchors every important fact.
+- [ ] Record the closest existing behavior, interface, and verification references.
+- [ ] Deliver one independently runnable slice with one primary uncertainty.
+- [ ] Keep changes inside the selected solution and feature boundaries.
+- [ ] Update durable contracts in \`SPECS/\` before dependent code.
+
 ## Verification
 
-- [ ] \`pnpm typecheck\`
-- [ ] \`pnpm build\`
-- [ ] Implicit behavior review completed
-- [ ] Rule or check candidate recorded when a reusable pitfall is found
+- [ ] Run the project-specific static checks recorded in \`SPECS/ARCHITECTURE.md\`.
+- [ ] Run risk-matched unit, integration, contract, or E2E checks.
+- [ ] Exercise the affected user path when behavior is user-visible.
+- [ ] Record verification evidence and clean generated test data.
+- [ ] Complete implicit behavior and rollback review.
+- [ ] Write reusable findings back to \`rules/\`, \`SPECS/\`, or \`memory/\`.
 `;
+}
+
+async function assertInstallTargetsAvailable(targetRoot: string, force: boolean): Promise<void> {
+  if (force) return;
+
+  const targets = [
+    ...(await listCopyTargets(TEMPLATE_ROOT, targetRoot)),
+    join(targetRoot, ".agents", "skills.json"),
+    ...(await listCopyTargets(KIT_SKILLS_ROOT, join(targetRoot, ".agents", "skills"))),
+    ...(await listCopyTargets(KIT_HOOKS_ROOT, join(targetRoot, ".agents", "hooks"))),
+    join(targetRoot, "workflow-state.json"),
+    join(targetRoot, "scripts", "kit-runtime.mjs"),
+    join(targetRoot, "scripts", "kit.mjs"),
+  ];
+  const conflicts: string[] = [];
+  for (const target of targets) {
+    if (await exists(target)) conflicts.push(target.slice(targetRoot.length + 1));
+  }
+
+  if (conflicts.length > 0) {
+    const preview = conflicts.slice(0, 8).join(", ");
+    const suffix = conflicts.length > 8 ? ` and ${conflicts.length - 8} more` : "";
+    fail(
+      `Vibe coding layer would overwrite existing files: ${preview}${suffix}`,
+      "Merge or move the conflicting files, or rerun with `--force true` only after reviewing the overwrite scope.",
+    );
+  }
+}
+
+async function listCopyTargets(sourceRoot: string, targetRoot: string): Promise<string[]> {
+  const targets: string[] = [];
+  for (const entry of await readdir(sourceRoot, { withFileTypes: true })) {
+    if (shouldSkipTemplateEntry(entry.name)) continue;
+    const sourcePath = join(sourceRoot, entry.name);
+    const targetPath = join(targetRoot, entry.name);
+    if (entry.isDirectory()) {
+      targets.push(...(await listCopyTargets(sourcePath, targetPath)));
+    } else if (entry.isFile()) {
+      targets.push(targetPath);
+    }
+  }
+  return targets;
 }
 
 async function copyTemplate(sourceRoot: string, targetRoot: string, replacements: Record<string, string>): Promise<void> {
@@ -1253,22 +1130,6 @@ async function copyTemplateFile(sourcePath: string, targetPath: string, replacem
     content = content.split(`{{${key}}}`).join(value);
   }
   await writeFile(targetPath, content, "utf8");
-}
-
-async function materializeEnvExamples(root: string): Promise<void> {
-  for (const entry of await readdir(root, { withFileTypes: true })) {
-    if (shouldSkipTemplateEntry(entry.name)) continue;
-
-    const sourcePath = join(root, entry.name);
-    if (entry.isDirectory()) {
-      await materializeEnvExamples(sourcePath);
-      continue;
-    }
-
-    if (entry.isFile() && isEnvExample(entry.name)) {
-      await copyFile(sourcePath, sourcePath.slice(0, -".example".length));
-    }
-  }
 }
 
 function renderKitRunner(): string {
@@ -1395,11 +1256,7 @@ function allowedWorkflowFiles(stage: Stage): Set<string> {
 }
 
 function shouldSkipTemplateEntry(name: string): boolean {
-  return name === "node_modules" || name === "dist" || name === ".DS_Store" || name === ".git" || name === ".cache" || (name.startsWith(".env") && !isEnvExample(name));
-}
-
-function isEnvExample(name: string): boolean {
-  return name.startsWith(".env") && name.endsWith(".example");
+  return name === "node_modules" || name === "dist" || name === ".DS_Store" || name === ".git" || name === ".cache" || name.startsWith(".env");
 }
 
 function stripQuotes(value: string): string {
@@ -1449,7 +1306,7 @@ function printHelp(): void {
   console.log(`ai-vibe-demo-kit CLI
 
 Commands:
-  kit init <project-name>
+  kit init [project-root] [--force true]
   kit check [project-root]
   kit skills [project-root]
   kit skill <alias> [project-root]

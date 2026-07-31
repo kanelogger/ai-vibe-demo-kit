@@ -6,7 +6,7 @@
 
 ## 一、首批核心技能（L1）
 
-对应 `product-ref.md` 第 6–9 步和默认 Agent 流程。
+默认链路覆盖需求、方案、实现、验证、审查和经验回写；条件型技能只在触发条件成立时加载。
 
 | 项目阶段 | 项目别名 | 实际 Skill | 作用 |
 | --- | --- | --- | --- |
@@ -18,7 +18,7 @@
 | 领域术语 | `ubiquitous-language` | `ubiquitous-language` | 统一领域术语表 |
 | 方案生成 | `solution-options` | `design-an-interface` | 产出 3 个技术方案 + 推荐理由 |
 | 技术规划 | `tech-plan-generator` | `planning-and-task-breakdown` | 方案选定后拆实施计划 |
-| 接口设计 | `api-design` | `api-and-interface-design` | 前后端契约、模块边界、API 路由 |
+| 接口设计 | `api-design` | `api-and-interface-design` | 公共接口、模块边界和跨模块契约 |
 | 安全加固 | `security-review` | `security-and-hardening` | 输入、鉴权、存储、外部调用 |
 | 实现 | `shell-implementation` | `implement` | 按方案编码 |
 | 测试驱动 | `tdd` | `tdd` | 行为验收、单元/集成测试 |
@@ -41,7 +41,7 @@
 | `prototype` | `prototype` | 技术方案不确定，先做可丢弃原型 |
 | `debug` | `ce-debug` | 调试复杂问题，定位根因 |
 | `debug-flow` | `debugging-and-error-recovery` | 构建、运行、测试失败时 |
-| `frontend-ui` | `frontend-ui-engineering` | 需要生成高质量后台 UI |
+| `frontend-ui` | `frontend-ui-engineering` | 需要实现高质量用户界面 |
 | `frontend-ui-design` | `ce-frontend-design` | 需要产出前端设计方案 |
 | `ui-guidelines` | `web-design-guidelines` | 检查 UI 可用性、可访问性、一致性 |
 

@@ -28,7 +28,7 @@ git diff
 
 1. 审查复制产生的所有冲突和覆盖；合并已有 `AGENTS.md`，保留项目原有高优先级约束。
 2. 填写 `HARNESS.md` 相关章节与 `SPECS/ARCHITECTURE.md` 中的项目事实。
-3. 在 `.harness/config.json` 登记真实运行、静态检查、测试、关键用户路径、清理和恢复命令。
+3. 在 `.harness/config.json` 登记真实运行、静态检查、测试、关键用户路径、清理和恢复命令；采用 `SPECS/API.md` 或 `SPECS/DATABASE.md` 时登记 `commands.contracts` 契约校验，无对应契约则删除该文件并写明显式说明。
 4. 执行 `node scripts/harness-check.mjs all`。
 5. 修复全部结构错误；项目专属命令暂不可运行时，显式记录缺口、原因和风险。
 6. 形成一次独立、可回退的 Harness 接入提交。
@@ -40,8 +40,15 @@ git diff
 ```sh
 node scripts/harness-check.mjs context   # 冷启动六问所需入口和占位符
 node scripts/harness-check.mjs gates     # 阶段状态、文档前置和用户原话证据
-node scripts/harness-check.mjs evidence  # Source Register、验证入口、报告、清理和回退
+node scripts/harness-check.mjs evidence  # Source Register、契约校验、验证入口、报告、清理和回退
 node scripts/harness-check.mjs all       # 以上全部
+```
+
+阶段推进由 `scripts/harness-stage.mjs` 硬门禁控制——它是 `workflow-state.json` 的唯一写入入口，只允许单步推进，每次推进必须携带用户原话并写入可审计的 history 证据链：
+
+```sh
+node scripts/harness-stage.mjs status                                        # 当前阶段与最近放行记录
+node scripts/harness-stage.mjs advance --to <stage> --by user --quote "<用户原话>"
 ```
 
 输出 Agent 可直接修复的结构化错误（`ERROR <check-id> <path>: <problem>` + `REPAIR:`），退出码 `0` 通过、`1` 有问题、`2` 配置无法解析。

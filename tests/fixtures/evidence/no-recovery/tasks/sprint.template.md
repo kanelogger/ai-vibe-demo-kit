@@ -1,26 +1,26 @@
-# Sprint NN
+# 迭代 NN
 
-## Goal
+## 目标
 
-- Deliver one independently runnable slice:
-- Primary uncertainty:
-- Explicit non-goals:
+- 交付一个可独立运行的切片：
+- 首要不确定性：
+- 明确的非目标：
 
-## Tasks
+## 任务
 
-- [ ] Confirm selected solution and feature spec.
-- [ ] Update affected durable contracts before dependent code.
-- [ ] Implement the smallest runnable behavior.
-- [ ] Run risk-matched checks registered in `.harness/config.json`.
-- [ ] Exercise the affected user path and record evidence.
-- [ ] Clean test data and record rollback steps.
+- [ ] 确认所选方案与 feature spec。
+- [ ] 在编写依赖代码前更新受影响的持久契约。
+- [ ] 实现最小可运行行为。
+- [ ] 运行 `.harness/config.json` 中登记的风险匹配检查。
+- [ ] 走查受影响的用户路径并记录证据。
+- [ ] 清理测试数据并记录回退步骤。
 
 ## Verification Report
 
 - Commands:
 - Results:
 - Executed at:
-- Manual / user-path evidence:
-- Uncovered risks:
-- Cleanup performed:
-- Rollback steps:
+- 人工 / 用户路径证据：
+- 未覆盖的风险：
+- 已执行的清理：
+- 回退步骤：

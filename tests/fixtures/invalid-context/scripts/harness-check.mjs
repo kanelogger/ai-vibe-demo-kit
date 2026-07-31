@@ -71,6 +71,7 @@ const CONTROL_PATHS = [
   "rules/security.md",
   "rules/git.md",
   "scripts/harness-check.mjs",
+  "scripts/harness-stage.mjs",
 ];
 
 const PLACEHOLDER_SCAN_FILES = [
@@ -78,8 +79,13 @@ const PLACEHOLDER_SCAN_FILES = [
   "HARNESS.md",
   "SPECS/ARCHITECTURE.md",
   "SPECS/README.md",
+  "SPECS/API.md",
+  "SPECS/DATABASE.md",
   "memory/decisions.md",
 ];
+
+// 唯一契约来源：任一存在即要求项目登记机器契约校验。
+const CONTRACT_SOURCE_FILES = ["SPECS/API.md", "SPECS/DATABASE.md"];
 
 const ARCHITECTURE_IDENTITY_FIELDS = ["Product / service", "Primary users", "Primary outcome"];
 
@@ -279,7 +285,7 @@ async function checkContext(root, reporter) {
         "context.unknown-stage",
         "workflow-state.json",
         `stage must be one of: ${STAGES.join(", ")}.`,
-        "Restore workflow-state.json to a known stage; do not hand-edit the file.",
+        "Restore workflow-state.json to a known stage; advance only via node scripts/harness-stage.mjs, never by hand-editing.",
       );
     }
   }
@@ -379,7 +385,7 @@ async function checkGates(root, reporter) {
       "gates.unknown-stage",
       "workflow-state.json",
       `stage must be one of: ${STAGES.join(", ")}.`,
-      "Restore workflow-state.json to a known stage; do not hand-edit the file.",
+      "Restore workflow-state.json to a known stage; advance only via node scripts/harness-stage.mjs, never by hand-editing.",
     );
     return;
   }
@@ -391,7 +397,7 @@ async function checkGates(root, reporter) {
       "gates.bad-transitions",
       "workflow-state.json",
       `allowedNextStages must be ${JSON.stringify(NEXT_STAGE[stage])} for stage "${stage}".`,
-      "Restore allowedNextStages from the transition table; stages advance only through user-approved releases recorded in history.",
+      "Restore allowedNextStages from the transition table; stages advance only via node scripts/harness-stage.mjs advance --quote \"<用户原话>\".",
     );
   }
 
@@ -406,7 +412,7 @@ async function checkGates(root, reporter) {
             "gates.missing-history-evidence",
             "workflow-state.json",
             `history[${index}] is missing "${field}".`,
-            "Every stage advance must record from/to/advancedBy/advancedAt/quote/doc with the user's original words.",
+            "Re-record the advance via node scripts/harness-stage.mjs advance; every advance must carry from/to/advancedBy/advancedAt/quote/doc with the user's original words.",
           );
         }
       }
@@ -593,6 +599,23 @@ async function checkEvidence(root, reporter) {
         "Static-check and test commands must be registered for the execution loop to be auditable.",
         "Register the project's real static-check and test commands under commands.quick in .harness/config.json.",
       );
+    }
+
+    // 1b. 契约校验：唯一契约来源存在时必须登记机器校验命令（或显式缺口说明）。
+    const contractSources = [];
+    for (const rel of CONTRACT_SOURCE_FILES) {
+      if (await exists(join(root, rel))) contractSources.push(rel);
+    }
+    if (contractSources.length > 0) {
+      const contracts = Array.isArray(commands.contracts) ? commands.contracts : [];
+      if (!contracts.some(isNonEmptyString)) {
+        reporter.error(
+          "evidence.contracts-missing",
+          ".harness/config.json",
+          `${contractSources.join(" and ")} exists but commands.contracts registers no contract check.`,
+          "Register the project's real contract-check command under commands.contracts in .harness/config.json, or record an explicit no-contract statement with a reason.",
+        );
+      }
     }
 
     // 2. 关键用户路径：声明了 UI 或已登记条目时必须完整；未声明 UI 的项目不强制。

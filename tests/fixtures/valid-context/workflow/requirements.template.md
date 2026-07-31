@@ -1,33 +1,33 @@
 ---
 status: draft
 ---
-# Requirements
+# 需求
 
-## User Request
+## 用户请求
 
 > 用户原话
 
 ## Source Register
 
-| Source Type | Location / Quote | Used For | Status |
+| 来源类型 | 位置 / 原话 | 用途 | 状态 |
 | --- | --- | --- | --- |
-| User request |  | Problem boundary | required |
-| Existing code / docs |  | Current behavior | required when available |
-| Design / prototype |  | Observable target | required when UI changes |
-| Test / log / incident |  | Evidence | optional |
+| 用户请求 |  | 问题边界 | 必需 |
+| 现有代码 / 文档 |  | 当前行为 | 可用时必需 |
+| 设计 / 原型 |  | 可观察目标 | UI 变更时必需 |
+| 测试 / 日志 / 事件 |  | 证据 | 可选 |
 
 没有任何来源时，在本节显式写明“无来源”及原因，不得留空。
 
-## Goals
+## 目标
 
-## Non-Goals
+## 非目标
 
-## Requirements
+## 需求条目
 
-| ID | Requirement | Evidence |
+| ID | 需求 | 证据 |
 | --- | --- | --- |
 | REQ-001 |  |  |
 
-## Acceptance Criteria
+## 验收标准
 
 - [ ]

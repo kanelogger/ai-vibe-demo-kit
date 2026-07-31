@@ -1,0 +1,11 @@
+{
+  "stage": "initialized",
+  "allowedNextStages": [
+    "requirements-draft"
+  ],
+  "currentStageDoc": null,
+  "lastConfirmedDoc": null,
+  "confirmation": null,
+  "selection": null,
+  "history": []
+}

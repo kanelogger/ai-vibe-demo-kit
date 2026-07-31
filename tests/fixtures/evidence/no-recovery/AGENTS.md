@@ -17,10 +17,12 @@
 
 - `node scripts/harness-check.mjs context`：校验冷启动六问所需入口和关键占位符。
 - `node scripts/harness-check.mjs gates`：校验阶段状态、文档前置和用户原话证据。
-- `node scripts/harness-check.mjs evidence`：校验 Source Register、验证入口、验证报告、清理和回退。
+- `node scripts/harness-check.mjs evidence`：校验 Source Register、契约校验入口、验证入口、验证报告、清理和回退。
 - `node scripts/harness-check.mjs all`：依次运行以上全部。
+- `node scripts/harness-stage.mjs status`：查看当前阶段、允许的下一阶段和最近一次放行记录。
+- `node scripts/harness-stage.mjs advance --to <stage> --by user --quote "<用户原话>"`：阶段推进的唯一入口。
 
-检查器只读，不创建文档、不修改状态、不推进阶段。检查通过不等于应用验收通过。
+检查器只读，不创建文档、不修改状态、不推进阶段。`harness-stage.mjs` 是 `workflow-state.json` 的唯一写入入口。检查通过不等于应用验收通过。
 
 ## 阶段门禁
 
@@ -33,16 +35,16 @@ initialized
 -> implementation-ready
 ```
 
-- `workflow-state.json` 是唯一机器状态源；阶段只在用户提供原话证据后由人工放行更新，Agent 不得手改布尔值或状态字段。
+- `workflow-state.json` 是唯一机器状态源；阶段只通过 `harness-stage.mjs advance` 在用户原话证据后放行，Agent 不得手改状态文件或伪造用户原话。
 - 需求未确认前不得创建方案。
 - 用户未选定方案前不得创建实现规格或开始编码。
 - 未进入 `implementation-ready` 前不得实现功能。
-- Agent 不得代替用户确认需求或选择方案；每次放行必须记录用户原话、时间和对应文档。
+- Agent 不得代替用户确认需求或选择方案；每次放行必须记录用户原话、时间和对应文档，形成可审计的 history 证据链。
 
 ## 上下文闭环
 
 - `workflow/` 保存本轮需求、方案和确认过程，完成后可以归档。
-- `SPECS/` 保存长期有效的架构、行为契约和 feature spec，必须随代码演进。
+- `SPECS/` 保存长期有效的架构、行为契约和 feature spec，必须随代码演进；`SPECS/API.md` 和 `SPECS/DATABASE.md` 是前后端共享的唯一契约来源，字段一致性由 `commands.contracts` 机器校验。
 - `tasks/` 保存当前可执行单元。
 - `memory/decisions.md` 保存简单决策，新决策覆盖旧决策时写明谱系；重要决策进入 `memory/adr/`。
 - `rules/` 保存按主题加载的工程约束。

@@ -1,6 +1,6 @@
 {
   "name": "ai-native-harness-overlay",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "可复制到现有代码库的 Agent 开发装甲：上下文恢复、规格管理、阶段证据、反馈验证和经验回写。",
   "updatePolicy": "manual-diff",
   "notes": "本清单只记录 Overlay 来源版本和文件职责，不驱动自动更新。复制后文件归目标项目所有。",
@@ -14,10 +14,11 @@
     ".agents/skills/": "Harness 专属最小 Skills（source-register、verification-closeout、memory-writeback）",
     ".agents/hooks/check-harness.mjs": "Hook 适配层，只调用 scripts/harness-check.mjs",
     "workflow/": "本轮需求、方案和放行过程的模板与说明",
-    "SPECS/": "长期有效的项目事实与 feature spec 骨架",
+    "SPECS/": "长期有效的项目事实、唯一契约来源（API.md / DATABASE.md）与 feature spec 骨架",
     "tasks/": "当前执行单元模板",
     "memory/": "决策谱系和 ADR 骨架",
     "rules/": "按主题加载的工程约束",
-    "scripts/harness-check.mjs": "只读、零第三方依赖的项目本地检查器"
+    "scripts/harness-check.mjs": "只读、零第三方依赖的项目本地检查器",
+    "scripts/harness-stage.mjs": "workflow-state.json 的唯一写入入口；阶段单步推进，强制用户原话证据"
   }
 }

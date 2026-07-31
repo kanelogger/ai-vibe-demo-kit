@@ -88,6 +88,10 @@ test("复制 Overlay 后既有应用文件保持不变，AGENTS 冲突可见", a
     config.recovery.rollback = ["git revert <commit>"];
     await writeFile(configPath, JSON.stringify(config, null, 2), "utf8");
 
+    // 演练项目是纯 CLI、无对外契约：删除契约模板并留空 contracts（显式缺口路径）。
+    await rm(join(root, "SPECS", "API.md"));
+    await rm(join(root, "SPECS", "DATABASE.md"));
+
     const archPath = join(root, "SPECS", "ARCHITECTURE.md");
     await writeFile(
       archPath,
@@ -95,10 +99,10 @@ test("复制 Overlay 后既有应用文件保持不变，AGENTS 冲突可见", a
         .replace("- Product / service:", "- Product / service: Greeting CLI demo")
         .replace("- Primary users:", "- Primary users: Harness maintainers")
         .replace("- Primary outcome:", "- Primary outcome: Overlay copy drill passes")
-        .replace("| Runtime |  |  |", "| Runtime | Node.js 20+ | package.json |")
-        .replace("| Package / build tool |  |  |", "| Package / build tool | npm | package.json |")
-        .replace("| Application framework |  |  |", "| Application framework | 无（纯 Node CLI） | src/index.js |")
-        .replace("| Data / external systems |  |  |", "| Data / external systems | 无 | 无外部依赖 |"),
+        .replace("| 运行时 |  |  |", "| 运行时 | Node.js 20+ | package.json |")
+        .replace("| 包管理 / 构建工具 |  |  |", "| 包管理 / 构建工具 | npm | package.json |")
+        .replace("| 应用框架 |  |  |", "| 应用框架 | 无（纯 Node CLI） | src/index.js |")
+        .replace("| 数据 / 外部系统 |  |  |", "| 数据 / 外部系统 | 无 | 无外部依赖 |"),
       "utf8",
     );
 

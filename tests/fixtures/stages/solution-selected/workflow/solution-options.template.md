@@ -2,7 +2,7 @@
 status: proposed
 optionIds: [minimal, balanced, robust]
 ---
-# Solution Options
+# 方案选项
 
 每个方案说明目标、边界、收益、代价、风险和验证方式。保持正好三个方案，由用户选择；Agent 不替用户做决定。
 
@@ -10,29 +10,29 @@ optionIds: [minimal, balanced, robust]
 
 方案依据的事实来源（需求文档、现有代码、约束）；没有来源时显式写明“无来源”及原因。
 
-## Option: minimal
+## 方案：minimal（最小化）
 
-- Goal:
-- Boundary:
-- Benefit:
-- Cost:
-- Risk:
-- Verification:
+- 目标：
+- 边界：
+- 收益：
+- 代价：
+- 风险：
+- 验证：
 
-## Option: balanced
+## 方案：balanced（均衡）
 
-- Goal:
-- Boundary:
-- Benefit:
-- Cost:
-- Risk:
-- Verification:
+- 目标：
+- 边界：
+- 收益：
+- 代价：
+- 风险：
+- 验证：
 
-## Option: robust
+## 方案：robust（稳健）
 
-- Goal:
-- Boundary:
-- Benefit:
-- Cost:
-- Risk:
-- Verification:
+- 目标：
+- 边界：
+- 收益：
+- 代价：
+- 风险：
+- 验证：

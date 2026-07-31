@@ -252,6 +252,28 @@ test("evidence: 缺清理和回退登记失败", () => {
   assert.ok(ids.includes("evidence.rollback-missing"));
 });
 
+test("evidence: 存在唯一契约来源但未登记契约校验失败", () => {
+  const result = runCheck(join(fixturesRoot, "evidence", "no-contracts-check"), "evidence");
+  assert.equal(result.code, 1);
+  assert.ok(errorIds(result.stdout).includes("evidence.contracts-missing"));
+});
+
+test("evidence: 无契约项目删除契约文件后不强制 contracts 命令", async () => {
+  const root = await mutableCopy("valid-context");
+  try {
+    await rm(join(root, "SPECS", "API.md"));
+    await rm(join(root, "SPECS", "DATABASE.md"));
+    const configPath = join(root, ".harness", "config.json");
+    const config = JSON.parse(await readFile(configPath, "utf8"));
+    config.commands.contracts = ["无对外契约：纯 CLI 项目"];
+    await writeFile(configPath, JSON.stringify(config, null, 2), "utf8");
+    const result = runCheck(root, "evidence");
+    assert.equal(result.code, 0, result.stdout + result.stderr);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("evidence: sprint 缺验证报告失败", () => {
   const result = runCheck(join(fixturesRoot, "evidence", "sprint-no-report"), "evidence");
   assert.equal(result.code, 1);

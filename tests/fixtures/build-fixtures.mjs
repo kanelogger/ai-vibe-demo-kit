@@ -27,6 +27,7 @@ const CONFIG = {
       static: [],
       test: [],
     },
+    contracts: ["node tests/contract/check-contracts.mjs"],
   },
   criticalUserPaths: [],
   recovery: {
@@ -76,10 +77,10 @@ function stateFor(stage) {
     return entry;
   });
   const lastConfirmedDoc =
-    stage === "requirements-confirmed"
-      ? "workflow/requirements.md"
-      : stage === "implementation-ready"
-        ? "workflow/implementation-ready.md"
+    STAGES.indexOf(stage) >= STAGES.indexOf("implementation-ready")
+      ? "workflow/implementation-ready.md"
+      : STAGES.indexOf(stage) >= STAGES.indexOf("requirements-confirmed")
+        ? "workflow/requirements.md"
         : null;
   return {
     stage,
@@ -255,17 +256,82 @@ async function fillArchitecture(root) {
     .replace("- Product / service:", "- Product / service: Fixture project for harness checker tests")
     .replace("- Primary users:", "- Primary users: Harness maintainers")
     .replace("- Primary outcome:", "- Primary outcome: Deterministic harness check results")
-    .replace("| Runtime |  |  |", "| Runtime | Node.js 24 | package.json engines |")
-    .replace("| Package / build tool |  |  |", "| Package / build tool | npm | package.json |")
-    .replace("| Application framework |  |  |", "| Application framework | 无（纯 Node CLI） | src/index.js |")
-    .replace("| Data / external systems |  |  |", "| Data / external systems | 无 | 无外部依赖 |");
+    .replace("| 运行时 |  |  |", "| 运行时 | Node.js 24 | package.json engines |")
+    .replace("| 包管理 / 构建工具 |  |  |", "| 包管理 / 构建工具 | npm | package.json |")
+    .replace("| 应用框架 |  |  |", "| 应用框架 | 无（纯 Node CLI） | src/index.js |")
+    .replace("| 数据 / 外部系统 |  |  |", "| 数据 / 外部系统 | 无 | 无外部依赖 |");
   await writeFile(path, content, "utf8");
+}
+
+const API_FILLED = `# API 契约（唯一来源）
+
+## Source Register
+
+| Source Type | Location / Quote | Used For | Status |
+| --- | --- | --- | --- |
+| 既有代码 | src/index.js | Endpoint 清单 | required |
+
+## 基本信息
+
+- Base URL: /api/v1
+- 认证方式: Bearer Token
+- 错误模型: { error: { code, message } }
+
+## Endpoints
+
+| Method | Path | 请求字段 | 响应字段 | 消费者 |
+| --- | --- | --- | --- | --- |
+| GET | /items | query: page:number | items: Item[] | src/api/items.ts |
+
+## 变更记录
+
+| 日期 | 变更 | 来源 |
+| --- | --- | --- |
+| 2026-07-31 | 初始契约 | 既有代码 |
+`;
+
+const DATABASE_FILLED = `# 数据库契约（唯一来源）
+
+## Source Register
+
+| Source Type | Location / Quote | Used For | Status |
+| --- | --- | --- | --- |
+| 既有代码 | src/index.js | 表结构 | required |
+
+## 引擎与连接
+
+- 引擎 / 版本: SQLite 3
+- Schema 定义位置: db/schema.sql
+- 迁移约定: db/migrations/ 顺序执行，禁止回改已发布迁移
+
+## 表结构
+
+| 表 | 字段 | 约束 | 用途 |
+| --- | --- | --- | --- |
+| items | id INTEGER, name TEXT | PK, NOT NULL | 示例条目 |
+
+## 测试数据
+
+- 种子数据位置: db/seed.sql
+- 测试数据清理: 见 \`.harness/config.json\` 的 \`recovery.testDataCleanup\`
+
+## 变更记录
+
+| 日期 | 变更 | 来源 |
+| --- | --- | --- |
+| 2026-07-31 | 初始契约 | 既有代码 |
+`;
+
+async function fillContracts(root) {
+  await writeFile(join(root, "SPECS", "API.md"), API_FILLED, "utf8");
+  await writeFile(join(root, "SPECS", "DATABASE.md"), DATABASE_FILLED, "utf8");
 }
 
 async function makeBase(root) {
   await cp(overlayRoot, root, { recursive: true });
   await writeJson(join(root, ".harness", "config.json"), CONFIG);
   await fillArchitecture(root);
+  await fillContracts(root);
 }
 
 async function makeStageFixture(stage) {
@@ -353,6 +419,14 @@ async function main() {
   const recoveryConfig = structuredClone(CONFIG);
   recoveryConfig.recovery = { testDataCleanup: [], rollback: [] };
   await writeJson(join(noRecovery, ".harness", "config.json"), recoveryConfig);
+
+  // evidence/no-contracts-check：存在唯一契约来源但未登记契约校验命令。
+  const noContracts = join(fixturesRoot, "evidence", "no-contracts-check");
+  await rm(noContracts, { recursive: true, force: true });
+  await cp(valid, noContracts, { recursive: true });
+  const contractsConfig = structuredClone(CONFIG);
+  contractsConfig.commands.contracts = [];
+  await writeJson(join(noContracts, ".harness", "config.json"), contractsConfig);
 
   // evidence/sprint-no-report：sprint 缺 Verification Report。
   const sprintNoReport = join(fixturesRoot, "evidence", "sprint-no-report");

@@ -6,14 +6,14 @@ selectedBy: user
 selectedAt:
 selectionQuote:
 ---
-# Selected Solution
+# 选定方案
 
-## Decision
+## 决策
 
-## Why
+## 理由
 
-## Superseded Decisions
+## 被取代的决策
 
 被本选择覆盖的旧决策及原因；没有时写“无”。
 
-## Risks
+## 风险

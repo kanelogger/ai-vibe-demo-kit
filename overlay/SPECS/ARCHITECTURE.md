@@ -1,8 +1,8 @@
-# Project Architecture
+# 项目架构
 
 接入 Harness 后，先用仓库证据填写本文件。未知信息写“待确认”，不要猜测。机器可执行命令登记在 `.harness/config.json`，本文件只解释命令的适用条件，不复制命令全文。
 
-## Project Identity
+## 项目身份
 
 - Product / service:
 - Primary users:
@@ -10,38 +10,38 @@
 
 ## Runtime And Tooling
 
-| Area | Technology / Version | Evidence |
+| 领域 | 技术 / 版本 | 证据 |
 | --- | --- | --- |
-| Runtime |  |  |
-| Package / build tool |  |  |
-| Application framework |  |  |
-| Data / external systems |  |  |
+| 运行时 |  |  |
+| 包管理 / 构建工具 |  |  |
+| 应用框架 |  |  |
+| 数据 / 外部系统 |  |  |
 
-## Module Map
+## 模块映射
 
-| Responsibility | Location | Required Context |
-| --- | --- | --- |
-|  |  |  |
-
-## Durable Contracts
-
-| Contract | Location | Consumers |
+| 职责 | 位置 | 所需上下文 |
 | --- | --- | --- |
 |  |  |  |
 
-## Verification Commands
+## 持久契约
+
+| 契约 | 位置 | 消费者 |
+| --- | --- | --- |
+|  |  |  |
+
+## 验证命令
 
 机器命令的唯一登记处是 `.harness/config.json`（`commands.quick` 与 `commands.full`）。在此说明各命令的适用条件和预期证据：
 
-| Purpose | Config Entry | When To Use | Expected Evidence |
+| 用途 | 配置项 | 使用时机 | 预期证据 |
 | --- | --- | --- | --- |
-| Static checks | `commands.*.static` |  |  |
-| Tests | `commands.*.test` |  |  |
-| Critical user path | `criticalUserPaths[]` |  |  |
+| 静态检查 | `commands.*.static` |  |  |
+| 测试 | `commands.*.test` |  |  |
+| 关键用户路径 | `criticalUserPaths[]` |  |  |
 
-## Risk And Recovery
+## 风险与恢复
 
-- Sensitive assets:
-- Destructive operations:
-- Rollback / recovery path:（机器入口见 `.harness/config.json` 的 `recovery`）
-- Test-data cleanup:（机器入口见 `.harness/config.json` 的 `recovery.testDataCleanup`）
+- 敏感资产：
+- 破坏性操作：
+- 回退 / 恢复路径：（机器入口见 `.harness/config.json` 的 `recovery`）
+- 测试数据清理：（机器入口见 `.harness/config.json` 的 `recovery.testDataCleanup`）

@@ -4,24 +4,24 @@ confirmedBy: user
 confirmedAt:
 confirmationQuote:
 ---
-# Implementation Ready
+# 实现就绪
 
-## Runnable Slice
+## 可运行切片
 
-- Outcome:
-- Primary uncertainty:
-- Non-goals:
+- 产出：
+- 首要不确定性：
+- 非目标：
 
 ## Source Register
 
 实现依据的需求、方案和 spec 来源；没有来源时显式写明“无来源”及原因。
 
-## Implementation Boundary
+## 实现边界
 
-## Verification Plan
+## 验证计划
 
-- Static checks:（引用 `.harness/config.json` 的命令）
-- Unit / integration / contract checks:
-- Critical user path:（引用 `.harness/config.json` 的 `criticalUserPaths`）
-- Cleanup:
-- Rollback:
+- 静态检查：（引用 `.harness/config.json` 的命令）
+- 单元 / 集成 / 契约检查：
+- 关键用户路径：（引用 `.harness/config.json` 的 `criticalUserPaths`）
+- 清理：
+- 回退：

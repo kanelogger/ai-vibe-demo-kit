@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "project": {
+    "name": "fixture-project",
+    "summary": "A small fixture project used to verify the harness checker.",
+    "hasUserInterface": false
+  },
+  "commands": {
+    "quick": {
+      "static": [
+        "node --check src/index.js"
+      ],
+      "test": [
+        "node --test tests/"
+      ]
+    },
+    "full": {
+      "static": [],
+      "test": []
+    }
+  },
+  "criticalUserPaths": [],
+  "recovery": {
+    "testDataCleanup": [],
+    "rollback": []
+  }
+}

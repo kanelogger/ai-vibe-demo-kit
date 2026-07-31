@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "description": "Harness 专属最小 Skill 路由。通用实现、前端、后端、安全等能力由用户环境或可选能力包提供，不在默认 Overlay 内。",
+  "skillsRoot": ".agents/skills",
+  "skills": [
+    {
+      "alias": "source-register",
+      "skill": "source-register",
+      "trigger": "整理需求、方案或 spec 的事实来源时",
+      "description": "把用户原话、文档、代码、设计、测试和日志整理成 Source Register，无来源时显式记录。",
+      "inputs": ["workflow/ 当前阶段文档", "SPECS/FEATURES/<slug>/spec.md"],
+      "outputs": ["Source Register 表格或无来源说明"]
+    },
+    {
+      "alias": "verification-closeout",
+      "skill": "verification-closeout",
+      "trigger": "实现切片完成、需要收尾验证时",
+      "description": "按 .harness/config.json 运行风险匹配的验证，产出验证报告、清理测试数据并记录回退。",
+      "inputs": [".harness/config.json", "tasks/sprint-*.md"],
+      "outputs": ["Verification Report", "清理与回退记录"]
+    },
+    {
+      "alias": "memory-writeback",
+      "skill": "memory-writeback",
+      "trigger": "产生可复用经验、决策被覆盖或重要架构选择时",
+      "description": "把经验写回 rules/、SPECS/ 或 memory/，维护 supersedes 覆盖谱系。",
+      "inputs": ["memory/decisions.md", "memory/adr/", "rules/"],
+      "outputs": ["决策条目或 ADR", "规则更新"]
+    }
+  ],
+  "stageDefaults": {
+    "initialized": ["source-register"],
+    "requirements-draft": ["source-register"],
+    "requirements-confirmed": ["source-register"],
+    "solution-options": ["source-register"],
+    "solution-selected": ["memory-writeback"],
+    "implementation-ready": ["verification-closeout", "memory-writeback"]
+  }
+}

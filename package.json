@@ -1,7 +1,7 @@
 {
-  "name": "ai-vibe-demo-kit",
-  "version": "0.2.0",
-  "description": "为现有代码库安装上下文、门禁与反馈闭环的 vibe coding 套件",
+  "name": "ai-native-harness-overlay",
+  "version": "0.3.0",
+  "description": "可复制到现有代码库的 Agent 开发装甲：上下文恢复、规格管理、阶段证据、反馈验证和经验回写",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kanelogger/ai-vibe-demo-kit.git"
@@ -13,49 +13,17 @@
   "keywords": [
     "agent",
     "ai-coding",
-    "vibe-coding",
     "agent-native",
+    "harness",
     "workflow",
     "developer-tools"
   ],
-  "bin": {
-    "ai-vibe-demo-kit": "packages/cli/dist/index.js",
-    "kit": "packages/cli/dist/index.js"
-  },
-  "files": [
-    ".agents/skills.json",
-    ".agents/skills/",
-    ".agents/hooks/",
-    "skills-list.md",
-    "packages/cli/package.json",
-    "packages/cli/dist/",
-    "templates/vibe-coding/",
-    "README.md"
-  ],
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
-  },
+  "private": true,
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
-    "build": "pnpm -r build",
-    "test": "pnpm --filter @ai-vibe-demo-kit/cli test",
-    "typecheck": "pnpm -r typecheck",
-    "cli": "node packages/cli/dist/index.js",
-    "check": "node packages/cli/dist/index.js check",
-    "stage": "node packages/cli/dist/index.js stage",
-    "prepack": "pnpm build",
-    "prepublishOnly": "pnpm build && pnpm test && pnpm typecheck",
-    "pack:dry": "npm pack --dry-run",
-    "clean": "pnpm -r exec rimraf dist node_modules && rimraf node_modules pnpm-lock.yaml"
-  },
-  "devDependencies": {
-    "rimraf": "^6.0.1",
-    "typescript": "^5.9.3"
+    "test": "node --test 'tests/*.test.mjs'",
+    "fixtures": "node tests/fixtures/build-fixtures.mjs"
   },
   "engines": {
-    "node": "^20.19.0 || >=22.13.0",
-    "pnpm": ">=9"
-  },
-  "packageManager": "pnpm@11.4.0"
+    "node": "^20.19.0 || >=22.13.0"
+  }
 }

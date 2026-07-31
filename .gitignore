@@ -1,35 +1,20 @@
 # Dependencies
 node_modules/
-.pnpm-store/
-
-# Build outputs
-frontend/dist/
-backend/dist/
-dist/
-dist-ssr/
-*.tgz
 
 # Environment / secrets
 .env
 .env.*
 !.env.example
 !.env*.example
-backend/.env
-backend/.env.*
 
 # Logs
 logs/
 *.log
-npm-debug.log*
-pnpm-debug.log*
 *.local
-report.html
 
 # Runtime
 tmp/
 temp/
-upload_tmp/
-backend/public/files/
 
 # IDE / editor
 .vscode/
@@ -37,10 +22,6 @@ backend/public/files/
 *.swp
 *.swo
 *~
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
 
 # OS
 .DS_Store
@@ -49,11 +30,6 @@ desktop.ini
 
 # Cache
 .cache/
-.eslintcache
-.stylelintcache
 
-# TypeScript
-*.tsbuildinfo
-vite.config.*.timestamp*
 draft/
 private-*

@@ -1,0 +1,20 @@
+{
+  "stage": "requirements-draft",
+  "allowedNextStages": [
+    "requirements-confirmed"
+  ],
+  "currentStageDoc": "workflow/requirements.md",
+  "lastConfirmedDoc": null,
+  "confirmation": null,
+  "selection": null,
+  "history": [
+    {
+      "from": "initialized",
+      "to": "requirements-draft",
+      "advancedBy": "user",
+      "advancedAt": "2026-07-31T00:00:00Z",
+      "quote": "用户原话：放行 requirements-draft",
+      "doc": "workflow/requirements.md"
+    }
+  ]
+}

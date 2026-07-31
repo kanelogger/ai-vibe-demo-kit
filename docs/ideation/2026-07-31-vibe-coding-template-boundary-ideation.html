@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vibe Coding 模板产品边界方案</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1020;
+      --surface: #121a2e;
+      --surface-2: #18233c;
+      --text: #e8edf7;
+      --muted: #aab6cc;
+      --line: #2a3959;
+      --accent: #7dd3fc;
+      --accent-soft: #12344a;
+      --good: #86efac;
+      --good-soft: #153c2d;
+      --warn: #fcd34d;
+      --warn-soft: #423516;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    main { width: min(940px, calc(100% - 36px)); margin: 0 auto; padding: 56px 0 72px; }
+    header { margin-bottom: 40px; }
+    h1 { font-size: clamp(30px, 6vw, 50px); line-height: 1.12; margin: 8px 0 16px; letter-spacing: -0.035em; }
+    h2 { margin: 44px 0 18px; font-size: 23px; }
+    h3 { margin: 0; font-size: 20px; }
+    p { max-width: 72ch; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #bae6fd; }
+    .eyebrow { color: var(--accent); font-size: 12px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+    .meta, .stats { display: flex; flex-wrap: wrap; gap: 10px; }
+    .pill { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; background: var(--surface); color: var(--muted); }
+    .stats { margin-top: 24px; }
+    .stats .pill { background: var(--accent-soft); color: #d7f2ff; border-color: #245474; }
+    .callout { background: var(--good-soft); border: 1px solid #286247; border-radius: 14px; padding: 18px 20px; color: #dcfce7; }
+    .axes { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; padding: 0; list-style: none; }
+    .axes li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 13px 14px; color: var(--muted); }
+    .cards { display: grid; gap: 18px; }
+    article { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 24px; }
+    article.recommended { background: #10263a; border-color: #367da8; }
+    .card-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
+    .rank { display: inline-block; color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: .09em; margin-bottom: 4px; }
+    .score { white-space: nowrap; border-radius: 999px; padding: 6px 11px; background: var(--good-soft); color: var(--good); font-weight: 750; }
+    dl { display: grid; grid-template-columns: 120px 1fr; gap: 8px 16px; margin: 18px 0 0; }
+    dt { color: var(--muted); font-size: 12px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
+    dd { margin: 0; }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 14px; overflow: hidden; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: var(--surface-2); color: var(--muted); font-size: 12px; letter-spacing: .05em; text-transform: uppercase; }
+    tr:last-child td { border-bottom: 0; }
+    a { color: var(--accent); }
+    footer { margin-top: 54px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); padding-top: 18px; }
+    @media (max-width: 640px) { dl { grid-template-columns: 1fr; gap: 2px; } dd { margin-bottom: 10px; } .card-head { flex-direction: column; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Ideation · Product Boundary</div>
+    <h1>Vibe Coding 模板产品边界</h1>
+    <p>基于《AI原生开发系统》《AI原生项目结构设计》和当前代码库，对“取消脚手架、只做好模板功能”形成三种有明显边界差异的方案。</p>
+    <div class="meta">
+      <span class="pill">日期 <time datetime="2026-07-31">2026-07-31</time></span>
+      <span class="pill">主题 vibe-coding-template-boundary</span>
+      <span class="pill">模式 repo-grounded</span>
+    </div>
+    <div class="stats">
+      <span class="pill">22 个原始候选</span>
+      <span class="pill">3 个最终方案</span>
+      <span class="pill">推荐方案 95%</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>Grounding Context</h2>
+    <p>两篇文章的核心要求是同时建立上下文闭环与执行闭环。模板必须让冷启动 Agent 找到项目事实、过程、状态和经验，也必须让验证、门禁、清理与回退成为可观察机制。文章同时明确：目录树不应固定，状态机不是唯一表达，能力分发属于 Plugin/工具包层。</p>
+    <p>当前仓库已删除前后端业务模板，但仍保留约 1300 行中央 CLI、9 组命令、43 个预装 Skills 和项目内运行时。它已经从全栈脚手架退成 Overlay，却仍管理开发生命周期，和“模板是产品主体”的新约束冲突。</p>
+    <div class="callout"><strong>判断标准：</strong>工具只能帮助模板资产发挥作用；一旦开始生成需求、裁决方案、推进阶段或拼装应用，它就越过模板边界。</div>
+  </section>
+
+  <section>
+    <h2>Topic Axes</h2>
+    <ul class="axes">
+      <li>模板分发与升级</li>
+      <li>上下文闭环</li>
+      <li>执行闭环</li>
+      <li>目标项目自主权</li>
+      <li>维护复杂度</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Ranked Ideas</h2>
+    <div class="cards">
+      <article id="idea-1" class="recommended">
+        <div class="card-head"><div><span class="rank">IDEA 1 · RECOMMENDED</span><h3>证据驱动的可执行模板</h3></div><span class="score">95%</span></div>
+        <p>产品只发布仓库模板。模板除 Markdown 资产外，包含少量项目本地 Hooks 与确定性检查脚本，用文档、Source Register、用户确认引用、验证报告、清理记录和回退记录判断当前是否具备推进资格。删除 npm CLI、中央文档生成器和常驻复制运行时。</p>
+        <dl>
+          <dt>Axis</dt><dd>上下文闭环 + 执行闭环</dd>
+          <dt>Basis</dt><dd><strong>direct:</strong> 两篇文章都要求 Rules、Skills、Hooks/脚本各司其职，并强调阶段门禁必须由文档、状态与用户证据共同支撑；真实用户路径仍需运行。</dd>
+          <dt>Rationale</dt><dd>静态文件恢复上下文，项目本地检查提供短反馈回路；两者同时存在，符合文章的“双闭环”，又没有中央脚手架。</dd>
+          <dt>Downsides</dt><dd>需要谨慎设计证据谓词；检查只能证明证据齐全，不能替代真实产品验收。</dd>
+          <dt>Complexity</dt><dd>Medium</dd>
+        </dl>
+      </article>
+
+      <article id="idea-2">
+        <div class="card-head"><div><span class="rank">IDEA 2</span><h3>纯静态仓库模板</h3></div><span class="score">80%</span></div>
+        <p>保留 <code>AGENTS.md</code>、<code>workflow/</code>、<code>SPECS/</code>、<code>tasks/</code>、<code>memory/</code>、<code>rules/</code> 和少量示例，作为 GitHub Template 或可下载目录发布。删除全部 CLI、状态推进命令、路由命令和项目运行时。</p>
+        <dl>
+          <dt>Axis</dt><dd>目标项目自主权 + 维护复杂度</dd>
+          <dt>Basis</dt><dd><strong>external:</strong> GitHub 官方模板模型只负责生成新仓库，生成结果与模板历史无关；这与“安装后项目完全自治”的目标一致。</dd>
+          <dt>Rationale</dt><dd>产品边界最清楚，维护面最小，Everything as Code 最直接。</dd>
+          <dt>Downsides</dt><dd>现有项目接入、模板升级和冲突处理全部靠人工；执行闭环容易退化为文本建议。</dd>
+          <dt>Complexity</dt><dd>Low</dd>
+        </dl>
+      </article>
+
+      <article id="idea-3">
+        <div class="card-head"><div><span class="rank">IDEA 3</span><h3>最小核心模板 + 可选能力包</h3></div><span class="score">76%</span></div>
+        <p>默认模板只保留“新会话六问”、Source Register、决策谱系和验证接口。严格门禁、团队协作、安全、Web E2E 等以独立静态 Profile 或 Agent Plugin 提供，用户显式选择，禁止按技术栈或业务问答自动生成应用。</p>
+        <dl>
+          <dt>Axis</dt><dd>模板扩展性 + 上下文信噪比</dd>
+          <dt>Basis</dt><dd><strong>direct:</strong> 文章要求 AGENTS 只做索引、规则按场景加载、不为无关规则付 token；当前项目却预装 43 个 Skills、约 8.5 MB。</dd>
+          <dt>Rationale</dt><dd>不同项目只携带相关能力，核心稳定，外围可以长期复利。</dd>
+          <dt>Downsides</dt><dd>能力包组合、版本兼容和选择成本会增长；管理失控后会重新演变成脚手架平台。</dd>
+          <dt>Complexity</dt><dd>Medium–High</dd>
+        </dl>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <h2>Rejection Summary</h2>
+    <table>
+      <thead><tr><th>候选</th><th>淘汰理由</th></tr></thead>
+      <tbody>
+        <tr><td>一次性 Overlay 复制</td><td>没有升级和冲突模型，复制后立即产生版本碎片。</td></tr>
+        <tr><td>版本化 Overlay 管理器</td><td>需要 manifest、三方合并和迁移，实质是在重造模板生命周期平台，偏离当前收缩目标。</td></tr>
+        <tr><td>Plugin-first</td><td>适合分发通用能力，但无法替代仓库内的项目事实与历史，并产生平台锁定。</td></tr>
+        <tr><td>中央硬状态机</td><td>门禁有效，但把一种方法论固化成产品运行时，个人 vibe coding 负担过重。</td></tr>
+        <tr><td>仅文件命名门禁</td><td>能表达阶段，不能证明来源、真实验证、清理与回退证据存在。</td></tr>
+        <tr><td>Git upstream 模板分支</td><td>用户操作成本高，根目录资产冲突多，不适合作为默认体验。</td></tr>
+        <tr><td>声明式工作区编译器</td><td>引入第二事实源和生成器，重新走回脚手架。</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer class="composition-signal">Composed 2026-07-31T12:59Z by ce-ideate from the current repository and the two user-supplied AI-native development articles.</footer>
+</main>
+</body>
+</html>

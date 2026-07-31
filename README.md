@@ -1,94 +1,84 @@
-# ai-vibe-demo-kit
+# AI Native Harness Overlay
 
-为现有代码库安装 AI 原生研发系统的 vibe coding 套件。
+可复制到现有代码库的 Agent 开发装甲。它为已有项目补充上下文恢复、规格管理、阶段证据、反馈验证和经验回写能力。
 
-它不生成前端、后端、数据库或业务模块，也不改变现有项目结构。应用代码先由你选择的模板或现有仓库提供，Kit 再覆盖上下文、规格、状态、门禁、Skills 和反馈回路。
+目标用户已经拥有可运行或正在建设的本地项目。把本仓库的 `overlay/` 复制进去，就能获得 Agent 冷启动索引、规格与决策记忆、阶段证据、反馈检查和经验回写入口。
 
-## 安装后的能力
-
-- `AGENTS.md`：冷启动索引、高频规则和阶段门禁。
-- `workflow-state.json` + `workflow/`：带用户原话证据的需求与方案流转。
-- `SPECS/`：长期有效的架构、行为契约和 feature spec。
-- `tasks/`：从确认规格派生的执行单元。
-- `memory/`：决策、覆盖谱系和 ADR。
-- `rules/`：实现、测试、安全和 Git 规则分片。
-- `.agents/`：Skills、Hooks 和阶段路由。
-- `scripts/kit.mjs`：可在项目内运行的状态机与确定性检查。
-
-## 使用
-
-先创建或准备应用项目：
-
-```sh
-your-template-installer my-project
-cd my-project
-```
-
-再安装 vibe coding 层：
-
-```sh
-npx ai-vibe-demo-kit init .
-node scripts/kit.mjs check
-node scripts/kit.mjs next
-```
-
-默认不会覆盖已有控制文件。确实要重装时，先审查冲突范围，再显式运行：
-
-```sh
-npx ai-vibe-demo-kit init . --force true
-```
-
-安装后先根据仓库证据填写 `SPECS/ARCHITECTURE.md`，登记真实技术栈、模块位置、运行、构建、测试、关键用户路径和恢复命令。
-
-## 工作流
+Overlay 不创建应用，不规定技术栈，不生成业务文档，也不替你推进开发阶段。
 
 ```text
-initialized
--> requirements-draft
--> requirements-confirmed
--> solution-options
--> solution-selected
--> implementation-ready
+已有项目
+  + Harness Overlay
+  = 可以被冷启动 Agent 初步理解、约束、执行和验证的项目
 ```
 
-常用命令：
+## 接入
+
+前提：目标项目已经由 Git 管理。**复制前先提交、暂存或备份现有修改**，保证覆盖可以恢复。
 
 ```sh
-node scripts/kit.mjs propose --title "Feature Name"
-node scripts/kit.mjs stage advance requirements-draft --by user --quote "<用户原话>"
-node scripts/kit.mjs stage advance requirements-confirmed --by user --quote "<用户原话>"
-node scripts/kit.mjs options --ids minimal,balanced,robust
-node scripts/kit.mjs options --check
-node scripts/kit.mjs stage advance solution-options --by user --quote "<用户原话>"
-node scripts/kit.mjs stage advance solution-selected --by user --quote "<用户原话>"
-node scripts/kit.mjs sdd user-import
-node scripts/kit.mjs stage advance implementation-ready --by user --quote "<用户原话>"
+git clone <harness-repository> /tmp/ai-native-harness
+cp -R /tmp/ai-native-harness/overlay/. /path/to/existing-project/
+cd /path/to/existing-project
+git status --short
+git diff
 ```
 
-`kit options` 只创建三个方案骨架，不替用户选择。`kit sdd` 创建技术栈无关的 `SPECS/FEATURES/<feature-slug>/spec.md` 和 `tasks.md`。
+首次适配：
 
-## 设计原则
+1. 审查复制产生的所有冲突和覆盖；合并已有 `AGENTS.md`，保留项目原有高优先级约束。
+2. 填写 `HARNESS.md` 相关章节与 `SPECS/ARCHITECTURE.md` 中的项目事实。
+3. 在 `.harness/config.json` 登记真实运行、静态检查、测试、关键用户路径、清理和恢复命令。
+4. 执行 `node scripts/harness-check.mjs all`。
+5. 修复全部结构错误；项目专属命令暂不可运行时，显式记录缺口、原因和风险。
+6. 形成一次独立、可回退的 Harness 接入提交。
 
-Kit 同时建立两个闭环：
+## Harness 检查
 
-1. 上下文闭环：仓库保存事实、过程、状态和经验，新会话可以恢复工作环境。
-2. 执行闭环：需求形成可观察目标，功能拆成可运行小版本，通过门禁、真实验证、清理和回退控制风险。
-
-判断安装是否有效，可以让一个没有口头背景的新会话只读仓库并回答六个问题：项目是什么、当前走到哪、允许做什么、按什么流程做、如何验证、经验写到哪里。
-
-## 开发与发布
+`scripts/harness-check.mjs` 无第三方依赖、只读，是唯一检查入口：
 
 ```sh
-pnpm install
-pnpm build
-pnpm test
-pnpm typecheck
-npm pack --dry-run
+node scripts/harness-check.mjs context   # 冷启动六问所需入口和占位符
+node scripts/harness-check.mjs gates     # 阶段状态、文档前置和用户原话证据
+node scripts/harness-check.mjs evidence  # Source Register、验证入口、报告、清理和回退
+node scripts/harness-check.mjs all       # 以上全部
 ```
 
-发布包只包含 CLI、通用 Overlay、Skills、Hooks 和说明文件，不包含应用源码。
+输出 Agent 可直接修复的结构化错误（`ERROR <check-id> <path>: <problem>` + `REPAIR:`），退出码 `0` 通过、`1` 有问题、`2` 配置无法解析。
+
+**Harness 检查通过不等于应用验收通过。** 真实构建、测试和用户路径结果以项目的验证报告为准。
+
+## 复制后所有权
+
+复制完成后 `overlay/` 文件归目标项目所有：按真实情况修改 `AGENTS.md`、规格、规则和脚本。本仓库不维护自动更新器；未来版本更新通过 Git diff 人工选择吸收。
+
+## 冷启动验收
+
+判断接入是否有效：让一个没有口头背景的新会话只读仓库并回答六个问题——项目是什么、走到哪一步、允许做什么、按什么流程做、如何验证、经验写到哪里。每个答案都必须有唯一仓库证据。
+
+## 非目标
+
+- 不创建新项目或业务目录，不选择或安装前端、后端、数据库模板。
+- 不生成需求、方案、SDD、API 或数据库契约内容。
+- 不自动确认需求、选择方案、推进阶段或伪造用户原话。
+- 不提供模板自动升级、三方合并或迁移平台。
+- 不因目录或文档存在就宣称实现已通过验收。
+
+## 仓库布局
+
+```text
+overlay/    # 唯一交付主体，复制单元
+tests/      # Harness 检查器与复制演练测试（仅用于维护 Overlay，不进入目标项目）
+docs/       # 计划与构想文档
+```
+
+## 开发
+
+```sh
+npm test              # 运行全部 Harness 测试
+npm run fixtures      # overlay 变更后重新生成 tests/fixtures/
+```
 
 ## 要求
 
-- Node.js `^20.19.0 || >=22.13.0`
-- pnpm `>=9`
+- Node.js `^20.19.0 || >=22.13.0`（仅作为 Harness 自带零依赖执行环境，目标项目本身不需要 Node）

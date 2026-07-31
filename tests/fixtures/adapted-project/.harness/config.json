@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "project": {
+    "name": "existing-project",
+    "summary": "一个 Node 20 的问候 CLI 示例项目，已接入 Harness Overlay",
+    "hasUserInterface": false
+  },
+  "commands": {
+    "quick": {
+      "static": [
+        "node --check src/index.js"
+      ],
+      "test": [
+        "node --test tests/"
+      ]
+    },
+    "full": {
+      "static": [],
+      "test": []
+    }
+  },
+  "criticalUserPaths": [],
+  "recovery": {
+    "testDataCleanup": [
+      "无需清理：测试不产生外部数据"
+    ],
+    "rollback": [
+      "git revert <commit>"
+    ]
+  },
+  "notes": "本文件保存机器需要执行或检查的项目命令和关键路径。project.name、project.summary 必填；commands.quick.static 和 commands.quick.test 至少各登记一条真实命令；full 组为空时视为与 quick 相同。hasUserInterface 为 true 或项目存在用户可见行为变更时，criticalUserPaths 必须登记 { id, description, verify } 条目。recovery 登记测试数据清理和回退命令或操作说明。留空数组表示未登记，会被 harness-check 标记。"
+}

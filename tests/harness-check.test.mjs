@@ -309,3 +309,54 @@ test("all: 依次执行三类检查并聚合退出码", () => {
   const bad = runCheck(join(fixturesRoot, "broken-json"), "all");
   assert.equal(bad.code, 2);
 });
+
+// ---------------------------------------------------------------------------
+// commit
+// ---------------------------------------------------------------------------
+
+function git(root, args) {
+  const result = spawnSync("git", args, { cwd: root, encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+}
+
+async function committedCopy(fixtureRel) {
+  const root = await mutableCopy(fixtureRel);
+  git(root, ["init"]);
+  git(root, ["add", "-A"]);
+  git(root, ["-c", "user.name=Fixture", "-c", "user.email=fixture@example.com", "commit", "-m", "fixture baseline"]);
+  return root;
+}
+
+test("commit: 干净工作区通过", async () => {
+  const root = await committedCopy("valid-context");
+  try {
+    const result = runCheck(root, "commit");
+    assert.equal(result.code, 0, result.stdout + result.stderr);
+    assert.match(result.stdout, /^OK commit$/m);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("commit: 未提交改动被发现", async () => {
+  const root = await committedCopy("valid-context");
+  try {
+    await writeFile(join(root, "leftover.js"), "// uncommitted\n", "utf8");
+    const result = runCheck(root, "commit");
+    assert.equal(result.code, 1);
+    assert.ok(errorIds(result.stdout).includes("commit.uncommitted-changes"), result.stdout);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("commit: 非 Git 仓库失败", async () => {
+  const root = await mutableCopy("valid-context");
+  try {
+    const result = runCheck(root, "commit");
+    assert.equal(result.code, 1);
+    assert.ok(errorIds(result.stdout).includes("commit.git-unavailable"), result.stdout);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});

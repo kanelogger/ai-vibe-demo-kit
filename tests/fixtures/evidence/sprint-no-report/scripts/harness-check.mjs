@@ -3,7 +3,8 @@
 // 只读、零第三方依赖。不创建文档、不修改状态、不推进阶段、不判断语义质量。
 //
 // 用法:
-//   node scripts/harness-check.mjs context|gates|evidence|all [--root <dir>]
+//   node scripts/harness-check.mjs context|gates|evidence|commit|all [--root <dir>]
+// commit 模式用于实现任务收尾：校验工作区无遗留未提交改动，不包含在 all 中。
 //
 // 输出（Agent 可直接读取）:
 //   ERROR <check-id> <path>: <problem>
@@ -13,6 +14,8 @@
 // 注意: 检查通过只代表 Harness 结构和当前阶段证据成立，不代表应用已验收。
 
 import { access, readdir, readFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -712,7 +715,7 @@ async function checkEvidence(root, reporter) {
         );
         continue;
       }
-      for (const label of ["Commands:", "Results:", "Executed at:"]) {
+      for (const label of ["Commands:", "Results:", "Executed at:", "提交哈希："]) {
         if (!content.includes(label)) {
           reporter.error(
             "evidence.report-incomplete",
@@ -727,6 +730,41 @@ async function checkEvidence(root, reporter) {
 }
 
 // ---------------------------------------------------------------------------
+// commit：实现任务收尾——工作区不得遗留未提交改动
+// ---------------------------------------------------------------------------
+
+const execFileAsync = promisify(execFile);
+
+async function checkCommit(root, reporter) {
+  let status;
+  try {
+    const result = await execFileAsync("git", ["status", "--porcelain"], {
+      cwd: root,
+      env: { ...process.env, GIT_OPTIONAL_LOCKS: "0" },
+    });
+    status = result.stdout;
+  } catch {
+    reporter.error(
+      "commit.git-unavailable",
+      ".",
+      "Cannot run `git status`; every implementation task must end with an auditable Git commit.",
+      "Initialize Git (or install it) so the task can end with a reviewable, revertable commit.",
+    );
+    return;
+  }
+  const lines = status.split("\n").filter((line) => line.trim() !== "");
+  if (lines.length > 0) {
+    const preview = lines.slice(0, 10).join("; ");
+    reporter.error(
+      "commit.uncommitted-changes",
+      ".",
+      `Working tree has ${lines.length} uncommitted change(s): ${preview}${lines.length > 10 ? "; …" : ""}`,
+      "Stage only files or hunks belonging to the current task, commit with a descriptive message, and report the commit hash to the user.",
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 入口
 // ---------------------------------------------------------------------------
 
@@ -734,6 +772,7 @@ const CHECKS = {
   context: checkContext,
   gates: checkGates,
   evidence: checkEvidence,
+  commit: checkCommit,
 };
 
 async function main(argv) {
@@ -753,7 +792,7 @@ async function main(argv) {
   const command = args[0];
   if (!command || command === "help" || command === "--help" || command === "-h") {
     process.stdout.write(
-      "Usage: node scripts/harness-check.mjs context|gates|evidence|all [--root <dir>]\n" +
+      "Usage: node scripts/harness-check.mjs context|gates|evidence|commit|all [--root <dir>]\n" +
         "Exit codes: 0 pass, 1 issues found, 2 unparseable config or state.\n",
     );
     process.exit(command ? 0 : 2);
@@ -762,7 +801,7 @@ async function main(argv) {
   const modes = command === "all" ? ["context", "gates", "evidence"] : [command];
   for (const mode of modes) {
     if (!CHECKS[mode]) {
-      process.stderr.write(`ERROR harness.unknown-command: unknown command "${command}".\nREPAIR: Use context, gates, evidence or all.\n`);
+      process.stderr.write(`ERROR harness.unknown-command: unknown command "${command}".\nREPAIR: Use context, gates, evidence, commit or all.\n`);
       process.exit(2);
     }
   }

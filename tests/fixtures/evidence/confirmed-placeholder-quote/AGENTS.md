@@ -18,7 +18,8 @@
 - `node scripts/harness-check.mjs context`：校验冷启动六问所需入口和关键占位符。
 - `node scripts/harness-check.mjs gates`：校验阶段状态、文档前置和用户原话证据。
 - `node scripts/harness-check.mjs evidence`：校验 Source Register、契约校验入口、验证入口、验证报告、清理和回退。
-- `node scripts/harness-check.mjs all`：依次运行以上全部。
+- `node scripts/harness-check.mjs commit`：实现任务收尾校验——工作区不得遗留未提交改动。
+- `node scripts/harness-check.mjs all`：依次运行 context、gates、evidence。
 - `node scripts/harness-stage.mjs status`：查看当前阶段、允许的下一阶段和最近一次放行记录。
 - `node scripts/harness-stage.mjs advance --to <stage> --by user --quote "<用户原话>"`：阶段推进的唯一入口。
 
@@ -59,6 +60,7 @@ initialized
 - 验证方式按风险选择：核心逻辑用单测，真实依赖用集成测试，共享接口用契约测试，关键用户路径用 E2E 或实际操作。
 - 验证命令以 `.harness/config.json` 登记为准；静态检查和测试输出必须让 Agent 可读取；失败后在当前会话修复并重跑。
 - 验证后按 `tasks/` 中的验证报告模板记录命令、结果、时间和未覆盖风险，并清理账户、文件、数据库记录等测试数据。
+- 实现任务以一次 Git 提交收尾：只提交当前任务相关文件，运行 `node scripts/harness-check.mjs commit` 确认无遗留改动，并向用户报告提交哈希。
 
 ## 完成标准
 

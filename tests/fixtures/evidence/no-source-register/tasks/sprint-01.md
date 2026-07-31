@@ -17,3 +17,4 @@
 - Uncovered risks: 示例风险
 - Cleanup performed: node scripts/cleanup-test-data.mjs
 - Rollback steps: git revert <commit>
+- 提交哈希：0123abc

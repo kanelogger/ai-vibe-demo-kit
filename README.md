@@ -41,7 +41,8 @@ git diff
 node scripts/harness-check.mjs context   # 冷启动六问所需入口和占位符
 node scripts/harness-check.mjs gates     # 阶段状态、文档前置和用户原话证据
 node scripts/harness-check.mjs evidence  # Source Register、契约校验、验证入口、报告、清理和回退
-node scripts/harness-check.mjs all       # 以上全部
+node scripts/harness-check.mjs commit    # 实现任务收尾：工作区不得遗留未提交改动
+node scripts/harness-check.mjs all       # context、gates、evidence 依次执行
 ```
 
 阶段推进由 `scripts/harness-stage.mjs` 硬门禁控制——它是 `workflow-state.json` 的唯一写入入口，只允许单步推进，每次推进必须携带用户原话并写入可审计的 history 证据链：

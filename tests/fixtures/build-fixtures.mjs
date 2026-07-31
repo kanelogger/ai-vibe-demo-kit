@@ -243,6 +243,7 @@ const SPRINT = `# Sprint 01
 - Uncovered risks: 示例风险
 - Cleanup performed: node scripts/cleanup-test-data.mjs
 - Rollback steps: git revert <commit>
+- 提交哈希：0123abc
 `;
 
 async function writeJson(path, value) {

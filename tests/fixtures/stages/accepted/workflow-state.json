@@ -1,0 +1,58 @@
+{
+  "stage": "accepted",
+  "allowedNextStages": [],
+  "currentStageDoc": "workflow/acceptance.md",
+  "lastConfirmedDoc": "workflow/acceptance.md",
+  "confirmation": null,
+  "selection": null,
+  "history": [
+    {
+      "from": "initialized",
+      "to": "requirements-draft",
+      "advancedBy": "user",
+      "advancedAt": "2026-07-31T00:00:00Z",
+      "quote": "用户原话：放行 requirements-draft",
+      "doc": "workflow/requirements.md"
+    },
+    {
+      "from": "requirements-draft",
+      "to": "requirements-confirmed",
+      "advancedBy": "user",
+      "advancedAt": "2026-07-31T01:00:00Z",
+      "quote": "用户原话：放行 requirements-confirmed",
+      "doc": "workflow/requirements.md"
+    },
+    {
+      "from": "requirements-confirmed",
+      "to": "solution-options",
+      "advancedBy": "user",
+      "advancedAt": "2026-07-31T02:00:00Z",
+      "quote": "用户原话：放行 solution-options",
+      "doc": "workflow/solution-options.md"
+    },
+    {
+      "from": "solution-options",
+      "to": "solution-selected",
+      "advancedBy": "user",
+      "advancedAt": "2026-07-31T03:00:00Z",
+      "quote": "用户原话：放行 solution-selected",
+      "doc": "workflow/solution-selected.md"
+    },
+    {
+      "from": "solution-selected",
+      "to": "implementation-ready",
+      "advancedBy": "user",
+      "advancedAt": "2026-07-31T04:00:00Z",
+      "quote": "用户原话：放行 implementation-ready",
+      "doc": "workflow/implementation-ready.md"
+    },
+    {
+      "from": "implementation-ready",
+      "to": "accepted",
+      "advancedBy": "user",
+      "advancedAt": "2026-07-31T05:00:00Z",
+      "quote": "用户原话：放行 accepted",
+      "doc": "workflow/acceptance.md"
+    }
+  ]
+}

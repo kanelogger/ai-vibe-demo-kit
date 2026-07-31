@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "project": {
+    "name": "fixture-project",
+    "summary": "A small fixture project used to verify the harness checker.",
+    "hasUserInterface": true
+  },
+  "commands": {
+    "quick": {
+      "static": [
+        "node --check src/index.js"
+      ],
+      "test": [
+        "node --test tests/"
+      ]
+    },
+    "full": {
+      "static": [],
+      "test": []
+    },
+    "contracts": [
+      "node tests/contract/check-contracts.mjs"
+    ]
+  },
+  "criticalUserPaths": [
+    {
+      "id": "main-flow",
+      "description": "主界面关键路径",
+      "verify": "node scripts/verify-main-flow.mjs"
+    }
+  ],
+  "recovery": {
+    "testDataCleanup": [
+      "node scripts/cleanup-test-data.mjs"
+    ],
+    "rollback": [
+      "git revert <commit>"
+    ]
+  }
+}

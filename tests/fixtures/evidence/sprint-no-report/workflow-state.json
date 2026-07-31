@@ -1,6 +1,8 @@
 {
   "stage": "implementation-ready",
-  "allowedNextStages": [],
+  "allowedNextStages": [
+    "accepted"
+  ],
   "currentStageDoc": "workflow/implementation-ready.md",
   "lastConfirmedDoc": "workflow/implementation-ready.md",
   "confirmation": null,

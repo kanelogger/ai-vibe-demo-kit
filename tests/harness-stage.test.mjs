@@ -142,6 +142,80 @@ test("advance: solution-selected 推进同步 selection 指针", async () => {
   }
 });
 
+test("advance: UI 项目推进 design-confirmed 写入确认证据", async () => {
+  const root = await mutableCopy("stages/requirements-confirmed");
+  try {
+    // 模拟 UI 项目：config 声明 UI，状态文件的允许转换与之一致。
+    const configPath = join(root, ".harness", "config.json");
+    const config = JSON.parse(await readFile(configPath, "utf8"));
+    config.project.hasUserInterface = true;
+    await writeFile(configPath, JSON.stringify(config, null, 2), "utf8");
+    const state = await readState(root);
+    state.allowedNextStages = ["design-confirmed"];
+    await writeFile(join(root, "workflow-state.json"), JSON.stringify(state, null, 2), "utf8");
+    await cp(join(fixturesRoot, "stages", "design-confirmed", "workflow", "design.md"), join(root, "workflow", "design.md"));
+
+    const result = runStage(root, ["advance", "--to", "design-confirmed", "--by", "user", "--quote", "设计稿就按这个来"]);
+    assert.equal(result.code, 0, result.stdout + result.stderr);
+    const next = await readState(root);
+    assert.equal(next.stage, "design-confirmed");
+    assert.deepEqual(next.allowedNextStages, ["solution-options"]);
+    assert.equal(next.lastConfirmedDoc, "workflow/design.md");
+    assert.equal(next.confirmation.quote, "设计稿就按这个来");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("advance: 非 UI 项目不得进入 design-confirmed", async () => {
+  const root = await mutableCopy("stages/requirements-confirmed");
+  try {
+    await cp(join(fixturesRoot, "stages", "design-confirmed", "workflow", "design.md"), join(root, "workflow", "design.md"));
+    const result = runStage(root, ["advance", "--to", "design-confirmed", "--quote", "设计稿就按这个来"]);
+    assert.equal(result.code, 1, result.stdout);
+    assert.match(result.stdout, /^ERROR stage\.not-allowed /m);
+    assert.equal((await readState(root)).stage, "requirements-confirmed");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("advance: UI 项目缺设计文档被拒绝", async () => {
+  const root = await mutableCopy("stages/requirements-confirmed");
+  try {
+    const configPath = join(root, ".harness", "config.json");
+    const config = JSON.parse(await readFile(configPath, "utf8"));
+    config.project.hasUserInterface = true;
+    await writeFile(configPath, JSON.stringify(config, null, 2), "utf8");
+    const state = await readState(root);
+    state.allowedNextStages = ["design-confirmed"];
+    await writeFile(join(root, "workflow-state.json"), JSON.stringify(state, null, 2), "utf8");
+    const result = runStage(root, ["advance", "--to", "design-confirmed", "--quote", "设计稿就按这个来"]);
+    assert.equal(result.code, 1, result.stdout);
+    assert.match(result.stdout, /^ERROR stage\.doc-missing workflow\/design\.md/m);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("advance: implementation-ready 推进 accepted 写入验收证据", async () => {
+  const root = await mutableCopy("stages/implementation-ready");
+  try {
+    await cp(join(fixturesRoot, "stages", "accepted", "workflow", "acceptance.md"), join(root, "workflow", "acceptance.md"));
+    const result = runStage(root, ["advance", "--to", "accepted", "--by", "user", "--quote", "验收通过"]);
+    assert.equal(result.code, 0, result.stdout + result.stderr);
+    const state = await readState(root);
+    assert.equal(state.stage, "accepted");
+    assert.deepEqual(state.allowedNextStages, []);
+    assert.equal(state.lastConfirmedDoc, "workflow/acceptance.md");
+    assert.equal(state.confirmation.quote, "验收通过");
+    const last = state.history[state.history.length - 1];
+    assert.equal(last.doc, "workflow/acceptance.md");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("usage: 未知命令退出码 2", () => {
   const root = join(fixturesRoot, "stages", "initialized");
   const result = runStage(root, ["frobnicate"]);

@@ -22,32 +22,55 @@ const STAGES = [
   "initialized",
   "requirements-draft",
   "requirements-confirmed",
+  "design-confirmed",
   "solution-options",
   "solution-selected",
   "implementation-ready",
+  "accepted",
 ];
 
+// requirements-confirmed 的下一步由 .harness/config.json 的 project.hasUserInterface 决定：
+// UI 项目必须先经过 design-confirmed，非 UI 项目直接进入 solution-options。
 const NEXT_STAGE = {
   initialized: ["requirements-draft"],
   "requirements-draft": ["requirements-confirmed"],
-  "requirements-confirmed": ["solution-options"],
+  "design-confirmed": ["solution-options"],
   "solution-options": ["solution-selected"],
   "solution-selected": ["implementation-ready"],
-  "implementation-ready": [],
+  "implementation-ready": ["accepted"],
+  accepted: [],
 };
+
+function nextStages(stage, hasUi) {
+  if (stage === "requirements-confirmed") return hasUi ? ["design-confirmed"] : ["solution-options"];
+  return NEXT_STAGE[stage] ?? [];
+}
+
+async function readHasUserInterface(root) {
+  try {
+    const config = JSON.parse(await readFile(join(root, ".harness", "config.json"), "utf8"));
+    return config?.project?.hasUserInterface === true;
+  } catch {
+    return false;
+  }
+}
 
 const STAGE_DOC = {
   "requirements-draft": "workflow/requirements.md",
   "requirements-confirmed": "workflow/requirements.md",
+  "design-confirmed": "workflow/design.md",
   "solution-options": "workflow/solution-options.md",
   "solution-selected": "workflow/solution-selected.md",
   "implementation-ready": "workflow/implementation-ready.md",
+  accepted: "workflow/acceptance.md",
 };
 
 // 推进到这些阶段时同步更新确认/选定指针，保持状态机内部一致。
 const CONFIRMED_DOC = {
   "requirements-confirmed": "workflow/requirements.md",
+  "design-confirmed": "workflow/design.md",
   "implementation-ready": "workflow/implementation-ready.md",
+  accepted: "workflow/acceptance.md",
 };
 
 function fail(id, path, problem, repair, code = 1) {
@@ -158,7 +181,8 @@ async function cmdAdvance(root, options) {
   }
 
   // 状态文件被手改过时拒绝推进：转换表以本命令内置状态机为准。
-  const expected = NEXT_STAGE[state.stage];
+  const hasUi = await readHasUserInterface(root);
+  const expected = nextStages(state.stage, hasUi);
   if (!Array.isArray(state.allowedNextStages) || JSON.stringify(state.allowedNextStages) !== JSON.stringify(expected)) {
     fail(
       "stage.state-drifted",
@@ -193,7 +217,7 @@ async function cmdAdvance(root, options) {
   const next = {
     ...state,
     stage: target,
-    allowedNextStages: NEXT_STAGE[target],
+    allowedNextStages: nextStages(target, hasUi),
     currentStageDoc: doc ?? null,
     lastConfirmedDoc: CONFIRMED_DOC[target] ?? state.lastConfirmedDoc ?? null,
     history: [...(Array.isArray(state.history) ? state.history : []), entry],

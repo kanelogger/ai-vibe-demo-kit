@@ -36,32 +36,61 @@ const CONFIG = {
   },
 };
 
+const UI_CONFIG = structuredClone(CONFIG);
+UI_CONFIG.project.hasUserInterface = true;
+UI_CONFIG.criticalUserPaths = [
+  { id: "main-flow", description: "主界面关键路径", verify: "node scripts/verify-main-flow.mjs" },
+];
+
 const STAGES = [
   "initialized",
   "requirements-draft",
   "requirements-confirmed",
+  "design-confirmed",
   "solution-options",
   "solution-selected",
   "implementation-ready",
+  "accepted",
 ];
 
 const NEXT_STAGE = {
   initialized: ["requirements-draft"],
   "requirements-draft": ["requirements-confirmed"],
-  "requirements-confirmed": ["solution-options"],
+  "design-confirmed": ["solution-options"],
   "solution-options": ["solution-selected"],
   "solution-selected": ["implementation-ready"],
-  "implementation-ready": [],
+  "implementation-ready": ["accepted"],
+  accepted: [],
 };
 
-function stateFor(stage) {
-  const order = STAGES.slice(1, STAGES.indexOf(stage) + 1);
+function nextStages(stage, hasUi) {
+  if (stage === "requirements-confirmed") return hasUi ? ["design-confirmed"] : ["solution-options"];
+  return NEXT_STAGE[stage] ?? [];
+}
+
+function chainFor(hasUi) {
+  return [
+    "requirements-draft",
+    "requirements-confirmed",
+    ...(hasUi ? ["design-confirmed"] : []),
+    "solution-options",
+    "solution-selected",
+    "implementation-ready",
+    "accepted",
+  ];
+}
+
+function stateFor(stage, hasUi = false) {
+  const chain = chainFor(hasUi);
+  const order = chain.slice(0, chain.indexOf(stage) + 1);
   const docByTarget = {
     "requirements-draft": "workflow/requirements.md",
     "requirements-confirmed": "workflow/requirements.md",
+    "design-confirmed": "workflow/design.md",
     "solution-options": "workflow/solution-options.md",
     "solution-selected": "workflow/solution-selected.md",
     "implementation-ready": "workflow/implementation-ready.md",
+    accepted: "workflow/acceptance.md",
   };
   let previous = "initialized";
   const history = order.map((target, index) => {
@@ -76,15 +105,20 @@ function stateFor(stage) {
     previous = target;
     return entry;
   });
+  const stageIndex = chain.indexOf(stage);
   const lastConfirmedDoc =
-    STAGES.indexOf(stage) >= STAGES.indexOf("implementation-ready")
-      ? "workflow/implementation-ready.md"
-      : STAGES.indexOf(stage) >= STAGES.indexOf("requirements-confirmed")
-        ? "workflow/requirements.md"
-        : null;
+    stage === "accepted"
+      ? "workflow/acceptance.md"
+      : stageIndex >= chain.indexOf("implementation-ready")
+        ? "workflow/implementation-ready.md"
+        : hasUi && stageIndex >= chain.indexOf("design-confirmed")
+          ? "workflow/design.md"
+          : stageIndex >= chain.indexOf("requirements-confirmed")
+            ? "workflow/requirements.md"
+            : null;
   return {
     stage,
-    allowedNextStages: NEXT_STAGE[stage],
+    allowedNextStages: nextStages(stage, hasUi),
     currentStageDoc: docByTarget[stage] ?? null,
     lastConfirmedDoc,
     confirmation: null,
@@ -217,6 +251,64 @@ confirmationQuote: 用户原话：可以开始实现
 - Rollback: recovery.rollback
 `;
 
+const DESIGN_CONFIRMED = `---
+status: confirmed
+confirmedBy: user
+confirmedAt: 2026-07-31T02:00:00Z
+confirmationQuote: 用户原话：设计稿就按这个来
+---
+# Design Confirmed
+
+## 设计稿位置
+
+| 文件 / 链接 | 版本 | 覆盖范围 |
+| --- | --- | --- |
+| design/main-screen.html | v1 | 主界面 |
+
+## 覆盖的界面与状态
+
+- 页面 / 组件：主界面
+- 权限与可见性：无差异
+- 空态 / 加载 / 错误：空态已定义
+- 禁用与边界状态：无
+
+## Source Register
+
+| Source Type | Location / Quote | Used For | Status |
+| --- | --- | --- | --- |
+| 设计 / 原型 | design/main-screen.html | 可观察目标 | required |
+| User request | workflow/requirements.md | Problem boundary | required |
+`;
+
+const ACCEPTANCE = `---
+status: accepted
+confirmedBy: user
+confirmedAt: 2026-07-31T05:00:00Z
+confirmationQuote: 用户原话：验收通过
+---
+# Acceptance
+
+## 验收范围
+
+- Sprint：tasks/sprint-01.md
+- 交付切片：示例切片
+- 明确的未交付范围：示例非目标
+
+## 验证证据
+
+- Verification Report：tasks/sprint-01.md
+- 关键用户路径证据：无（非 UI 项目）
+- 提交哈希：0123abc
+
+## 未覆盖风险与遗留
+
+示例风险。
+
+## 用户验收原话
+
+> 验收通过
+`;
+
 const BACKLOG = `# Backlog
 
 | ID | Outcome | Source | Status |
@@ -339,13 +431,21 @@ async function makeStageFixture(stage) {
   const root = join(fixturesRoot, "stages", stage);
   await rm(root, { recursive: true, force: true });
   await makeBase(root);
-  await writeJson(join(root, "workflow-state.json"), stateFor(stage));
+  // design-confirmed 阶段夹具走 UI 路径（hasUserInterface: true），其余走非 UI 路径。
+  const hasUi = stage === "design-confirmed";
+  if (hasUi) {
+    await writeJson(join(root, ".harness", "config.json"), UI_CONFIG);
+  }
+  await writeJson(join(root, "workflow-state.json"), stateFor(stage, hasUi));
   const at = (target) => STAGES.indexOf(stage) >= STAGES.indexOf(target);
   if (at("requirements-draft")) {
     await writeFile(join(root, "workflow", "requirements.md"), at("requirements-confirmed") ? REQUIREMENTS_CONFIRMED : REQUIREMENTS_DRAFT, "utf8");
   }
   if (at("requirements-confirmed")) {
     await writeFile(join(root, "tasks", "backlog.md"), BACKLOG, "utf8");
+  }
+  if (hasUi && at("design-confirmed")) {
+    await writeFile(join(root, "workflow", "design.md"), DESIGN_CONFIRMED, "utf8");
   }
   if (at("solution-options")) {
     await writeFile(join(root, "workflow", "solution-options.md"), SOLUTION_OPTIONS, "utf8");
@@ -363,6 +463,9 @@ async function makeStageFixture(stage) {
   if (at("implementation-ready")) {
     await writeFile(join(root, "workflow", "implementation-ready.md"), IMPLEMENTATION_READY, "utf8");
     await writeFile(join(root, "tasks", "sprint-01.md"), SPRINT, "utf8");
+  }
+  if (at("accepted")) {
+    await writeFile(join(root, "workflow", "acceptance.md"), ACCEPTANCE, "utf8");
   }
 }
 
@@ -389,7 +492,7 @@ async function main() {
   await writeFile(join(broken, ".harness", "config.json"), "{ not json", "utf8");
   await writeFile(join(broken, "workflow-state.json"), "{ also not json", "utf8");
 
-  // stages：六个合法阶段各一份。
+  // stages：八个合法阶段各一份（design-confirmed 为 UI 路径，其余为非 UI 路径）。
   for (const stage of STAGES) {
     await makeStageFixture(stage);
   }

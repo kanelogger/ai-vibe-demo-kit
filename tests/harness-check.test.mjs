@@ -122,9 +122,11 @@ const STAGES = [
   "initialized",
   "requirements-draft",
   "requirements-confirmed",
+  "design-confirmed",
   "solution-options",
   "solution-selected",
   "implementation-ready",
+  "accepted",
 ];
 
 for (const stage of STAGES) {
@@ -134,6 +136,21 @@ for (const stage of STAGES) {
     assert.equal(result.code, 0, result.stdout + result.stderr);
   });
 }
+
+test("gates: hasUserInterface 变更导致转换表漂移被发现", async () => {
+  const root = await mutableCopy("stages/requirements-confirmed");
+  try {
+    const configPath = join(root, ".harness", "config.json");
+    const config = JSON.parse(await readFile(configPath, "utf8"));
+    config.project.hasUserInterface = true;
+    await writeFile(configPath, JSON.stringify(config, null, 2), "utf8");
+    const result = runCheck(root, "gates");
+    assert.equal(result.code, 1);
+    assert.ok(errorIds(result.stdout).includes("gates.bad-transitions"), result.stdout);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 test("gates: 手改 allowedNextStages 跳阶段被发现", async () => {
   const root = await mutableCopy("stages/requirements-draft");

@@ -31,16 +31,20 @@
 initialized
 -> requirements-draft
 -> requirements-confirmed
+-> design-confirmed        （仅 .harness/config.json 中 hasUserInterface 为 true 的项目）
 -> solution-options
 -> solution-selected
 -> implementation-ready
+-> accepted
 ```
 
 - `workflow-state.json` 是唯一机器状态源；阶段只通过 `harness-stage.mjs advance` 在用户原话证据后放行，Agent 不得手改状态文件或伪造用户原话。
 - 需求未确认前不得创建方案。
+- UI 项目的设计稿未确认前不得创建方案；UI 问题先回设计稿修改，再由 Agent 比较设计稿变更后更新实现。
 - 用户未选定方案前不得创建实现规格或开始编码。
 - 未进入 `implementation-ready` 前不得实现功能。
-- Agent 不得代替用户确认需求或选择方案；每次放行必须记录用户原话、时间和对应文档，形成可审计的 history 证据链。
+- 验证报告完成、关键用户路径实际运行后，才由用户原话放行进入 `accepted`；Harness 检查通过不等于验收通过。
+- Agent 不得代替用户确认需求、设计、方案或验收；每次放行必须记录用户原话、时间和对应文档，形成可审计的 history 证据链。
 
 ## 上下文闭环
 

@@ -90,6 +90,8 @@ node scripts/harness-stage.mjs advance --to <stage> --by user --quote "<用户�
 
 推进是硬门禁：只允许单步推进，目标阶段文档必须已存在，每次推进必须携带用户原话并写入 `history` 证据链。Agent 不得手改状态文件或伪造原话。推进后运行 `node scripts/harness-check.mjs gates` 复核文档证据。
 
+阶段链：`initialized → requirements-draft → requirements-confirmed → solution-options → solution-selected → implementation-ready → accepted`。`.harness/config.json` 中 `project.hasUserInterface` 为 true 时，`requirements-confirmed` 之后插入 `design-confirmed` 设计确认门禁；非 UI 项目自动跳过。`accepted` 是验收门禁：验证报告和关键用户路径证据完成后由用户原话放行。
+
 ## 契约唯一来源
 
 `SPECS/API.md` 和 `SPECS/DATABASE.md` 是前后端共享的唯一契约来源。任一文件存在时，`.harness/config.json` 的 `commands.contracts` 必须登记机器校验命令；项目没有对应契约时删除该文件并在 config 中写明显式说明。契约只有一份，实现侧引用路径而不复制内容。

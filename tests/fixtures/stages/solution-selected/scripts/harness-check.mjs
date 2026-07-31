@@ -23,26 +23,47 @@ const STAGES = [
   "initialized",
   "requirements-draft",
   "requirements-confirmed",
+  "design-confirmed",
   "solution-options",
   "solution-selected",
   "implementation-ready",
+  "accepted",
 ];
 
+// requirements-confirmed 的下一步由 .harness/config.json 的 project.hasUserInterface 决定：
+// UI 项目必须先经过 design-confirmed，非 UI 项目直接进入 solution-options。
 const NEXT_STAGE = {
   initialized: ["requirements-draft"],
   "requirements-draft": ["requirements-confirmed"],
-  "requirements-confirmed": ["solution-options"],
+  "design-confirmed": ["solution-options"],
   "solution-options": ["solution-selected"],
   "solution-selected": ["implementation-ready"],
-  "implementation-ready": [],
+  "implementation-ready": ["accepted"],
+  accepted: [],
 };
+
+function nextStages(stage, hasUi) {
+  if (stage === "requirements-confirmed") return hasUi ? ["design-confirmed"] : ["solution-options"];
+  return NEXT_STAGE[stage] ?? [];
+}
+
+async function readHasUserInterface(root) {
+  try {
+    const config = JSON.parse(await readFile(join(root, ".harness", "config.json"), "utf8"));
+    return config?.project?.hasUserInterface === true;
+  } catch {
+    return false;
+  }
+}
 
 const STAGE_DOC = {
   "requirements-draft": "workflow/requirements.md",
   "requirements-confirmed": "workflow/requirements.md",
+  "design-confirmed": "workflow/design.md",
   "solution-options": "workflow/solution-options.md",
   "solution-selected": "workflow/solution-selected.md",
   "implementation-ready": "workflow/implementation-ready.md",
+  accepted: "workflow/acceptance.md",
 };
 
 const HISTORY_FIELDS = ["from", "to", "advancedBy", "advancedAt", "quote", "doc"];
@@ -56,9 +77,11 @@ const CONTROL_PATHS = [
   ".agents/skills.json",
   "workflow/README.md",
   "workflow/requirements.template.md",
+  "workflow/design.template.md",
   "workflow/solution-options.template.md",
   "workflow/solution-selected.template.md",
   "workflow/implementation-ready.template.md",
+  "workflow/acceptance.template.md",
   "SPECS/README.md",
   "SPECS/ARCHITECTURE.md",
   "SPECS/FEATURES",
@@ -221,13 +244,15 @@ function parseFrontmatter(content) {
   return parseSimpleYaml(content.slice(4, end));
 }
 
-function allowedWorkflowFiles(stage) {
+function allowedWorkflowFiles(stage, hasUi) {
   const files = [];
   if (stageIndex(stage) >= stageIndex("requirements-draft")) files.push("workflow/requirements.md");
+  if (hasUi && stageIndex(stage) >= stageIndex("design-confirmed")) files.push("workflow/design.md");
   if (stageIndex(stage) >= stageIndex("solution-options")) files.push("workflow/solution-options.md");
   if (stageIndex(stage) >= stageIndex("solution-selected")) files.push("workflow/solution-selected.md");
   if (stageIndex(stage) >= stageIndex("implementation-ready")) files.push("workflow/implementation-ready.md");
-  for (const target of NEXT_STAGE[stage]) {
+  if (stageIndex(stage) >= stageIndex("accepted")) files.push("workflow/acceptance.md");
+  for (const target of nextStages(stage, hasUi)) {
     if (target !== "initialized") files.push(STAGE_DOC[target]);
   }
   return new Set(files);
@@ -393,13 +418,14 @@ async function checkGates(root, reporter) {
     return;
   }
   const stage = state.stage;
+  const hasUi = await readHasUserInterface(root);
 
   // 状态机一致性：允许转换必须与当前阶段匹配；仅改布尔值无法绕过。
-  if (!sameArray(state.allowedNextStages, NEXT_STAGE[stage])) {
+  if (!sameArray(state.allowedNextStages, nextStages(stage, hasUi))) {
     reporter.error(
       "gates.bad-transitions",
       "workflow-state.json",
-      `allowedNextStages must be ${JSON.stringify(NEXT_STAGE[stage])} for stage "${stage}".`,
+      `allowedNextStages must be ${JSON.stringify(nextStages(stage, hasUi))} for stage "${stage}".`,
       "Restore allowedNextStages from the transition table; stages advance only via node scripts/harness-stage.mjs advance --quote \"<用户原话>\".",
     );
   }
@@ -425,7 +451,7 @@ async function checkGates(root, reporter) {
   // 当前阶段以后的产物不得提前存在。
   const workflowRoot = join(root, "workflow");
   if (await exists(workflowRoot)) {
-    const allowed = allowedWorkflowFiles(stage);
+    const allowed = allowedWorkflowFiles(stage, hasUi);
     for (const entry of await readdir(workflowRoot)) {
       if (!entry.endsWith(".md") || entry === "README.md" || entry.endsWith(".template.md")) continue;
       const rel = `workflow/${entry}`;
@@ -457,8 +483,10 @@ async function checkGates(root, reporter) {
   if (stageIndex(stage) < stageIndex("implementation-ready") && sprintFiles.length > 0) {
     reporter.error("gates.task-timing", `tasks/${sprintFiles[0]}`, "Sprint plan is created too early.", "Create sprint plans only at implementation-ready.");
   }
-  if (stage === "implementation-ready" && sprintFiles.length === 0) {
-    reporter.error("gates.task-timing", "tasks/sprint-01.md", "A sprint plan is required at implementation-ready.", "Create tasks/sprint-01.md from tasks/sprint.template.md using the selected solution.");
+  if (stage === "implementation-ready" || stage === "accepted") {
+    if (sprintFiles.length === 0) {
+      reporter.error("gates.task-timing", "tasks/sprint-01.md", "A sprint plan is required from implementation-ready onward.", "Create tasks/sprint-01.md from tasks/sprint.template.md using the selected solution.");
+    }
   }
 
   // 当前阶段文档的 frontmatter 证据。
@@ -481,6 +509,22 @@ async function checkGates(root, reporter) {
           "workflow-state.json",
           "lastConfirmedDoc must point to workflow/requirements.md.",
           "Re-record the requirements confirmation with the user quote, time, and doc reference.",
+        );
+      }
+      break;
+    case "design-confirmed":
+      await requireFrontmatter(
+        root,
+        "workflow/design.md",
+        { status: "confirmed", fields: ["confirmedBy", "confirmedAt", "confirmationQuote"] },
+        reporter,
+      );
+      if (state.lastConfirmedDoc !== "workflow/design.md") {
+        reporter.error(
+          "gates.state-doc-mismatch",
+          "workflow-state.json",
+          "lastConfirmedDoc must point to workflow/design.md.",
+          "Re-record the design confirmation with the user quote, time, and doc reference.",
         );
       }
       break;
@@ -545,6 +589,22 @@ async function checkGates(root, reporter) {
           "workflow-state.json",
           "lastConfirmedDoc must point to workflow/implementation-ready.md.",
           "Re-record the implementation release with the user quote, time, and doc reference.",
+        );
+      }
+      break;
+    case "accepted":
+      await requireFrontmatter(
+        root,
+        "workflow/acceptance.md",
+        { status: "accepted", fields: ["confirmedBy", "confirmedAt", "confirmationQuote"] },
+        reporter,
+      );
+      if (state.lastConfirmedDoc !== "workflow/acceptance.md") {
+        reporter.error(
+          "gates.state-doc-mismatch",
+          "workflow-state.json",
+          "lastConfirmedDoc must point to workflow/acceptance.md.",
+          "Re-record the acceptance with the user quote, time, and doc reference.",
         );
       }
       break;
@@ -664,7 +724,7 @@ async function checkEvidence(root, reporter) {
   }
 
   // 4. Source Register：当前需求、方案、实现放行文档和 feature spec 都必须维护。
-  const sourceRegisterDocs = ["workflow/requirements.md", "workflow/solution-options.md", "workflow/implementation-ready.md"];
+  const sourceRegisterDocs = ["workflow/requirements.md", "workflow/design.md", "workflow/solution-options.md", "workflow/implementation-ready.md"];
   const featuresRoot = join(root, "SPECS", "FEATURES");
   if (await exists(featuresRoot)) {
     for (const entry of await readdir(featuresRoot, { withFileTypes: true })) {

@@ -2,9 +2,9 @@
 // harness-check.mjs — AI Native Harness Overlay 的项目本地检查器。
 // 只读、零第三方依赖。不创建文档、不修改状态、不推进阶段、不判断语义质量。
 //
-// 用法:
 //   node scripts/harness-check.mjs context|gates|evidence|commit|all [--root <dir>]
-// commit 模式用于实现任务收尾：校验工作区无遗留未提交改动，不包含在 all 中。
+//   node scripts/harness-check.mjs preflight --state-file <candidate.json> [--root <dir>]
+// preflight 由 harness-stage 调用：对候选状态运行 context、gates 和 evidence，不修改正式状态。
 //
 // 输出（Agent 可直接读取）:
 //   ERROR <check-id> <path>: <problem>
@@ -18,6 +18,14 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  VERIFICATION_REPORT_VERSION,
+  commandPlan,
+  createWorkspaceFingerprint,
+  isSafeRelativePath,
+  sha256,
+  verificationSettings,
+} from "./harness-runtime.mjs";
 
 const STAGES = [
   "initialized",
@@ -97,7 +105,9 @@ const CONTROL_PATHS = [
   "rules/security.md",
   "rules/git.md",
   "scripts/harness-check.mjs",
+  "scripts/harness-runtime.mjs",
   "scripts/harness-stage.mjs",
+  "scripts/harness-verify.mjs",
 ];
 
 const PLACEHOLDER_SCAN_FILES = [
@@ -403,8 +413,9 @@ async function checkContext(root, reporter) {
 // gates：阶段状态、文档前置和用户原话证据
 // ---------------------------------------------------------------------------
 
-async function checkGates(root, reporter) {
-  const stateResult = await readJson(root, "workflow-state.json", reporter, "gates.state-invalid-json");
+async function checkGates(root, reporter, options = {}) {
+  const stateRel = options.stateFile ?? "workflow-state.json";
+  const stateResult = await readJson(root, stateRel, reporter, "gates.state-invalid-json");
   if (!stateResult.ok) return;
   const state = stateResult.value;
 
@@ -496,13 +507,14 @@ async function checkGates(root, reporter) {
     case "requirements-draft":
       await requireFrontmatter(root, "workflow/requirements.md", { status: "draft" }, reporter);
       break;
-    case "requirements-confirmed":
-      await requireFrontmatter(
+    case "requirements-confirmed": {
+      const meta = await requireFrontmatter(
         root,
         "workflow/requirements.md",
         { status: "confirmed", fields: ["confirmedBy", "confirmedAt", "confirmationQuote"] },
         reporter,
       );
+      requireReleaseMatch(meta, state, "workflow/requirements.md", "confirmation", { by: "confirmedBy", at: "confirmedAt", quote: "confirmationQuote" }, reporter);
       if (state.lastConfirmedDoc !== "workflow/requirements.md") {
         reporter.error(
           "gates.state-doc-mismatch",
@@ -512,13 +524,24 @@ async function checkGates(root, reporter) {
         );
       }
       break;
-    case "design-confirmed":
-      await requireFrontmatter(
+    }
+    case "design-confirmed": {
+      const meta = await requireFrontmatter(
         root,
         "workflow/design.md",
-        { status: "confirmed", fields: ["confirmedBy", "confirmedAt", "confirmationQuote"] },
+        { status: "confirmed", fields: ["confirmedBy", "confirmedAt", "confirmationQuote", "prototypeCommand", "prototypeEvidence"] },
         reporter,
       );
+      requireReleaseMatch(meta, state, "workflow/design.md", "confirmation", { by: "confirmedBy", at: "confirmedAt", quote: "confirmationQuote" }, reporter);
+      if (!meta || !Array.isArray(meta.prototypePaths) || meta.prototypePaths.length === 0 || !meta.prototypePaths.every(isSafeRelativePath)) {
+        reporter.error("gates.prototype-paths-missing", "workflow/design.md", "prototypePaths must list safe repository-relative runnable prototype files.", "Register the HTML/CSS/component/mock-data artifacts used for design confirmation.");
+      } else {
+        for (const path of [...meta.prototypePaths, meta.prototypeEvidence]) {
+          if (!isSafeRelativePath(path) || !(await exists(join(root, path)))) {
+            reporter.error("gates.prototype-evidence-missing", "workflow/design.md", `Executable prototype evidence is missing: ${path}`, "Create the registered prototype artifact or evidence file before design confirmation.");
+          }
+        }
+      }
       if (state.lastConfirmedDoc !== "workflow/design.md") {
         reporter.error(
           "gates.state-doc-mismatch",
@@ -528,6 +551,7 @@ async function checkGates(root, reporter) {
         );
       }
       break;
+    }
     case "solution-options": {
       const meta = await requireFrontmatter(root, "workflow/solution-options.md", { status: "proposed" }, reporter);
       if (meta && (!Array.isArray(meta.optionIds) || meta.optionIds.length !== 3)) {
@@ -547,6 +571,7 @@ async function checkGates(root, reporter) {
         { status: "selected", fields: ["selectionType", "selectedOptionId", "selectedBy", "selectedAt", "selectionQuote"] },
         reporter,
       );
+      requireReleaseMatch(meta, state, "workflow/solution-selected.md", "selection", { by: "selectedBy", at: "selectedAt", quote: "selectionQuote" }, reporter);
       if (meta && meta.selectionType !== "option" && meta.selectionType !== "custom") {
         reporter.error(
           "gates.bad-selection-type",
@@ -576,13 +601,14 @@ async function checkGates(root, reporter) {
       }
       break;
     }
-    case "implementation-ready":
-      await requireFrontmatter(
+    case "implementation-ready": {
+      const meta = await requireFrontmatter(
         root,
         "workflow/implementation-ready.md",
         { status: "ready", fields: ["confirmedBy", "confirmedAt", "confirmationQuote"] },
         reporter,
       );
+      requireReleaseMatch(meta, state, "workflow/implementation-ready.md", "confirmation", { by: "confirmedBy", at: "confirmedAt", quote: "confirmationQuote" }, reporter);
       if (state.lastConfirmedDoc !== "workflow/implementation-ready.md") {
         reporter.error(
           "gates.state-doc-mismatch",
@@ -592,13 +618,15 @@ async function checkGates(root, reporter) {
         );
       }
       break;
-    case "accepted":
-      await requireFrontmatter(
+    }
+    case "accepted": {
+      const meta = await requireFrontmatter(
         root,
         "workflow/acceptance.md",
         { status: "accepted", fields: ["confirmedBy", "confirmedAt", "confirmationQuote"] },
         reporter,
       );
+      requireReleaseMatch(meta, state, "workflow/acceptance.md", "confirmation", { by: "confirmedBy", at: "confirmedAt", quote: "confirmationQuote" }, reporter);
       if (state.lastConfirmedDoc !== "workflow/acceptance.md") {
         reporter.error(
           "gates.state-doc-mismatch",
@@ -608,6 +636,7 @@ async function checkGates(root, reporter) {
         );
       }
       break;
+    }
   }
 }
 
@@ -640,90 +669,253 @@ async function requireFrontmatter(root, rel, required, reporter) {
   return meta;
 }
 
+function requireReleaseMatch(meta, state, rel, recordName, fields, reporter) {
+  if (!meta) return;
+  const record = state[recordName];
+  const latest = Array.isArray(state.history) ? state.history[state.history.length - 1] : null;
+  const validTime = !Number.isNaN(Date.parse(meta[fields.at]));
+  const matches =
+    isRecord(record) &&
+    record.doc === rel &&
+    record.by === meta[fields.by] &&
+    record.quote === meta[fields.quote] &&
+    latest?.to === state.stage &&
+    latest.doc === rel &&
+    latest.advancedBy === record.by &&
+    latest.quote === record.quote;
+  if (!matches || !validTime) {
+    reporter.error(
+      "gates.release-evidence-mismatch",
+      rel,
+      "Frontmatter, state release record and latest history entry must describe the same user release.",
+      "Use the same user, original quote and document in frontmatter and harness-stage --by/--quote; confirmed/selected time must be valid.",
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // evidence：执行闭环的可审计入口
 // ---------------------------------------------------------------------------
 
-async function checkEvidence(root, reporter) {
-  const config = await readJson(root, ".harness/config.json", reporter, "evidence.config-invalid-json");
-  const configValue = config.ok && isRecord(config.value) ? config.value : null;
+function isValidUserPath(entry) {
+  if (!isRecord(entry) || !isNonEmptyString(entry.id) || !isNonEmptyString(entry.description) || !isRecord(entry.verify)) return false;
+  if (entry.verify.mode === "command") return isNonEmptyString(entry.verify.command);
+  return entry.verify.mode === "manual" && isNonEmptyString(entry.verify.instructions) && isSafeRelativePath(entry.verify.evidence);
+}
 
-  // 1. 验证入口：至少登记静态检查和测试命令（级别随项目声明变化，不强制浏览器 E2E）。
-  if (configValue) {
-    const commands = isRecord(configValue.commands) ? configValue.commands : {};
-    const quick = isRecord(commands.quick) ? commands.quick : {};
-    const full = isRecord(commands.full) ? commands.full : {};
-    const hasStatic = [quick.static, full.static].some((list) => Array.isArray(list) && list.some(isNonEmptyString));
-    const hasTest = [quick.test, full.test].some((list) => Array.isArray(list) && list.some(isNonEmptyString));
-    if (!hasStatic || !hasTest) {
+function isValidCleanup(entry) {
+  if (!isRecord(entry)) return false;
+  if (entry.mode === "command") return isNonEmptyString(entry.command);
+  return entry.mode === "none" && isNonEmptyString(entry.reason);
+}
+
+function reportField(content, label) {
+  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return content.match(new RegExp(`^- ${escaped}:[ \\t]*(.*)$`, "m"));
+}
+
+async function validateAcceptedReport(root, reporter, configValue, configRaw, options, contractSources) {
+  const settings = verificationSettings(configValue);
+  const reportPath = settings.reportPath;
+  if (!isSafeRelativePath(reportPath)) return;
+  const reportResult = await readJson(root, reportPath, reporter, "evidence.verification-report-invalid");
+  if (!reportResult.ok || !isRecord(reportResult.value)) return;
+  const report = reportResult.value;
+  if (!isNonEmptyString(report.reportId) || report.reportPath !== reportPath || report.project !== configValue.project?.name) {
+    reporter.error(
+      "evidence.verification-report-identity-invalid",
+      reportPath,
+      "Verification report id, path and project must match the current project configuration.",
+      "Regenerate the report with node scripts/harness-verify.mjs full.",
+    );
+  }
+  if (report.version !== VERIFICATION_REPORT_VERSION || report.status !== "passed" || report.profile !== "full" || report.sourceStage !== "implementation-ready") {
+    reporter.error(
+      "evidence.verification-report-not-passed",
+      reportPath,
+      "Accepted requires a version-1, full, passed report produced from implementation-ready.",
+      "Run node scripts/harness-verify.mjs full at implementation-ready and resolve every failed check before acceptance.",
+    );
+  }
+  if (report.configSha256 !== sha256(configRaw)) {
+    reporter.error(
+      "evidence.verification-report-stale-config",
+      reportPath,
+      "Verification report does not match the current .harness/config.json.",
+      "Re-run node scripts/harness-verify.mjs full after the configuration change.",
+    );
+  }
+  const generatedAt = Date.parse(report.generatedAt);
+  const ageMs = Date.now() - generatedAt;
+  if (!Number.isFinite(generatedAt) || ageMs < -300_000 || ageMs > settings.maxAgeHours * 3_600_000) {
+    reporter.error(
+      "evidence.verification-report-stale",
+      reportPath,
+      `Verification report must be current within ${settings.maxAgeHours} hour(s).`,
+      "Re-run node scripts/harness-verify.mjs full immediately before acceptance.",
+    );
+  }
+
+  const expectedChecks = commandPlan(configValue, "full", contractSources.length > 0);
+  const checks = Array.isArray(report.checks) ? report.checks : [];
+  for (const expected of expectedChecks) {
+    if (!checks.some((item) => isRecord(item) && item.kind === expected.kind && item.command === expected.command && item.status === "passed")) {
       reporter.error(
-        "evidence.commands-missing",
-        ".harness/config.json",
-        "Static-check and test commands must be registered for the execution loop to be auditable.",
-        "Register the project's real static-check and test commands under commands.quick in .harness/config.json.",
+        "evidence.verification-command-not-passed",
+        reportPath,
+        `No passing result for ${expected.kind} command: ${expected.command}`,
+        "Re-run the full verifier with the current command registry and fix the failing command.",
       );
     }
-
-    // 1b. 契约校验：唯一契约来源存在时必须登记机器校验命令（或显式缺口说明）。
-    const contractSources = [];
-    for (const rel of CONTRACT_SOURCE_FILES) {
-      if (await exists(join(root, rel))) contractSources.push(rel);
-    }
-    if (contractSources.length > 0) {
-      const contracts = Array.isArray(commands.contracts) ? commands.contracts : [];
-      if (!contracts.some(isNonEmptyString)) {
-        reporter.error(
-          "evidence.contracts-missing",
-          ".harness/config.json",
-          `${contractSources.join(" and ")} exists but commands.contracts registers no contract check.`,
-          "Register the project's real contract-check command under commands.contracts in .harness/config.json, or record an explicit no-contract statement with a reason.",
-        );
-      }
-    }
-
-    // 2. 关键用户路径：声明了 UI 或已登记条目时必须完整；未声明 UI 的项目不强制。
-    const hasUi = configValue.project && configValue.project.hasUserInterface === true;
-    const paths = Array.isArray(configValue.criticalUserPaths) ? configValue.criticalUserPaths : [];
-    if (hasUi && paths.length === 0) {
+  }
+  const pathResults = Array.isArray(report.criticalUserPaths) ? report.criticalUserPaths : [];
+  for (const path of configValue.criticalUserPaths ?? []) {
+    if (!pathResults.some((item) => isRecord(item) && item.id === path.id && item.status === "passed")) {
       reporter.error(
-        "evidence.user-path-missing",
-        ".harness/config.json",
-        "project.hasUserInterface is true but no criticalUserPaths are registered.",
-        "Register each critical user path as { id, description, verify } in .harness/config.json.",
+        "evidence.user-path-not-passed",
+        reportPath,
+        `Critical user path "${path.id}" has no passing evidence.`,
+        "Run the configured command or provide the configured manual evidence artifact, then re-run full verification.",
       );
     }
-    for (const [index, entry] of paths.entries()) {
-      if (!isRecord(entry) || !isNonEmptyString(entry.id) || !isNonEmptyString(entry.description) || !isNonEmptyString(entry.verify)) {
-        reporter.error(
-          "evidence.user-path-incomplete",
-          ".harness/config.json",
-          `criticalUserPaths[${index}] must have non-empty id, description and verify.`,
-          "Complete the critical user path entry with a deterministic verify command or procedure.",
-        );
-      }
-    }
-
-    // 3. 清理和回退入口。
-    const recovery = isRecord(configValue.recovery) ? configValue.recovery : {};
-    if (!Array.isArray(recovery.testDataCleanup) || !recovery.testDataCleanup.some(isNonEmptyString)) {
+  }
+  const cleanupResults = Array.isArray(report.cleanup) ? report.cleanup : [];
+  for (const cleanup of configValue.recovery?.testDataCleanup ?? []) {
+    const matched = cleanupResults.some((item) => {
+      if (!isRecord(item) || item.mode !== cleanup.mode || item.status !== "passed") return false;
+      return cleanup.mode === "none" ? item.reason === cleanup.reason : item.command === cleanup.command;
+    });
+    if (!matched) {
       reporter.error(
-        "evidence.cleanup-missing",
-        ".harness/config.json",
-        "recovery.testDataCleanup must list cleanup commands or an explicit no-cleanup statement.",
-        "Register test-data cleanup commands, or an explicit entry explaining why no cleanup is needed.",
-      );
-    }
-    if (!Array.isArray(recovery.rollback) || !recovery.rollback.some(isNonEmptyString)) {
-      reporter.error(
-        "evidence.rollback-missing",
-        ".harness/config.json",
-        "recovery.rollback must list rollback steps or an explicit statement.",
-        "Register rollback commands or steps in .harness/config.json.",
+        "evidence.cleanup-not-passed",
+        reportPath,
+        "Configured test-data cleanup has no passing result.",
+        "Fix and re-run the configured cleanup through node scripts/harness-verify.mjs full.",
       );
     }
   }
 
-  // 4. Source Register：当前需求、方案、实现放行文档和 feature spec 都必须维护。
+  if (!isSafeRelativePath(report.sprint) || !(await exists(join(root, report.sprint)))) {
+    reporter.error("evidence.report-sprint-missing", reportPath, "Verification report does not reference an existing sprint.", "Set report.sprint to the verified tasks/sprint-*.md document.");
+  }
+  const acceptancePath = "workflow/acceptance.md";
+  if (await exists(join(root, acceptancePath))) {
+    const acceptance = await readText(root, acceptancePath);
+    if (!acceptance.includes(reportPath) || !acceptance.includes(report.reportId ?? "")) {
+      reporter.error(
+        "evidence.acceptance-report-mismatch",
+        acceptancePath,
+        "Acceptance does not reference the current machine report path and report id.",
+        `Reference ${reportPath}#${report.reportId} in the acceptance evidence section.`,
+      );
+    }
+  }
+
+  if (settings.workspaceFingerprint === "git") {
+    try {
+      const exclusions = [reportPath, report.sprint, acceptancePath, "workflow-state.json", options.stateFile].filter(Boolean);
+      const current = await createWorkspaceFingerprint(root, exclusions);
+      if (!isRecord(report.workspace) || report.workspace.sha256 !== current.sha256 || report.workspace.head !== current.head) {
+        reporter.error(
+          "evidence.verification-report-stale-workspace",
+          reportPath,
+          "Project files changed after verification.",
+          "Re-run node scripts/harness-verify.mjs full on the current workspace before acceptance.",
+        );
+      }
+    } catch (error) {
+      reporter.error(
+        "evidence.workspace-fingerprint-failed",
+        ".",
+        error instanceof Error ? error.message : String(error),
+        "Restore Git access and re-run full verification, or configure an explicit equivalent audit mode.",
+      );
+    }
+  }
+}
+
+async function checkEvidence(root, reporter, options = {}) {
+  const config = await readJson(root, ".harness/config.json", reporter, "evidence.config-invalid-json");
+  const configValue = config.ok && isRecord(config.value) ? config.value : null;
+  const configRaw = config.ok ? await readText(root, ".harness/config.json") : "";
+  const stateRel = options.stateFile ?? "workflow-state.json";
+  const stateResult = await readJson(root, stateRel, reporter, "evidence.state-invalid-json");
+  const state = stateResult.ok && isRecord(stateResult.value) ? stateResult.value : null;
+  const contractSources = [];
+  for (const rel of CONTRACT_SOURCE_FILES) {
+    if (await exists(join(root, rel))) contractSources.push(rel);
+  }
+
+  if (configValue) {
+    const commands = isRecord(configValue.commands) ? configValue.commands : {};
+    const quick = isRecord(commands.quick) ? commands.quick : {};
+    const full = isRecord(commands.full) ? commands.full : {};
+    const validCommandList = (list, required) => Array.isArray(list) && (!required || list.length > 0) && list.every(isNonEmptyString);
+    if (!validCommandList(quick.static, true) || !validCommandList(quick.test, true) || !validCommandList(full.static, false) || !validCommandList(full.test, false)) {
+      reporter.error(
+        "evidence.commands-missing",
+        ".harness/config.json",
+        "commands.quick requires executable static and test commands; full lists must contain only commands.",
+        "Register real commands under commands.quick; leave full arrays empty to reuse quick.",
+      );
+    }
+    if (contractSources.length > 0 && (!Array.isArray(commands.contracts) || !commands.contracts.some(isNonEmptyString) || !commands.contracts.every(isNonEmptyString))) {
+      reporter.error(
+        "evidence.contracts-missing",
+        ".harness/config.json",
+        `${contractSources.join(" and ")} exists but commands.contracts has no executable contract check.`,
+        "Register the project's real contract-check command, or remove unused contract templates.",
+      );
+    }
+
+    const hasUi = configValue.project && configValue.project.hasUserInterface === true;
+    const paths = Array.isArray(configValue.criticalUserPaths) ? configValue.criticalUserPaths : [];
+    if (hasUi && paths.length === 0) {
+      reporter.error("evidence.user-path-missing", ".harness/config.json", "UI projects require at least one criticalUserPath.", "Register each path with command verification or a repository evidence artifact.");
+    }
+    const pathIds = paths.filter(isRecord).map((entry) => entry.id).filter(isNonEmptyString);
+    if (new Set(pathIds).size !== pathIds.length) {
+      reporter.error("evidence.user-path-duplicate", ".harness/config.json", "criticalUserPaths ids must be unique.", "Assign one stable unique id to every critical user path.");
+    }
+    for (const [index, entry] of paths.entries()) {
+      if (!isValidUserPath(entry)) {
+        reporter.error(
+          "evidence.user-path-incomplete",
+          ".harness/config.json",
+          `criticalUserPaths[${index}] has an invalid verification contract.`,
+          "Use verify { mode: command, command } or { mode: manual, instructions, evidence }.",
+        );
+      }
+    }
+
+    const recovery = isRecord(configValue.recovery) ? configValue.recovery : {};
+    if (!Array.isArray(recovery.testDataCleanup) || recovery.testDataCleanup.length === 0 || !recovery.testDataCleanup.every(isValidCleanup)) {
+      reporter.error(
+        "evidence.cleanup-missing",
+        ".harness/config.json",
+        "recovery.testDataCleanup requires executable command steps or an explicit none reason.",
+        "Use { mode: command, command } or { mode: none, reason }.",
+      );
+    }
+    if (!Array.isArray(recovery.rollback) || !recovery.rollback.some(isNonEmptyString) || !recovery.rollback.every(isNonEmptyString)) {
+      reporter.error("evidence.rollback-missing", ".harness/config.json", "recovery.rollback must list concrete rollback steps.", "Register rollback commands or procedures.");
+    }
+
+    const rawSettings = isRecord(configValue.verification) ? configValue.verification : {};
+    const settings = verificationSettings(configValue);
+    if (!isSafeRelativePath(settings.reportPath) || !(settings.maxAgeHours > 0) || !(settings.commandTimeoutMs > 0) || !["git", "none"].includes(rawSettings.workspaceFingerprint)) {
+      reporter.error(
+        "evidence.verification-config-invalid",
+        ".harness/config.json",
+        "verification requires a safe reportPath, positive maxAgeHours/commandTimeoutMs, and git|none workspaceFingerprint.",
+        "Fill every verification setting; use git unless an equivalent audit mechanism is documented.",
+      );
+    }
+    if (settings.workspaceFingerprint === "none" && !isNonEmptyString(configValue.notes)) {
+      reporter.error("evidence.workspace-audit-missing", ".harness/config.json", "workspaceFingerprint none requires an equivalent audit explanation.", "Document the equivalent source-fingerprint mechanism in notes.");
+    }
+  }
+
   const sourceRegisterDocs = ["workflow/requirements.md", "workflow/design.md", "workflow/solution-options.md", "workflow/implementation-ready.md"];
   const featuresRoot = join(root, "SPECS", "FEATURES");
   if (await exists(featuresRoot)) {
@@ -735,57 +927,47 @@ async function checkEvidence(root, reporter) {
     if (!(await exists(join(root, rel)))) continue;
     const content = await readText(root, rel);
     if (!/^#{1,3}\s+Source Register/m.test(content)) {
-      reporter.error(
-        "evidence.source-register-missing",
-        rel,
-        "Document has no Source Register section.",
-        `Add a Source Register section to ${rel}; write 无来源 explicitly with a reason when no source exists.`,
-      );
+      reporter.error("evidence.source-register-missing", rel, "Document has no Source Register section.", `Add a Source Register section to ${rel}; write 无来源 explicitly with a reason when no source exists.`);
     }
   }
 
-  // 5. 已确认的需求不得残留用户原话占位符。
   const reqRel = "workflow/requirements.md";
   if (await exists(join(root, reqRel))) {
     const content = await readText(root, reqRel);
     const meta = parseFrontmatter(content);
     if (meta && meta.status === "confirmed" && content.includes("> 用户原话")) {
-      reporter.error(
-        "evidence.placeholder-quote",
-        reqRel,
-        "Requirements are confirmed but the User Request section still contains the template placeholder.",
-        "Replace `> 用户原话` with the user's actual words before confirming requirements.",
-      );
+      reporter.error("evidence.placeholder-quote", reqRel, "Confirmed requirements still contain the user-quote placeholder.", "Replace the placeholder with the user's actual words before confirmation.");
     }
   }
 
-  // 6. 验证报告：sprint 文档必须带可审计的报告结构。
+  const sprintFiles = [];
   const tasksRoot = join(root, "tasks");
   if (await exists(tasksRoot)) {
     for (const name of await readdir(tasksRoot)) {
       if (!/^sprint-.*\.md$/.test(name) || name.endsWith(".template.md")) continue;
       const rel = `tasks/${name}`;
+      sprintFiles.push(rel);
       const content = await readText(root, rel);
       if (!/^##\s+Verification Report/m.test(content)) {
-        reporter.error(
-          "evidence.report-missing",
-          rel,
-          "Sprint document has no Verification Report section.",
-          `Add a Verification Report to ${rel} with commands, results, executed-at time, user-path evidence, uncovered risks, cleanup and rollback.`,
-        );
+        reporter.error("evidence.report-missing", rel, "Sprint document has no Verification Report section.", `Add the report structure from tasks/sprint.template.md.`);
         continue;
       }
-      for (const label of ["Commands:", "Results:", "Executed at:", "提交哈希："]) {
-        if (!content.includes(label)) {
+      for (const label of ["Machine report", "Commands", "Results", "Executed at", "User-path evidence", "Uncovered risks", "Cleanup performed", "Rollback steps", "提交哈希"]) {
+        const match = reportField(content, label);
+        if (!match || (state?.stage === "accepted" && !isNonEmptyString(match[1]))) {
           reporter.error(
             "evidence.report-incomplete",
             rel,
-            `Verification Report is missing "${label}".`,
-            `Record ${label} in the Verification Report of ${rel}.`,
+            `Verification Report is missing${state?.stage === "accepted" ? " a value for" : ""} "${label}".`,
+            `Record an explicit ${label} value before acceptance; use none with a reason when appropriate.`,
           );
         }
       }
     }
+  }
+
+  if (configValue && state?.stage === "accepted") {
+    await validateAcceptedReport(root, reporter, configValue, configRaw, options, contractSources);
   }
 }
 
@@ -848,27 +1030,45 @@ async function main(argv) {
     root = resolve(value);
     args.splice(rootIndex, 2);
   }
+  let stateFile = null;
+  const stateIndex = args.indexOf("--state-file");
+  if (stateIndex !== -1) {
+    const value = args[stateIndex + 1];
+    if (!isSafeRelativePath(value)) {
+      process.stderr.write("ERROR harness.usage: --state-file requires a safe project-relative path.\n");
+      process.exit(2);
+    }
+    stateFile = value;
+    args.splice(stateIndex, 2);
+  }
+
 
   const command = args[0];
   if (!command || command === "help" || command === "--help" || command === "-h") {
     process.stdout.write(
       "Usage: node scripts/harness-check.mjs context|gates|evidence|commit|all [--root <dir>]\n" +
+        "       node scripts/harness-check.mjs preflight --state-file <candidate.json> [--root <dir>]\n" +
         "Exit codes: 0 pass, 1 issues found, 2 unparseable config or state.\n",
     );
     process.exit(command ? 0 : 2);
   }
 
-  const modes = command === "all" ? ["context", "gates", "evidence"] : [command];
+  if (args.length !== 1 || (command === "preflight" && !stateFile) || (command !== "preflight" && stateFile)) {
+    process.stderr.write("ERROR harness.usage: preflight alone requires --state-file; other commands do not accept it.\n");
+    process.exit(2);
+  }
+  const modes = command === "all" || command === "preflight" ? ["context", "gates", "evidence"] : [command];
   for (const mode of modes) {
     if (!CHECKS[mode]) {
-      process.stderr.write(`ERROR harness.unknown-command: unknown command "${command}".\nREPAIR: Use context, gates, evidence, commit or all.\n`);
+      process.stderr.write(`ERROR harness.unknown-command: unknown command "${command}".\nREPAIR: Use context, gates, evidence, commit, all or preflight.\n`);
       process.exit(2);
     }
   }
 
   const reporter = createReporter();
+  const options = { stateFile };
   for (const mode of modes) {
-    await CHECKS[mode](root, reporter);
+    await CHECKS[mode](root, reporter, options);
   }
 
   if (reporter.issues.length > 0) {

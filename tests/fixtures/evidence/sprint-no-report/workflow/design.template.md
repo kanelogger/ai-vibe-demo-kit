@@ -3,12 +3,19 @@ status: confirmed
 confirmedBy: 
 confirmedAt: 
 confirmationQuote: 
+prototypeCommand: 
+prototypePaths: []
+prototypeEvidence: 
 ---
 # 设计确认
 
-设计稿是 UI 实现的上游事实源。UI 问题先回到设计工具修改原型、用更新后的设计稿替换本地文件，再由 Agent 比较设计稿变更后更新实现；不直接补正式代码修 UI。
+设计稿是 UI 实现的上游事实源。确认对象必须是可运行、可操作的原型；UI 问题先修改原型并更新证据，再同步正式实现。
 
-## 设计稿位置
+## 可执行原型
+
+- 运行命令：与 frontmatter `prototypeCommand` 相同
+- 原型文件：在 frontmatter `prototypePaths` 登记 HTML、CSS、组件、模拟数据等仓库相对路径
+- 操作证据：在 frontmatter `prototypeEvidence` 登记截图或人工走查记录
 
 | 文件 / 链接 | 版本 | 覆盖范围 |
 | --- | --- | --- |

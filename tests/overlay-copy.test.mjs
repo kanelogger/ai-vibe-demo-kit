@@ -84,7 +84,7 @@ test("复制 Overlay 后既有应用文件保持不变，AGENTS 冲突可见", a
     config.project.summary = "演练用既有项目";
     config.commands.quick.static = ["node --check src/index.js"];
     config.commands.quick.test = ["node --test tests/"];
-    config.recovery.testDataCleanup = ["无需清理：测试不产生外部数据"];
+    config.recovery.testDataCleanup = [{ mode: "none", reason: "测试不产生外部数据" }];
     config.recovery.rollback = ["git revert <commit>"];
     await writeFile(configPath, JSON.stringify(config, null, 2), "utf8");
 

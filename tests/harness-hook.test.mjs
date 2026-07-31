@@ -12,6 +12,7 @@ const fixturesRoot = join(repoRoot, "tests", "fixtures");
 
 for (const [fixture, expected] of [
   ["valid-context", 0],
+  ["stages/accepted", 0],
   ["invalid-context", 1],
   ["broken-json", 2],
 ]) {

@@ -2,7 +2,7 @@
 status: confirmed
 confirmedBy: user
 confirmedAt: 2026-07-31T01:00:00Z
-confirmationQuote: 用户原话：需求就按这个做
+confirmationQuote: 需求就按这个做
 ---
 # Requirements
 

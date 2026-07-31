@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "reportId": "fixture-full-report",
+  "reportPath": ".harness/verification-report.json",
+  "generatedAt": "2026-07-31T05:00:00Z",
+  "project": "fixture-project",
+  "sourceStage": "implementation-ready",
+  "sprint": "tasks/sprint-01.md",
+  "profile": "full",
+  "configSha256": "6d7fed097699eed6e0ea1052d7e5205909ffcef16d5db2104bf52d3364a53e1d",
+  "workspace": null,
+  "status": "passed",
+  "checks": [
+    {
+      "kind": "static",
+      "command": "node --check src/index.js",
+      "status": "passed",
+      "exitCode": 0
+    },
+    {
+      "kind": "test",
+      "command": "node --test tests/",
+      "status": "passed",
+      "exitCode": 0
+    },
+    {
+      "kind": "contract",
+      "command": "node tests/contract/check-contracts.mjs",
+      "status": "passed",
+      "exitCode": 0
+    }
+  ],
+  "criticalUserPaths": [],
+  "cleanup": [
+    {
+      "mode": "command",
+      "command": "node scripts/cleanup-test-data.mjs",
+      "status": "passed"
+    }
+  ],
+  "rollback": [
+    "git revert <commit>"
+  ]
+}

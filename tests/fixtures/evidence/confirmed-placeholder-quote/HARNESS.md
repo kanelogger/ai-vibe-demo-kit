@@ -27,17 +27,20 @@ AI Native Harness Overlay 是一层可复制到现有代码库的 Agent 开发�
 ├── HARNESS.md             # 本文件：Harness 地图、边界和接入说明
 ├── workflow-state.json    # 当前阶段的唯一机器状态源
 ├── .harness/
-│   ├── config.json        # 机器配置：验证命令、契约校验、关键路径、清理和恢复入口
+│   ├── config.json        # 机器配置：验证命令、关键路径、报告绑定、清理和恢复入口
 │   ├── manifest.json      # Overlay 版本和文件职责说明（不驱动自动更新）
+│   └── verification-report.json # full 验证生成的当前机器报告（初始不存在）
 ├── .agents/               # Harness 专属 Skills 和 Hook 适配
 ├── workflow/              # 本轮需求、方案和放行过程
 ├── SPECS/                 # 长期有效的项目事实、唯一契约来源和 feature spec
-├── tasks/                 # 当前执行单元
+├── tasks/                 # 当前执行单元及人类可读验证摘要
 ├── memory/                # 决策谱系和 ADR
 ├── rules/                 # 按主题加载的工程约束
 └── scripts/
-    ├── harness-check.mjs  # 只读、零依赖的项目本地检查器
-    └── harness-stage.mjs  # workflow-state.json 的唯一写入入口（阶段门禁）
+    ├── harness-check.mjs  # 只读检查器及候选状态 preflight
+    ├── harness-runtime.mjs# 检查器与验证器共享的报告/指纹契约
+    ├── harness-verify.mjs # 实际执行验证、关键路径和清理，生成机器报告
+    └── harness-stage.mjs  # 候选状态预检通过后原子推进
 ```
 
 应用源码、测试、部署和基础设施目录保持原样，由目标项目继续拥有。
@@ -60,10 +63,11 @@ node scripts/harness-check.mjs context
 1. 审查复制产生的所有冲突和覆盖。
 2. 合并已有 `AGENTS.md`，保留项目原有高优先级约束。
 3. 填写 `HARNESS.md` 相关章节与 `SPECS/ARCHITECTURE.md` 中的项目事实。
-4. 在 `.harness/config.json` 登记真实运行、静态检查、测试、关键用户路径、清理和恢复命令；采用 `SPECS/API.md` 或 `SPECS/DATABASE.md` 时登记 `commands.contracts` 契约校验，无对应契约则删除该文件并写明显式说明。
-5. 执行 `node scripts/harness-check.mjs all`。
-6. 修复全部结构错误；项目专属命令暂不可运行时，显式记录缺口、原因和风险。
-7. 形成一次独立、可回退的 Harness 接入提交。
+4. 在 `.harness/config.json` 登记可执行的静态检查、测试、契约、关键路径和清理步骤，并配置报告有效期与工作区指纹。
+5. 按 `.agents/hooks/README.md` 在目标平台注册会话启动、实现前和提交前阻断点；平台不支持 Hook 时登记对应人工命令节点。
+6. 执行 `node scripts/harness-check.mjs all`。
+7. 修复全部结构错误；命令暂不可运行视为未完成，不用说明文字代替执行结果。
+8. 形成一次独立、可回退的 Harness 接入提交。
 
 ## 检查契约
 
@@ -77,6 +81,15 @@ node scripts/harness-check.mjs commit    # 实现任务收尾：工作区不得�
 node scripts/harness-check.mjs all       # context、gates、evidence 依次执行
 ```
 
+实际反馈闭环由验证器执行：
+
+```sh
+node scripts/harness-verify.mjs quick --sprint tasks/sprint-01.md # 迭代反馈
+node scripts/harness-verify.mjs full --sprint tasks/sprint-01.md  # 验收报告
+```
+
+验证器执行登记的命令、关键用户路径和清理步骤，原子写入机器报告并回填 Sprint 摘要。`full` 报告绑定配置哈希和工作区指纹；配置或项目文件变化后自动失效。
+
 退出码：`0` 通过，`1` 存在必须修复的问题，`2` 配置或状态文件无法解析。
 
 ## 阶段推进
@@ -88,9 +101,9 @@ node scripts/harness-stage.mjs status                                        # �
 node scripts/harness-stage.mjs advance --to <stage> --by user --quote "<用户原话>"
 ```
 
-推进是硬门禁：只允许单步推进，目标阶段文档必须已存在，每次推进必须携带用户原话并写入 `history` 证据链。Agent 不得手改状态文件或伪造原话。推进后运行 `node scripts/harness-check.mjs gates` 复核文档证据。
+推进是原子硬门禁：`harness-stage` 先写候选状态，再调用同一检查器运行 `context + gates + evidence`。任何文档、Source Register、原话、报告、关键路径、清理、配置哈希或工作区指纹错误都会删除候选状态；正式 `workflow-state.json` 保持不变。全部通过后才原子替换正式状态。
 
-阶段链：`initialized → requirements-draft → requirements-confirmed → solution-options → solution-selected → implementation-ready → accepted`。`.harness/config.json` 中 `project.hasUserInterface` 为 true 时，`requirements-confirmed` 之后插入 `design-confirmed` 设计确认门禁；非 UI 项目自动跳过。`accepted` 是验收门禁：验证报告和关键用户路径证据完成后由用户原话放行。
+阶段链：`initialized → requirements-draft → requirements-confirmed → solution-options → solution-selected → implementation-ready → accepted`。UI 项目插入 `design-confirmed`，且必须登记可运行原型文件、运行命令和操作证据。进入 `accepted` 必须有当前 `full` 验证报告和用户验收原话。
 
 ## 契约唯一来源
 

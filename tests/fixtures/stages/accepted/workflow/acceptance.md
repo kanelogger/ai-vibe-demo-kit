@@ -2,7 +2,7 @@
 status: accepted
 confirmedBy: user
 confirmedAt: 2026-07-31T05:00:00Z
-confirmationQuote: 用户原话：验收通过
+confirmationQuote: 验收通过
 ---
 # Acceptance
 
@@ -14,7 +14,8 @@ confirmationQuote: 用户原话：验收通过
 
 ## 验证证据
 
-- Verification Report：tasks/sprint-01.md
+- Machine report：`.harness/verification-report.json#fixture-full-report`
+- Sprint Verification Report：tasks/sprint-01.md
 - 关键用户路径证据：无（非 UI 项目）
 - 提交哈希：0123abc
 

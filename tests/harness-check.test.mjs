@@ -318,6 +318,55 @@ test("evidence: 登记关键用户路径但条目不完整失败", async () => {
   }
 });
 
+test("evidence: 重复关键路径 id 失败", async () => {
+  const root = await mutableCopy("valid-context");
+  try {
+    const configPath = join(root, ".harness", "config.json");
+    const config = JSON.parse(await readFile(configPath, "utf8"));
+    const path = { id: "checkout", description: "Checkout", verify: { mode: "command", command: "node scripts/check-checkout.mjs" } };
+    config.criticalUserPaths = [path, { ...path }];
+    await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+    const result = runCheck(root, "evidence");
+    assert.equal(result.code, 1);
+    assert.ok(errorIds(result.stdout).includes("evidence.user-path-duplicate"), result.stdout);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("evidence: accepted 报告与当前配置不一致时失败", async () => {
+  const root = await mutableCopy("stages/accepted");
+  try {
+    const configPath = join(root, ".harness", "config.json");
+    const config = JSON.parse(await readFile(configPath, "utf8"));
+    config.notes = `${config.notes} changed`;
+    await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
+    const result = runCheck(root, "evidence");
+    assert.equal(result.code, 1);
+    assert.ok(errorIds(result.stdout).includes("evidence.verification-report-stale-config"), result.stdout);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("evidence: accepted 报告包含失败结果时失败", async () => {
+  const root = await mutableCopy("stages/accepted");
+  try {
+    const reportPath = join(root, ".harness", "verification-report.json");
+    const report = JSON.parse(await readFile(reportPath, "utf8"));
+    report.status = "failed";
+    report.checks[0].status = "failed";
+    await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+    const result = runCheck(root, "evidence");
+    assert.equal(result.code, 1);
+    const ids = errorIds(result.stdout);
+    assert.ok(ids.includes("evidence.verification-report-not-passed"), result.stdout);
+    assert.ok(ids.includes("evidence.verification-command-not-passed"), result.stdout);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("all: 依次执行三类检查并聚合退出码", () => {
   const ok = runCheck(join(fixturesRoot, "valid-context"), "all");
   assert.equal(ok.code, 0);

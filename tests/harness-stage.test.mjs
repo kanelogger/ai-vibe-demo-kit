@@ -41,6 +41,8 @@ test("status: 打印当前阶段、允许转换和最近放行", () => {
 test("advance: 合法单步推进写入完整证据链", async () => {
   const root = await mutableCopy("stages/requirements-draft");
   try {
+    await cp(join(fixturesRoot, "stages", "requirements-confirmed", "workflow", "requirements.md"), join(root, "workflow", "requirements.md"));
+    await cp(join(fixturesRoot, "stages", "requirements-confirmed", "tasks", "backlog.md"), join(root, "tasks", "backlog.md"));
     const result = runStage(root, ["advance", "--to", "requirements-confirmed", "--by", "user", "--quote", "需求就按这个做"]);
     assert.equal(result.code, 0, result.stdout + result.stderr);
     assert.match(result.stdout, /^OK advanced requirements-draft -> requirements-confirmed$/m);
@@ -130,6 +132,7 @@ test("advance: solution-selected 推进同步 selection 指针", async () => {
   try {
     // solution-selected 的目标文档需要先行准备（门禁要求文档先于推进存在）。
     await cp(join(fixturesRoot, "stages", "solution-selected", "workflow", "solution-selected.md"), join(root, "workflow", "solution-selected.md"));
+    await cp(join(fixturesRoot, "stages", "solution-selected", "memory", "decisions.md"), join(root, "memory", "decisions.md"));
     const result = runStage(root, ["advance", "--to", "solution-selected", "--quote", "选 balanced"]);
     assert.equal(result.code, 0, result.stdout + result.stderr);
     const state = await readState(root);
@@ -145,15 +148,14 @@ test("advance: solution-selected 推进同步 selection 指针", async () => {
 test("advance: UI 项目推进 design-confirmed 写入确认证据", async () => {
   const root = await mutableCopy("stages/requirements-confirmed");
   try {
-    // 模拟 UI 项目：config 声明 UI，状态文件的允许转换与之一致。
-    const configPath = join(root, ".harness", "config.json");
-    const config = JSON.parse(await readFile(configPath, "utf8"));
-    config.project.hasUserInterface = true;
-    await writeFile(configPath, JSON.stringify(config, null, 2), "utf8");
+    // 模拟 UI 项目并复制可运行原型、关键路径配置和证据。
+    await cp(join(fixturesRoot, "stages", "design-confirmed", ".harness", "config.json"), join(root, ".harness", "config.json"));
     const state = await readState(root);
     state.allowedNextStages = ["design-confirmed"];
     await writeFile(join(root, "workflow-state.json"), JSON.stringify(state, null, 2), "utf8");
     await cp(join(fixturesRoot, "stages", "design-confirmed", "workflow", "design.md"), join(root, "workflow", "design.md"));
+    await cp(join(fixturesRoot, "stages", "design-confirmed", "design"), join(root, "design"), { recursive: true });
+    await cp(join(fixturesRoot, "stages", "design-confirmed", "scripts", "run-design-prototype.mjs"), join(root, "scripts", "run-design-prototype.mjs"));
 
     const result = runStage(root, ["advance", "--to", "design-confirmed", "--by", "user", "--quote", "设计稿就按这个来"]);
     assert.equal(result.code, 0, result.stdout + result.stderr);
@@ -202,6 +204,7 @@ test("advance: implementation-ready 推进 accepted 写入验收证据", async (
   const root = await mutableCopy("stages/implementation-ready");
   try {
     await cp(join(fixturesRoot, "stages", "accepted", "workflow", "acceptance.md"), join(root, "workflow", "acceptance.md"));
+    await cp(join(fixturesRoot, "stages", "accepted", ".harness", "verification-report.json"), join(root, ".harness", "verification-report.json"));
     const result = runStage(root, ["advance", "--to", "accepted", "--by", "user", "--quote", "验收通过"]);
     assert.equal(result.code, 0, result.stdout + result.stderr);
     const state = await readState(root);
@@ -211,6 +214,32 @@ test("advance: implementation-ready 推进 accepted 写入验收证据", async (
     assert.equal(state.confirmation.quote, "验收通过");
     const last = state.history[state.history.length - 1];
     assert.equal(last.doc, "workflow/acceptance.md");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("advance: 验收文档无效时拒绝且正式状态不变", async () => {
+  const root = await mutableCopy("stages/implementation-ready");
+  try {
+    await writeFile(join(root, "workflow", "acceptance.md"), "# empty acceptance\n", "utf8");
+    const result = runStage(root, ["advance", "--to", "accepted", "--quote", "验收通过"]);
+    assert.equal(result.code, 1, result.stdout);
+    assert.match(result.stdout, /^ERROR gates\.missing-frontmatter /m);
+    assert.equal((await readState(root)).stage, "implementation-ready");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("advance: 缺少通过的机器报告时拒绝且正式状态不变", async () => {
+  const root = await mutableCopy("stages/implementation-ready");
+  try {
+    await cp(join(fixturesRoot, "stages", "accepted", "workflow", "acceptance.md"), join(root, "workflow", "acceptance.md"));
+    const result = runStage(root, ["advance", "--to", "accepted", "--quote", "验收通过"]);
+    assert.equal(result.code, 1, result.stdout);
+    assert.match(result.stdout, /^ERROR evidence\.verification-report-invalid /m);
+    assert.equal((await readState(root)).stage, "implementation-ready");
   } finally {
     await rm(root, { recursive: true, force: true });
   }

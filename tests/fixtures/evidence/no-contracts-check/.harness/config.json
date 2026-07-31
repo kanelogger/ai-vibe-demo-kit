@@ -21,12 +21,22 @@
     "contracts": []
   },
   "criticalUserPaths": [],
+  "verification": {
+    "reportPath": ".harness/verification-report.json",
+    "maxAgeHours": 1000000,
+    "commandTimeoutMs": 30000,
+    "workspaceFingerprint": "none"
+  },
   "recovery": {
     "testDataCleanup": [
-      "node scripts/cleanup-test-data.mjs"
+      {
+        "mode": "command",
+        "command": "node scripts/cleanup-test-data.mjs"
+      }
     ],
     "rollback": [
       "git revert <commit>"
     ]
-  }
+  },
+  "notes": "Static fixtures use immutable generated files as the equivalent workspace audit mechanism."
 }

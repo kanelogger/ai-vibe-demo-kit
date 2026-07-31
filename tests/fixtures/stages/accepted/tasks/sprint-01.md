@@ -10,11 +10,12 @@
 
 ## Verification Report
 
-- Commands: node --check src/index.js; node --test tests/
-- Results: pass
+- Machine report: .harness/verification-report.json#fixture-full-report
+- Commands: node --check src/index.js; node --test tests/; node tests/contract/check-contracts.mjs
+- Results: passed
 - Executed at: 2026-07-31T05:00:00Z
-- Manual / user-path evidence: 无 UI 路径
+- User-path evidence: none registered
 - Uncovered risks: 示例风险
-- Cleanup performed: node scripts/cleanup-test-data.mjs
+- Cleanup performed: node scripts/cleanup-test-data.mjs=passed
 - Rollback steps: git revert <commit>
-- 提交哈希：0123abc
+- 提交哈希: 0123abc

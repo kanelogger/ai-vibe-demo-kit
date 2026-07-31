@@ -4,7 +4,7 @@ selectionType: option
 selectedOptionId: balanced
 selectedBy: user
 selectedAt: 2026-07-31T03:00:00Z
-selectionQuote: 用户原话：选 balanced
+selectionQuote: 选 balanced
 ---
 # Selected Solution
 

@@ -23,8 +23,15 @@
     ]
   },
   "criticalUserPaths": [],
+  "verification": {
+    "reportPath": ".harness/verification-report.json",
+    "maxAgeHours": 1000000,
+    "commandTimeoutMs": 30000,
+    "workspaceFingerprint": "none"
+  },
   "recovery": {
     "testDataCleanup": [],
     "rollback": []
-  }
+  },
+  "notes": "Static fixtures use immutable generated files as the equivalent workspace audit mechanism."
 }

@@ -11,12 +11,14 @@
 //   ERROR <check-id> <path>: <problem>
 //   REPAIR: <deterministic next action>
 //
-// 退出码: 0 成功；1 门禁拒绝（缺证据、跳阶段、缺文档）；2 用法错误或状态文件无法解析。
-// 注意: 推进成功后必须运行 node scripts/harness-check.mjs gates 复核文档证据。
+// 退出码: 0 成功；1 门禁拒绝；2 用法错误、解析失败或检查器不可用。
+// advance 先对候选状态运行完整 preflight；只有检查全部通过才原子替换正式状态。
 
-import { readFile, rename, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
 
 const STAGES = [
   "initialized",
@@ -110,11 +112,21 @@ async function readState(root) {
   }
 }
 
-async function writeState(root, state) {
-  const path = join(root, "workflow-state.json");
-  const tmp = `${path}.tmp`;
-  await writeFile(tmp, `${JSON.stringify(state, null, 2)}\n`, "utf8");
-  await rename(tmp, path);
+async function preflightAndWriteState(root, state) {
+  const rel = `.harness/workflow-state.candidate-${process.pid}.json`;
+  const candidate = join(root, rel);
+  await writeFile(candidate, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+  const checker = join(root, "scripts", "harness-check.mjs");
+  const result = spawnSync(process.execPath, [checker, "preflight", "--root", root, "--state-file", rel], {
+    encoding: "utf8",
+  });
+  if (result.status !== 0) {
+    await unlink(candidate).catch(() => {});
+    if (result.stdout) process.stdout.write(result.stdout);
+    if (result.stderr) process.stderr.write(result.stderr);
+    process.exit(result.status ?? 2);
+  }
+  await rename(candidate, join(root, "workflow-state.json"));
 }
 
 function parseArgs(argv) {
@@ -229,9 +241,9 @@ async function cmdAdvance(root, options) {
     next.selection = { by, at: advancedAt, quote: quote.trim(), doc };
   }
 
-  await writeState(root, next);
+  await preflightAndWriteState(root, next);
   process.stdout.write(`OK advanced ${state.stage} -> ${target}\n`);
-  process.stdout.write(`NEXT: run node scripts/harness-check.mjs gates to verify the stage doc evidence.\n`);
+  process.stdout.write(`PREFLIGHT: context, gates and evidence passed before state commit.\n`);
   process.exit(0);
 }
 

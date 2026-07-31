@@ -20,8 +20,9 @@ confirmationQuote:
 
 ## 验证计划
 
-- 静态检查：（引用 `.harness/config.json` 的命令）
-- 单元 / 集成 / 契约检查：
-- 关键用户路径：（引用 `.harness/config.json` 的 `criticalUserPaths`）
-- 清理：
-- 回退：
+- 迭代验证：`node scripts/harness-verify.mjs quick --sprint tasks/sprint-01.md`
+- 验收验证：`node scripts/harness-verify.mjs full --sprint tasks/sprint-01.md`
+- 静态 / 测试 / 契约命令：引用 `.harness/config.json`
+- 关键用户路径：引用 `criticalUserPaths`
+- 清理：引用 `recovery.testDataCleanup`
+- 回退：引用 `recovery.rollback`

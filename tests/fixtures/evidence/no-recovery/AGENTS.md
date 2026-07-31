@@ -20,10 +20,12 @@
 - `node scripts/harness-check.mjs evidence`：校验 Source Register、契约校验入口、验证入口、验证报告、清理和回退。
 - `node scripts/harness-check.mjs commit`：实现任务收尾校验——工作区不得遗留未提交改动。
 - `node scripts/harness-check.mjs all`：依次运行 context、gates、evidence。
+- `node scripts/harness-verify.mjs quick --sprint <path>`：实际执行迭代验证、关键路径和清理并生成报告。
+- `node scripts/harness-verify.mjs full --sprint <path>`：生成进入 `accepted` 所需的完整报告。
 - `node scripts/harness-stage.mjs status`：查看当前阶段、允许的下一阶段和最近一次放行记录。
 - `node scripts/harness-stage.mjs advance --to <stage> --by user --quote "<用户原话>"`：阶段推进的唯一入口。
 
-检查器只读，不创建文档、不修改状态、不推进阶段。`harness-stage.mjs` 是 `workflow-state.json` 的唯一写入入口。检查通过不等于应用验收通过。
+检查器只读。`harness-stage.mjs` 对候选状态执行完整 preflight，全部通过后才原子更新 `workflow-state.json`；Agent 不得直接编辑状态文件。
 
 ## 阶段门禁
 
@@ -38,13 +40,13 @@ initialized
 -> accepted
 ```
 
-- `workflow-state.json` 是唯一机器状态源；阶段只通过 `harness-stage.mjs advance` 在用户原话证据后放行，Agent 不得手改状态文件或伪造用户原话。
+- `workflow-state.json` 是唯一机器状态源；`harness-stage.mjs advance` 对候选状态运行完整 preflight，失败时正式状态不变。
 - 需求未确认前不得创建方案。
-- UI 项目的设计稿未确认前不得创建方案；UI 问题先回设计稿修改，再由 Agent 比较设计稿变更后更新实现。
+- UI 项目必须先确认可运行原型、原型文件和操作证据；设计问题先更新原型。
 - 用户未选定方案前不得创建实现规格或开始编码。
 - 未进入 `implementation-ready` 前不得实现功能。
-- 验证报告完成、关键用户路径实际运行后，才由用户原话放行进入 `accepted`；Harness 检查通过不等于验收通过。
-- Agent 不得代替用户确认需求、设计、方案或验收；每次放行必须记录用户原话、时间和对应文档，形成可审计的 history 证据链。
+- `harness-verify.mjs full` 实际执行验证、关键路径和清理；通过报告必须仍与当前配置及工作区一致，才允许进入 `accepted`。
+- Agent 不得代替用户确认需求、设计、方案或验收；frontmatter、状态记录和 history 必须保存同一份用户原话。
 
 ## 上下文闭环
 
@@ -62,9 +64,9 @@ initialized
 - 一次只交付一个可独立运行的小切片，并限制主要不确定性。
 - 设计问题回设计事实源，规格问题回 `SPECS/`，实现问题回代码。
 - 验证方式按风险选择：核心逻辑用单测，真实依赖用集成测试，共享接口用契约测试，关键用户路径用 E2E 或实际操作。
-- 验证命令以 `.harness/config.json` 登记为准；静态检查和测试输出必须让 Agent 可读取；失败后在当前会话修复并重跑。
-- 验证后按 `tasks/` 中的验证报告模板记录命令、结果、时间和未覆盖风险，并清理账户、文件、数据库记录等测试数据。
-- 实现任务以一次 Git 提交收尾：只提交当前任务相关文件，运行 `node scripts/harness-check.mjs commit` 确认无遗留改动，并向用户报告提交哈希。
+- 迭代中运行 `harness-verify.mjs quick`，验收前运行 `harness-verify.mjs full`；失败后修复并重跑。
+- 验证器生成机器报告并回填 Sprint 摘要；补充未覆盖风险和提交哈希，确认清理与回退记录。
+- 实现任务以聚焦、可回退的 Git 提交收尾，运行 `node scripts/harness-check.mjs commit` 确认无遗留改动。
 
 ## 完成标准
 

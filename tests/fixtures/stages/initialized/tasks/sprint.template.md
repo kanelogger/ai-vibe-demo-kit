@@ -18,11 +18,12 @@
 
 ## Verification Report
 
+- Machine report:
 - Commands:
 - Results:
 - Executed at:
-- 人工 / 用户路径证据：
-- 未覆盖的风险：
-- 已执行的清理：
-- 回退步骤：
-- 提交哈希：
+- User-path evidence:
+- Uncovered risks:
+- Cleanup performed:
+- Rollback steps:
+- 提交哈希:

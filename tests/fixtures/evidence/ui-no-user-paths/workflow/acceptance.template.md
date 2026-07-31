@@ -16,7 +16,8 @@ confirmationQuote:
 
 ## 验证证据
 
-- Verification Report：对应 sprint 文档的报告章节
+- Machine report：`.harness/verification-report.json#<reportId>`
+- Sprint Verification Report：对应 sprint 文档
 - 关键用户路径证据：
 - 提交哈希：
 

@@ -2,7 +2,10 @@
 status: confirmed
 confirmedBy: user
 confirmedAt: 2026-07-31T02:00:00Z
-confirmationQuote: 用户原话：设计稿就按这个来
+confirmationQuote: 设计稿就按这个来
+prototypeCommand: node scripts/run-design-prototype.mjs
+prototypePaths: [design/main-screen.html, design/mock-data.json]
+prototypeEvidence: design/walkthrough.md
 ---
 # Design Confirmed
 

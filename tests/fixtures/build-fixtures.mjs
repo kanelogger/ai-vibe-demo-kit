@@ -3,6 +3,7 @@
 // 用法: node tests/fixtures/build-fixtures.mjs
 // 夹具是生成物但入库保存，便于审查；变更 overlay 后重新运行本脚本。
 
+import { createHash } from "node:crypto";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,16 +31,23 @@ const CONFIG = {
     contracts: ["node tests/contract/check-contracts.mjs"],
   },
   criticalUserPaths: [],
+  verification: {
+    reportPath: ".harness/verification-report.json",
+    maxAgeHours: 1_000_000,
+    commandTimeoutMs: 30_000,
+    workspaceFingerprint: "none",
+  },
   recovery: {
-    testDataCleanup: ["node scripts/cleanup-test-data.mjs"],
+    testDataCleanup: [{ mode: "command", command: "node scripts/cleanup-test-data.mjs" }],
     rollback: ["git revert <commit>"],
   },
+  notes: "Static fixtures use immutable generated files as the equivalent workspace audit mechanism.",
 };
 
 const UI_CONFIG = structuredClone(CONFIG);
 UI_CONFIG.project.hasUserInterface = true;
 UI_CONFIG.criticalUserPaths = [
-  { id: "main-flow", description: "主界面关键路径", verify: "node scripts/verify-main-flow.mjs" },
+  { id: "main-flow", description: "主界面关键路径", verify: { mode: "command", command: "node scripts/verify-main-flow.mjs" } },
 ];
 
 const STAGES = [
@@ -92,6 +100,15 @@ function stateFor(stage, hasUi = false) {
     "implementation-ready": "workflow/implementation-ready.md",
     accepted: "workflow/acceptance.md",
   };
+  const quoteByTarget = {
+    "requirements-draft": "开始整理需求",
+    "requirements-confirmed": "需求就按这个做",
+    "design-confirmed": "设计稿就按这个来",
+    "solution-options": "生成三个方案",
+    "solution-selected": "选 balanced",
+    "implementation-ready": "可以开始实现",
+    accepted: "验收通过",
+  };
   let previous = "initialized";
   const history = order.map((target, index) => {
     const entry = {
@@ -99,30 +116,27 @@ function stateFor(stage, hasUi = false) {
       to: target,
       advancedBy: "user",
       advancedAt: `2026-07-31T0${index}:00:00Z`,
-      quote: `用户原话：放行 ${target}`,
+      quote: quoteByTarget[target],
       doc: docByTarget[target],
     };
     previous = target;
     return entry;
   });
-  const stageIndex = chain.indexOf(stage);
-  const lastConfirmedDoc =
-    stage === "accepted"
-      ? "workflow/acceptance.md"
-      : stageIndex >= chain.indexOf("implementation-ready")
-        ? "workflow/implementation-ready.md"
-        : hasUi && stageIndex >= chain.indexOf("design-confirmed")
-          ? "workflow/design.md"
-          : stageIndex >= chain.indexOf("requirements-confirmed")
-            ? "workflow/requirements.md"
-            : null;
+  const confirmationTargets = ["requirements-confirmed", ...(hasUi ? ["design-confirmed"] : []), "implementation-ready", "accepted"];
+  const confirmedTarget = [...confirmationTargets].reverse().find((target) => order.includes(target));
+  const confirmationEntry = history.find((entry) => entry.to === confirmedTarget);
+  const selectionEntry = history.find((entry) => entry.to === "solution-selected");
   return {
     stage,
     allowedNextStages: nextStages(stage, hasUi),
     currentStageDoc: docByTarget[stage] ?? null,
-    lastConfirmedDoc,
-    confirmation: null,
-    selection: null,
+    lastConfirmedDoc: confirmedTarget ? docByTarget[confirmedTarget] : null,
+    confirmation: confirmationEntry
+      ? { by: confirmationEntry.advancedBy, at: confirmationEntry.advancedAt, quote: confirmationEntry.quote, doc: confirmationEntry.doc }
+      : null,
+    selection: selectionEntry
+      ? { by: selectionEntry.advancedBy, at: selectionEntry.advancedAt, quote: selectionEntry.quote, doc: selectionEntry.doc }
+      : null,
     history,
   };
 }
@@ -164,7 +178,7 @@ status: draft
 const REQUIREMENTS_CONFIRMED = REQUIREMENTS_DRAFT.replace("status: draft", `status: confirmed
 confirmedBy: user
 confirmedAt: 2026-07-31T01:00:00Z
-confirmationQuote: 用户原话：需求就按这个做`).replace("> 用户原话", "> 把夹具项目的需求管理起来");
+confirmationQuote: 需求就按这个做`).replace("> 用户原话", "> 把夹具项目的需求管理起来");
 
 const SOLUTION_OPTIONS = `---
 status: proposed
@@ -197,7 +211,7 @@ selectionType: option
 selectedOptionId: balanced
 selectedBy: user
 selectedAt: 2026-07-31T03:00:00Z
-selectionQuote: 用户原话：选 balanced
+selectionQuote: 选 balanced
 ---
 # Selected Solution
 
@@ -222,7 +236,7 @@ const IMPLEMENTATION_READY = `---
 status: ready
 confirmedBy: user
 confirmedAt: 2026-07-31T04:00:00Z
-confirmationQuote: 用户原话：可以开始实现
+confirmationQuote: 可以开始实现
 ---
 # Implementation Ready
 
@@ -255,7 +269,10 @@ const DESIGN_CONFIRMED = `---
 status: confirmed
 confirmedBy: user
 confirmedAt: 2026-07-31T02:00:00Z
-confirmationQuote: 用户原话：设计稿就按这个来
+confirmationQuote: 设计稿就按这个来
+prototypeCommand: node scripts/run-design-prototype.mjs
+prototypePaths: [design/main-screen.html, design/mock-data.json]
+prototypeEvidence: design/walkthrough.md
 ---
 # Design Confirmed
 
@@ -284,7 +301,7 @@ const ACCEPTANCE = `---
 status: accepted
 confirmedBy: user
 confirmedAt: 2026-07-31T05:00:00Z
-confirmationQuote: 用户原话：验收通过
+confirmationQuote: 验收通过
 ---
 # Acceptance
 
@@ -296,7 +313,8 @@ confirmationQuote: 用户原话：验收通过
 
 ## 验证证据
 
-- Verification Report：tasks/sprint-01.md
+- Machine report：\`.harness/verification-report.json#fixture-full-report\`
+- Sprint Verification Report：tasks/sprint-01.md
 - 关键用户路径证据：无（非 UI 项目）
 - 提交哈希：0123abc
 
@@ -328,18 +346,45 @@ const SPRINT = `# Sprint 01
 
 ## Verification Report
 
-- Commands: node --check src/index.js; node --test tests/
-- Results: pass
+- Machine report: .harness/verification-report.json#fixture-full-report
+- Commands: node --check src/index.js; node --test tests/; node tests/contract/check-contracts.mjs
+- Results: passed
 - Executed at: 2026-07-31T05:00:00Z
-- Manual / user-path evidence: 无 UI 路径
+- User-path evidence: none registered
 - Uncovered risks: 示例风险
-- Cleanup performed: node scripts/cleanup-test-data.mjs
+- Cleanup performed: node scripts/cleanup-test-data.mjs=passed
 - Rollback steps: git revert <commit>
-- 提交哈希：0123abc
+- 提交哈希: 0123abc
 `;
 
 async function writeJson(path, value) {
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+}
+
+async function writeVerificationReport(root, config) {
+  const configRaw = `${JSON.stringify(config, null, 2)}\n`;
+  const report = {
+    version: 1,
+    reportId: "fixture-full-report",
+    reportPath: config.verification.reportPath,
+    generatedAt: "2026-07-31T05:00:00Z",
+    project: config.project.name,
+    sourceStage: "implementation-ready",
+    sprint: "tasks/sprint-01.md",
+    profile: "full",
+    configSha256: createHash("sha256").update(configRaw).digest("hex"),
+    workspace: null,
+    status: "passed",
+    checks: [
+      { kind: "static", command: config.commands.quick.static[0], status: "passed", exitCode: 0 },
+      { kind: "test", command: config.commands.quick.test[0], status: "passed", exitCode: 0 },
+      { kind: "contract", command: config.commands.contracts[0], status: "passed", exitCode: 0 },
+    ],
+    criticalUserPaths: [],
+    cleanup: config.recovery.testDataCleanup.map((entry) => ({ ...entry, status: "passed" })),
+    rollback: config.recovery.rollback,
+  };
+  await writeJson(join(root, config.verification.reportPath), report);
 }
 
 async function fillArchitecture(root) {
@@ -446,6 +491,11 @@ async function makeStageFixture(stage) {
   }
   if (hasUi && at("design-confirmed")) {
     await writeFile(join(root, "workflow", "design.md"), DESIGN_CONFIRMED, "utf8");
+    await mkdir(join(root, "design"), { recursive: true });
+    await writeFile(join(root, "design", "main-screen.html"), "<!doctype html><title>Fixture prototype</title>\n", "utf8");
+    await writeJson(join(root, "design", "mock-data.json"), { items: [] });
+    await writeFile(join(root, "design", "walkthrough.md"), "Prototype opened and empty state inspected.\n", "utf8");
+    await writeFile(join(root, "scripts", "run-design-prototype.mjs"), "process.stdout.write('prototype ready\\n');\n", "utf8");
   }
   if (at("solution-options")) {
     await writeFile(join(root, "workflow", "solution-options.md"), SOLUTION_OPTIONS, "utf8");
@@ -466,6 +516,7 @@ async function makeStageFixture(stage) {
   }
   if (at("accepted")) {
     await writeFile(join(root, "workflow", "acceptance.md"), ACCEPTANCE, "utf8");
+    await writeVerificationReport(root, CONFIG);
   }
 }
 

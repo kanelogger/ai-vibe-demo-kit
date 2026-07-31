@@ -28,9 +28,9 @@ git diff
 
 1. 审查复制产生的所有冲突和覆盖；合并已有 `AGENTS.md`，保留项目原有高优先级约束。
 2. 填写 `HARNESS.md` 相关章节与 `SPECS/ARCHITECTURE.md` 中的项目事实。
-3. 在 `.harness/config.json` 登记真实运行、静态检查、测试、关键用户路径、清理和恢复命令；采用 `SPECS/API.md` 或 `SPECS/DATABASE.md` 时登记 `commands.contracts` 契约校验，无对应契约则删除该文件并写明显式说明。
-4. 执行 `node scripts/harness-check.mjs all`。
-5. 修复全部结构错误；项目专属命令暂不可运行时，显式记录缺口、原因和风险。
+3. 在 `.harness/config.json` 登记可执行验证、关键路径、清理、回退、报告有效期和工作区指纹。
+4. 按 `overlay/.agents/hooks/README.md` 注册平台阻断点；不支持 Hook 时登记相同节点的人工命令。
+5. 执行 `node scripts/harness-check.mjs all` 并修复全部结构错误。
 6. 形成一次独立、可回退的 Harness 接入提交。
 
 ## Harness 检查
@@ -45,14 +45,23 @@ node scripts/harness-check.mjs commit    # 实现任务收尾：工作区不得�
 node scripts/harness-check.mjs all       # context、gates、evidence 依次执行
 ```
 
-阶段推进由 `scripts/harness-stage.mjs` 硬门禁控制——它是 `workflow-state.json` 的唯一写入入口，只允许单步推进，每次推进必须携带用户原话并写入可审计的 history 证据链：
+真实反馈由验证器执行：
 
 ```sh
-node scripts/harness-stage.mjs status                                        # 当前阶段与最近放行记录
+node scripts/harness-verify.mjs quick --sprint tasks/sprint-01.md
+node scripts/harness-verify.mjs full --sprint tasks/sprint-01.md
+```
+
+验证器实际运行命令、关键路径和清理，生成绑定配置与工作区的机器报告，并回填 Sprint 摘要。
+
+阶段推进由 `scripts/harness-stage.mjs` 原子硬门禁控制：它先对候选状态运行 `context + gates + evidence`，全部通过后才替换正式状态。每次推进必须携带用户原话并写入 history：
+
+```sh
+node scripts/harness-stage.mjs status
 node scripts/harness-stage.mjs advance --to <stage> --by user --quote "<用户原话>"
 ```
 
-输出 Agent 可直接修复的结构化错误（`ERROR <check-id> <path>: <problem>` + `REPAIR:`），退出码 `0` 通过、`1` 有问题、`2` 配置无法解析。
+进入 `accepted` 必须有当前 `full` 验证报告；配置或项目文件变化会使报告失效。
 
 **Harness 检查通过不等于应用验收通过。** 真实构建、测试和用户路径结果以项目的验证报告为准。
 

@@ -5,7 +5,12 @@
   ],
   "currentStageDoc": "workflow/requirements.md",
   "lastConfirmedDoc": "workflow/requirements.md",
-  "confirmation": null,
+  "confirmation": {
+    "by": "user",
+    "at": "2026-07-31T01:00:00Z",
+    "quote": "需求就按这个做",
+    "doc": "workflow/requirements.md"
+  },
   "selection": null,
   "history": [
     {
@@ -13,7 +18,7 @@
       "to": "requirements-draft",
       "advancedBy": "user",
       "advancedAt": "2026-07-31T00:00:00Z",
-      "quote": "用户原话：放行 requirements-draft",
+      "quote": "开始整理需求",
       "doc": "workflow/requirements.md"
     },
     {
@@ -21,7 +26,7 @@
       "to": "requirements-confirmed",
       "advancedBy": "user",
       "advancedAt": "2026-07-31T01:00:00Z",
-      "quote": "用户原话：放行 requirements-confirmed",
+      "quote": "需求就按这个做",
       "doc": "workflow/requirements.md"
     }
   ]

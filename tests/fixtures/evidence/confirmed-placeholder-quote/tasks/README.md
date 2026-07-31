@@ -6,4 +6,4 @@
 - `sprint-NN.md`：实现准备完成后建立（模板见 `sprint.template.md`）。
 - feature 级任务位于 `SPECS/FEATURES/<feature-slug>/tasks.md`。
 
-每个 sprint 必须附验证报告：执行命令、结果、时间、关键用户路径证据、未覆盖风险和清理记录。
+每个 sprint 必须保留 Verification Report。`harness-verify.mjs` 自动回填机器报告、命令、结果、时间、关键路径和清理；任务负责人补充未覆盖风险与提交哈希。进入 `accepted` 前所有字段必须非空。

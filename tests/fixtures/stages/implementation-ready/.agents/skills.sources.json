@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "description": "外部 Skill 来源清单：.agents/skills.json 是路由索引，本文件是来源声明。scripts/skills-sync.mjs 据此把外部 Skills 拉入 .agents/skills/ 并生成 .agents/skills.lock.json（提交）与 .agents/skills/.gitignore（受管目录不入库）。path 指向含 SKILL.md 的单个 Skill 目录或含多个 Skill 的父目录；ref 必须钉 tag 或完整 commit SHA，禁止浮动分支；only/exclude 可选，按 Skill 名或目录前缀（以 / 结尾）过滤。技能在 Agent 会话启动时加载，sync 必须在会话开始前运行。",
+  "skillsRoot": ".agents/skills",
+  "sources": []
+}

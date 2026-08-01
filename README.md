@@ -29,9 +29,30 @@ git diff
 1. 审查复制产生的所有冲突和覆盖；合并已有 `AGENTS.md`，保留项目原有高优先级约束。
 2. 填写 `HARNESS.md` 相关章节与 `SPECS/ARCHITECTURE.md` 中的项目事实。
 3. 在 `.harness/config.json` 登记可执行验证、关键路径、清理、回退、报告有效期和工作区指纹。
-4. 按 `overlay/.agents/hooks/README.md` 注册平台阻断点；不支持 Hook 时登记相同节点的人工命令。
-5. 执行 `node scripts/harness-check.mjs all` 并修复全部结构错误。
-6. 形成一次独立、可回退的 Harness 接入提交。
+4. 需要外部 Skills 时在 `.agents/skills.sources.json` 登记来源并执行 `node scripts/skills-sync.mjs`；不需要时保持 `sources` 为空数组。
+5. 按 `overlay/.agents/hooks/README.md` 注册平台阻断点；不支持 Hook 时登记相同节点的人工命令。
+6. 执行 `node scripts/harness-check.mjs all` 并修复全部结构错误。
+7. 形成一次独立、可回退的 Harness 接入提交。
+
+## 外部 Skills
+
+`.agents/skills.json` 是 Harness 路由索引；外部 Skill 的**来源**由 `.agents/skills.sources.json` 声明，二者职责不同：
+
+```json
+{
+  "version": 1,
+  "sources": [
+    { "repo": "https://github.com/<owner>/<repo>", "path": "skills", "ref": "<tag-or-full-sha>", "exclude": ["deprecated/"] }
+  ]
+}
+```
+
+- `path` 指向含 `SKILL.md` 的单个 Skill 目录，或含多个 Skill 的父目录（技能组）；`only` / `exclude` 可选，按 Skill 名或目录前缀（以 `/` 结尾）过滤。
+- `ref` 必须钉 tag 或完整 commit SHA；浮动分支会破坏可复现性。
+- `node scripts/skills-sync.mjs` 把 Skills 拉入 `.agents/skills/`，生成 `.agents/skills.lock.json`（提交以复现）和 `.agents/skills/.gitignore`（受管目录不入库）。重复执行幂等；`--force` 强制重新拉取。
+- 技能在 Agent 会话启动时加载，sync 必须在会话开始前运行，不做会话内懒加载。清单、锁文件与磁盘漂移由 `harness-check context` 报错。
+- Overlay 自带的三个 Harness Skill（source-register、verification-closeout、memory-writeback）照常提交，sync 不会覆盖锁文件之外的目录。
+- 同步后如需接入 Harness 路由，在 `.agents/skills.json` 登记对应 alias。
 
 ## Harness 检查
 

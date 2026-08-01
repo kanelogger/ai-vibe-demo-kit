@@ -108,6 +108,7 @@ const CONTROL_PATHS = [
   "scripts/harness-runtime.mjs",
   "scripts/harness-stage.mjs",
   "scripts/harness-verify.mjs",
+  "scripts/skills-sync.mjs",
 ];
 
 const PLACEHOLDER_SCAN_FILES = [
@@ -207,6 +208,11 @@ function sameArray(left, right) {
 
 function stageIndex(stage) {
   return STAGES.indexOf(stage);
+}
+
+// 外部 Skill 来源身份：repo+path+ref+过滤条件；skills-sync.mjs 用同一规则写锁文件。
+function sourceKeyOf(entry) {
+  return JSON.stringify([entry.repo, entry.path, entry.ref, entry.only ?? null, entry.exclude ?? null]);
 }
 
 function stripQuotes(value) {
@@ -404,6 +410,120 @@ async function checkContext(root, reporter) {
           `Skill "${entry.skill}" referenced by alias "${entry.alias || `<index ${index}>`}" is missing.`,
           "Restore the missing skill directory or remove the entry from .agents/skills.json.",
         );
+      }
+    }
+  }
+
+  // 7. 外部 Skill 来源清单、锁文件与磁盘三者一致（skills-sync 的漂移检测；无清单时跳过）。
+  const sourcesRel = ".agents/skills.sources.json";
+  if (await exists(join(root, sourcesRel))) {
+    const sourcesDoc = await readJson(root, sourcesRel, reporter, "context.skill-sources-invalid-json");
+    if (sourcesDoc.ok && isRecord(sourcesDoc.value)) {
+      const skillsRoot = isNonEmptyString(sourcesDoc.value.skillsRoot) ? sourcesDoc.value.skillsRoot.trim() : ".agents/skills";
+      const sources = Array.isArray(sourcesDoc.value.sources) ? sourcesDoc.value.sources : [];
+      const sourceKeys = new Map();
+      for (const [index, entry] of sources.entries()) {
+        if (!isRecord(entry) || !isNonEmptyString(entry.repo) || !isNonEmptyString(entry.path) || !isNonEmptyString(entry.ref)) {
+          reporter.error(
+            "context.skill-source-invalid",
+            sourcesRel,
+            `sources[${index}] must declare repo, path and ref as non-empty strings.`,
+            "Fix the source entry; ref must be a tag or full commit SHA, never a floating branch.",
+          );
+          continue;
+        }
+        for (const field of ["only", "exclude"]) {
+          if (entry[field] !== undefined && (!Array.isArray(entry[field]) || entry[field].some((item) => !isNonEmptyString(item)))) {
+            reporter.error(
+              "context.skill-source-invalid",
+              sourcesRel,
+              `sources[${index}].${field} must be an array of non-empty strings.`,
+              "Use skill names or directory prefixes ending in \"/\".",
+            );
+          }
+        }
+        sourceKeys.set(sourceKeyOf(entry), entry);
+      }
+
+      const lockRel = ".agents/skills.lock.json";
+      const lockExists = await exists(join(root, lockRel));
+      if (sourceKeys.size > 0 && !lockExists) {
+        reporter.error(
+          "context.skill-lock-missing",
+          lockRel,
+          "External skill sources are declared but no lockfile exists.",
+          "Run node scripts/skills-sync.mjs to fetch and lock external skills.",
+        );
+      } else if (lockExists) {
+        const lock = await readJson(root, lockRel, reporter, "context.skill-lock-invalid-json");
+        if (lock.ok && isRecord(lock.value)) {
+          const managed = Array.isArray(lock.value.managed) ? lock.value.managed : [];
+          const names = new Set();
+          const covered = new Set();
+          for (const [index, entry] of managed.entries()) {
+            if (!isRecord(entry) || !isNonEmptyString(entry.name) || !isNonEmptyString(entry.repo) || !isNonEmptyString(entry.path) || !isNonEmptyString(entry.ref) || !isNonEmptyString(entry.resolved)) {
+              reporter.error(
+                "context.skill-lock-invalid",
+                lockRel,
+                `managed[${index}] must declare name, repo, path, ref and resolved.`,
+                "Regenerate the lockfile with node scripts/skills-sync.mjs.",
+              );
+              continue;
+            }
+            if (names.has(entry.name)) {
+              reporter.error("context.skill-lock-invalid", lockRel, `Duplicate managed skill "${entry.name}".`, "Regenerate the lockfile with node scripts/skills-sync.mjs.");
+            }
+            names.add(entry.name);
+            if (sourceKeys.has(sourceKeyOf(entry))) {
+              covered.add(sourceKeyOf(entry));
+            } else {
+              reporter.error(
+                "context.skill-lock-stale",
+                lockRel,
+                `Managed skill "${entry.name}" matches no declared source.`,
+                "Run node scripts/skills-sync.mjs to prune or reconcile managed skills.",
+              );
+            }
+            const skillDoc = `${skillsRoot}/${entry.name}/SKILL.md`;
+            if (!(await exists(join(root, skillDoc)))) {
+              reporter.error(
+                "context.skill-managed-missing",
+                skillDoc,
+                `Managed skill "${entry.name}" is locked but missing on disk.`,
+                "Run node scripts/skills-sync.mjs to restore managed skills.",
+              );
+            }
+          }
+          for (const [key, entry] of sourceKeys) {
+            if (!covered.has(key)) {
+              reporter.error(
+                "context.skill-source-unsynced",
+                sourcesRel,
+                `Source ${entry.repo} @ ${entry.ref} (path "${entry.path}") has no managed skills in the lockfile.`,
+                "Run node scripts/skills-sync.mjs after changing skill sources.",
+              );
+            }
+          }
+          if (names.size > 0) {
+            const gitignoreRel = `${skillsRoot}/.gitignore`;
+            let gitignoreLines = new Set();
+            try {
+              gitignoreLines = new Set((await readText(root, gitignoreRel)).split(/\r?\n/).map((line) => line.trim()));
+            } catch {
+              // 文件缺失时每个受管技能各报一条。
+            }
+            for (const name of names) {
+              if (!gitignoreLines.has(`/${name}/`)) {
+                reporter.error(
+                  "context.skill-gitignore-missing",
+                  gitignoreRel,
+                  `Managed skill "${name}" is not excluded from version control.`,
+                  "Run node scripts/skills-sync.mjs to regenerate the managed .gitignore.",
+                );
+              }
+            }
+          }
+        }
       }
     }
   }

@@ -30,7 +30,7 @@ AI Native Harness Overlay 是一层可复制到现有代码库的 Agent 开发�
 │   ├── config.json        # 机器配置：验证命令、关键路径、报告绑定、清理和恢复入口
 │   ├── manifest.json      # Overlay 版本和文件职责说明（不驱动自动更新）
 │   └── verification-report.json # full 验证生成的当前机器报告（初始不存在）
-├── .agents/               # Harness 专属 Skills 和 Hook 适配
+├── .agents/               # Harness 专属 Skills、外部 Skill 来源清单和 Hook 适配
 ├── workflow/              # 本轮需求、方案和放行过程
 ├── SPECS/                 # 长期有效的项目事实、唯一契约来源和 feature spec
 ├── tasks/                 # 当前执行单元及人类可读验证摘要
@@ -40,7 +40,8 @@ AI Native Harness Overlay 是一层可复制到现有代码库的 Agent 开发�
     ├── harness-check.mjs  # 只读检查器及候选状态 preflight
     ├── harness-runtime.mjs# 检查器与验证器共享的报告/指纹契约
     ├── harness-verify.mjs # 实际执行验证、关键路径和清理，生成机器报告
-    └── harness-stage.mjs  # 候选状态预检通过后原子推进
+    ├── harness-stage.mjs  # 候选状态预检通过后原子推进
+    └── skills-sync.mjs    # 按 .agents/skills.sources.json 同步外部 Skills，生成锁文件
 ```
 
 应用源码、测试、部署和基础设施目录保持原样，由目标项目继续拥有。
@@ -64,10 +65,11 @@ node scripts/harness-check.mjs context
 2. 合并已有 `AGENTS.md`，保留项目原有高优先级约束。
 3. 填写 `HARNESS.md` 相关章节与 `SPECS/ARCHITECTURE.md` 中的项目事实。
 4. 在 `.harness/config.json` 登记可执行的静态检查、测试、契约、关键路径和清理步骤，并配置报告有效期与工作区指纹。
-5. 按 `.agents/hooks/README.md` 在目标平台注册会话启动、实现前和提交前阻断点；平台不支持 Hook 时登记对应人工命令节点。
-6. 执行 `node scripts/harness-check.mjs all`。
-7. 修复全部结构错误；命令暂不可运行视为未完成，不用说明文字代替执行结果。
-8. 形成一次独立、可回退的 Harness 接入提交。
+5. 需要外部 Skills 时在 `.agents/skills.sources.json` 登记来源并执行 `node scripts/skills-sync.mjs`。
+6. 按 `.agents/hooks/README.md` 在目标平台注册会话启动、实现前和提交前阻断点；平台不支持 Hook 时登记对应人工命令节点。
+7. 执行 `node scripts/harness-check.mjs all`。
+8. 修复全部结构错误；命令暂不可运行视为未完成，不用说明文字代替执行结果。
+9. 形成一次独立、可回退的 Harness 接入提交。
 
 ## 检查契约
 

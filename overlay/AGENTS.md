@@ -9,7 +9,7 @@
 3. 读 `SPECS/ARCHITECTURE.md`，获取真实技术栈、模块位置和风险事实。
 4. 读 `.harness/config.json`，获取机器可执行的验证命令和关键用户路径。
 5. 按任务读取 `workflow/`、`SPECS/FEATURES/`、`tasks/`、`memory/` 与相关 `rules/`。
-6. 需要 Harness 流程帮助时读取 `.agents/skills.json` 中的最小 Skill 路由。
+6. 需要 Harness 流程帮助时读取 `.agents/skills.json` 中的最小 Skill 路由；外部 Skills 由 `.agents/skills.sources.json` 声明、`scripts/skills-sync.mjs` 在会话开始前同步。
 
 `AGENTS.md` 是索引。技术栈、测试、安全和 Git 细则分别维护在 `SPECS/ARCHITECTURE.md` 与 `rules/` 中，不在这里重复。
 
@@ -24,6 +24,7 @@
 - `node scripts/harness-verify.mjs full --sprint <path>`：生成进入 `accepted` 所需的完整报告。
 - `node scripts/harness-stage.mjs status`：查看当前阶段、允许的下一阶段和最近一次放行记录。
 - `node scripts/harness-stage.mjs advance --to <stage> --by user --quote "<用户原话>"`：阶段推进的唯一入口。
+- `node scripts/skills-sync.mjs`：按 `.agents/skills.sources.json` 同步外部 Skills（会话开始前运行，幂等）。
 
 检查器只读。`harness-stage.mjs` 对候选状态执行完整 preflight，全部通过后才原子更新 `workflow-state.json`；Agent 不得直接编辑状态文件。
 
@@ -55,7 +56,7 @@ initialized
 - `tasks/` 保存当前可执行单元。
 - `memory/decisions.md` 保存简单决策，新决策覆盖旧决策时写明谱系；重要决策进入 `memory/adr/`。
 - `rules/` 保存按主题加载的工程约束。
-- `.agents/` 保存 Harness 专属 Skills 和 Hook 适配。
+- `.agents/` 保存 Harness 专属 Skills、外部 Skill 来源清单和 Hook 适配。
 
 需求、方案、feature spec 和实现计划必须维护 Source Register。记录用户原话、文档、现有代码、设计、测试和日志来源；没有来源时显式写明“无来源”及原因。
 

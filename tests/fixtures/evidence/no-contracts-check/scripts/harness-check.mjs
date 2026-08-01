@@ -26,6 +26,17 @@ import {
   sha256,
   verificationSettings,
 } from "./harness-runtime.mjs";
+import {
+  ERR as SYNC_ERR,
+  GITIGNORE_HEADER,
+  SyncError,
+  digestDiskDirectory,
+  expectedGitignore,
+  parseManifestValue,
+  parseLockValue,
+  sha256Hex,
+  sourceSpecEqual,
+} from "./skills-sync-core.mjs";
 
 const STAGES = [
   "initialized",
@@ -109,6 +120,7 @@ const CONTROL_PATHS = [
   "scripts/harness-stage.mjs",
   "scripts/harness-verify.mjs",
   "scripts/skills-sync.mjs",
+  "scripts/skills-sync-core.mjs",
 ];
 
 const PLACEHOLDER_SCAN_FILES = [
@@ -208,11 +220,6 @@ function sameArray(left, right) {
 
 function stageIndex(stage) {
   return STAGES.indexOf(stage);
-}
-
-// 外部 Skill 来源身份：repo+path+ref+过滤条件；skills-sync.mjs 用同一规则写锁文件。
-function sourceKeyOf(entry) {
-  return JSON.stringify([entry.repo, entry.path, entry.ref, entry.only ?? null, entry.exclude ?? null]);
 }
 
 function stripQuotes(value) {
@@ -414,112 +421,167 @@ async function checkContext(root, reporter) {
     }
   }
 
-  // 7. 外部 Skill 来源清单、锁文件与磁盘三者一致（skills-sync 的漂移检测；无清单时跳过）。
+  // 7. 外部 Skill 控制面（manifest/lock）与数据面（磁盘摘要、provenance、gitignore）一致。
+  // v2 schema 与摘要定义共享自 skills-sync-core.mjs；只读，不访问 Git/网络（CHK-001）。
   const sourcesRel = ".agents/skills.sources.json";
-  if (await exists(join(root, sourcesRel))) {
+ if (await exists(join(root, sourcesRel))) {
     const sourcesDoc = await readJson(root, sourcesRel, reporter, "context.skill-sources-invalid-json");
-    if (sourcesDoc.ok && isRecord(sourcesDoc.value)) {
-      const skillsRoot = isNonEmptyString(sourcesDoc.value.skillsRoot) ? sourcesDoc.value.skillsRoot.trim() : ".agents/skills";
-      const sources = Array.isArray(sourcesDoc.value.sources) ? sourcesDoc.value.sources : [];
-      const sourceKeys = new Map();
-      for (const [index, entry] of sources.entries()) {
-        if (!isRecord(entry) || !isNonEmptyString(entry.repo) || !isNonEmptyString(entry.path) || !isNonEmptyString(entry.ref)) {
+    if (sourcesDoc.ok) {
+      let manifest = null;
+      try {
+        manifest = parseManifestValue(sourcesDoc.value);
+      } catch (error) {
+        if (error instanceof SyncError && error.code === SYNC_ERR.manifestVersion) {
           reporter.error(
-            "context.skill-source-invalid",
+            "context.skill-manifest-version-unsupported",
             sourcesRel,
-            `sources[${index}] must declare repo, path and ref as non-empty strings.`,
-            "Fix the source entry; ref must be a tag or full commit SHA, never a floating branch.",
+            error.message,
+            "Migrate the manifest to version 2 (track {kind,value}) per docs/external-skills-sync-requirements.md §10, then run node scripts/skills-sync.mjs --update.",
           );
-          continue;
+        } else {
+          reporter.error(
+            "context.skill-sources-invalid",
+            sourcesRel,
+            error instanceof Error ? error.message : String(error),
+            "Fix the manifest per docs/external-skills-sync-requirements.md §10; unknown fields and floating refs are rejected.",
+          );
         }
-        for (const field of ["only", "exclude"]) {
-          if (entry[field] !== undefined && (!Array.isArray(entry[field]) || entry[field].some((item) => !isNonEmptyString(item)))) {
-            reporter.error(
-              "context.skill-source-invalid",
-              sourcesRel,
-              `sources[${index}].${field} must be an array of non-empty strings.`,
-              "Use skill names or directory prefixes ending in \"/\".",
-            );
-          }
-        }
-        sourceKeys.set(sourceKeyOf(entry), entry);
       }
-
-      const lockRel = ".agents/skills.lock.json";
-      const lockExists = await exists(join(root, lockRel));
-      if (sourceKeys.size > 0 && !lockExists) {
-        reporter.error(
-          "context.skill-lock-missing",
-          lockRel,
-          "External skill sources are declared but no lockfile exists.",
-          "Run node scripts/skills-sync.mjs to fetch and lock external skills.",
-        );
-      } else if (lockExists) {
-        const lock = await readJson(root, lockRel, reporter, "context.skill-lock-invalid-json");
-        if (lock.ok && isRecord(lock.value)) {
-          const managed = Array.isArray(lock.value.managed) ? lock.value.managed : [];
-          const names = new Set();
-          const covered = new Set();
-          for (const [index, entry] of managed.entries()) {
-            if (!isRecord(entry) || !isNonEmptyString(entry.name) || !isNonEmptyString(entry.repo) || !isNonEmptyString(entry.path) || !isNonEmptyString(entry.ref) || !isNonEmptyString(entry.resolved)) {
-              reporter.error(
-                "context.skill-lock-invalid",
-                lockRel,
-                `managed[${index}] must declare name, repo, path, ref and resolved.`,
-                "Regenerate the lockfile with node scripts/skills-sync.mjs.",
-              );
-              continue;
-            }
-            if (names.has(entry.name)) {
-              reporter.error("context.skill-lock-invalid", lockRel, `Duplicate managed skill "${entry.name}".`, "Regenerate the lockfile with node scripts/skills-sync.mjs.");
-            }
-            names.add(entry.name);
-            if (sourceKeys.has(sourceKeyOf(entry))) {
-              covered.add(sourceKeyOf(entry));
-            } else {
-              reporter.error(
-                "context.skill-lock-stale",
-                lockRel,
-                `Managed skill "${entry.name}" matches no declared source.`,
-                "Run node scripts/skills-sync.mjs to prune or reconcile managed skills.",
-              );
-            }
-            const skillDoc = `${skillsRoot}/${entry.name}/SKILL.md`;
-            if (!(await exists(join(root, skillDoc)))) {
-              reporter.error(
-                "context.skill-managed-missing",
-                skillDoc,
-                `Managed skill "${entry.name}" is locked but missing on disk.`,
-                "Run node scripts/skills-sync.mjs to restore managed skills.",
-              );
-            }
-          }
-          for (const [key, entry] of sourceKeys) {
-            if (!covered.has(key)) {
-              reporter.error(
-                "context.skill-source-unsynced",
-                sourcesRel,
-                `Source ${entry.repo} @ ${entry.ref} (path "${entry.path}") has no managed skills in the lockfile.`,
-                "Run node scripts/skills-sync.mjs after changing skill sources.",
-              );
-            }
-          }
-          if (names.size > 0) {
-            const gitignoreRel = `${skillsRoot}/.gitignore`;
-            let gitignoreLines = new Set();
+      if (manifest) {
+        const lockRel = ".agents/skills.lock.json";
+        const lockExists = await exists(join(root, lockRel));
+        if (manifest.sources.length > 0 && !lockExists) {
+          reporter.error(
+            "context.skill-lock-missing",
+            lockRel,
+            "External skill sources are declared but no v2 lockfile exists.",
+            "Run node scripts/skills-sync.mjs --update to fetch and lock external skills.",
+          );
+        } else if (lockExists) {
+          const lockDoc = await readJson(root, lockRel, reporter, "context.skill-lock-invalid-json");
+          if (lockDoc.ok) {
+            let lock = null;
             try {
-              gitignoreLines = new Set((await readText(root, gitignoreRel)).split(/\r?\n/).map((line) => line.trim()));
-            } catch {
-              // 文件缺失时每个受管技能各报一条。
+              lock = parseLockValue(lockDoc.value);
+            } catch (error) {
+              const id = error instanceof SyncError && error.code === SYNC_ERR.manifestVersion ? "context.skill-lock-version-unsupported" : "context.skill-lock-invalid";
+              reporter.error(id, lockRel, error instanceof Error ? error.message : String(error), "Run node scripts/skills-sync.mjs --update to regenerate the v2 lock.");
             }
-            for (const name of names) {
-              if (!gitignoreLines.has(`/${name}/`)) {
+            if (lock) {
+              const skillsRoot = manifest.skillsRoot;
+              const manifestById = new Map(manifest.sources.map((source) => [source.id, source]));
+              const lockById = new Map(lock.sources.map((source) => [source.id, source]));
+              if (lock.skillsRoot !== skillsRoot) {
                 reporter.error(
-                  "context.skill-gitignore-missing",
-                  gitignoreRel,
-                  `Managed skill "${name}" is not excluded from version control.`,
-                  "Run node scripts/skills-sync.mjs to regenerate the managed .gitignore.",
+                  "context.skill-lock-stale",
+                  lockRel,
+                  `Lock skillsRoot "${lock.skillsRoot}" differs from manifest "${skillsRoot}".`,
+                  "Run node scripts/skills-sync.mjs --update to re-lock against the current manifest.",
                 );
+              }
+              for (const [id, source] of manifestById) {
+                const locked = lockById.get(id);
+                if (!locked) {
+                  reporter.error(
+                    "context.skill-source-unsynced",
+                    sourcesRel,
+                    `Source "${id}" (${source.repo}, path "${source.path}") has no entry in the lockfile.`,
+                    "Run node scripts/skills-sync.mjs --update after changing skill sources.",
+                  );
+                } else if (!sourceSpecEqual(source, locked)) {
+                  reporter.error(
+                    "context.skill-lock-stale",
+                    lockRel,
+                    `Source "${id}" spec (repo/path/track/only/exclude) differs from the lockfile.`,
+                    "Review the manifest change, then run node scripts/skills-sync.mjs --update to re-lock.",
+                  );
+                }
+              }
+              for (const id of lockById.keys()) {
+                if (!manifestById.has(id)) {
+                  reporter.error(
+                    "context.skill-lock-stale",
+                    lockRel,
+                    `Locked source "${id}" matches no declared source in the manifest.`,
+                    "Run node scripts/skills-sync.mjs --update to prune or reconcile managed skills.",
+                  );
+                }
+              }
+              const allNames = [];
+              for (const source of lock.sources) {
+                for (const skill of source.skills) {
+                  allNames.push(skill.name);
+                  const skillDir = join(root, skillsRoot, skill.name);
+                  if (!(await exists(skillDir))) {
+                    reporter.error(
+                      "context.skill-managed-missing",
+                      `${skillsRoot}/${skill.name}/SKILL.md`,
+                      `Managed skill "${skill.name}" is locked but missing on disk.`,
+                      "Run node scripts/skills-sync.mjs to restore managed skills from the locked commits.",
+                    );
+                    continue;
+                  }
+                  const digest = await digestDiskDirectory(skillDir);
+                  if (digest !== skill.treeDigest) {
+                    reporter.error(
+                      "context.skill-managed-drift",
+                      `${skillsRoot}/${skill.name}`,
+                      `Managed skill "${skill.name}" drifted from the locked tree digest ${skill.treeDigest.slice(0, 12)}.`,
+                      "Run node scripts/skills-sync.mjs to repair the drifted skill from the locked commit.",
+                    );
+                  }
+                }
+                for (const file of source.licenseFiles) {
+                  let licenseOk = false;
+                  try {
+                    licenseOk = sha256Hex(await readFile(join(root, file.localPath))) === file.sha256;
+                  } catch {
+                    licenseOk = false;
+                  }
+                  if (!licenseOk) {
+                    reporter.error(
+                      "context.skill-license-drift",
+                      file.localPath,
+                      `License provenance for source "${source.id}" (${file.path}) is missing or does not match the locked SHA-256.`,
+                      "Run node scripts/skills-sync.mjs to restore the locked license provenance.",
+                    );
+                  }
+                }
+              }
+              if (allNames.length > 0) {
+                const gitignoreRel = `${skillsRoot}/.gitignore`;
+                const expected = expectedGitignore(allNames);
+                let rawGitignore = null;
+                try {
+                  rawGitignore = await readText(root, gitignoreRel);
+                } catch {
+                  // 文件缺失时每条规则各报一条。
+                }
+                if (rawGitignore !== null && rawGitignore.startsWith(GITIGNORE_HEADER)) {
+                  // 生成文件必须逐字节等于受管规则集：多余规则（如 /* ）会吞掉内置 Skill（IGN-002）。
+                  if (rawGitignore !== expected) {
+                    reporter.error(
+                      "context.skill-gitignore-missing",
+                      gitignoreRel,
+                      "Generated .gitignore content differs from the managed rule set (stale or hand-edited).",
+                      "Run node scripts/skills-sync.mjs to regenerate the managed .gitignore.",
+                    );
+                  }
+                } else {
+                  const gitignoreLines = new Set((rawGitignore ?? "").split(/\r?\n/).map((line) => line.trim()));
+                  for (const line of expected.split("\n")) {
+                    const rule = line.trim();
+                    if (rule === "" || rule.startsWith("#")) continue;
+                    if (!gitignoreLines.has(rule)) {
+                      reporter.error(
+                        "context.skill-gitignore-missing",
+                        gitignoreRel,
+                        `Generated .gitignore is missing the rule "${rule}".`,
+                        "Run node scripts/skills-sync.mjs to regenerate the managed .gitignore.",
+                      );
+                    }
+                  }
+                }
               }
             }
           }

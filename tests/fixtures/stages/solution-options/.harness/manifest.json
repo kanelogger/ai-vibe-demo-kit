@@ -11,8 +11,8 @@
     ".harness/config.json": "机器配置：可执行验证、关键路径、报告绑定、清理和恢复入口；必须由目标项目填写",
     ".harness/manifest.json": "本文件",
     ".agents/skills.json": "最小 Harness Skill 路由",
-    ".agents/skills.sources.json": "外部 Skill 来源清单（repo/path/ref，可选 only/exclude），由 scripts/skills-sync.mjs 消费",
-    ".agents/skills.lock.json": "skills-sync 生成的解析锁定，提交以复现（未使用外部 Skills 时不存在）",
+    ".agents/skills.sources.json": "外部 Skill 来源清单 v2（id/repo/path/track，可选 only/exclude），由 scripts/skills-sync.mjs 消费",
+    ".agents/skills.lock.json": "skills-sync 生成的 v2 解析锁定（resolved SHA + tree digest + 许可证摘要），提交以复现（sources 为空时不存在）",
     ".agents/skills/": "Harness 专属最小 Skills（source-register、verification-closeout、memory-writeback）与 skills-sync 拉取的受管外部 Skills（不入库）",
     ".agents/hooks/check-harness.mjs": "Hook 适配层，只调用 scripts/harness-check.mjs",
     "workflow/": "本轮需求、方案和放行过程的模板与说明",
@@ -24,6 +24,7 @@
     "scripts/harness-runtime.mjs": "检查器与验证器共享的命令计划、报告版本、配置哈希和工作区指纹契约",
     "scripts/harness-verify.mjs": "实际执行验证命令、关键用户路径和清理，生成机器报告并回填 Sprint 摘要",
     "scripts/harness-stage.mjs": "候选状态完整预检通过后原子更新 workflow-state.json",
-    "scripts/skills-sync.mjs": "按 skills.sources.json 从 Git 仓库同步外部 Skills，生成锁文件与受管 .gitignore；幂等、零依赖"
+    "scripts/skills-sync.mjs": "外部 Skills 同步 CLI：默认按 lock 锁定恢复，--update 解析 track 并重写 lock；幂等、零依赖",
+    "scripts/skills-sync-core.mjs": "skills-sync 的协议无关核心（parse/resolve/discover/plan/materialize/verify），CLI 与 harness-check 共享 schema 与摘要定义，未来 MCP adapter 复用"
   }
 }

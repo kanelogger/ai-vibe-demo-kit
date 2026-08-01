@@ -465,8 +465,33 @@ async function fillContracts(root) {
   await writeFile(join(root, "SPECS", "database.md"), DATABASE_FILLED, "utf8");
 }
 
+// Overlay 工作副本含有真实的默认来源与物化数据面；夹具只保留控制面（sources 为空、无 lock/gitignore/.sources）。
+// 受管目录名单从复制来的 lock 读取，不维护第二份内置技能清单。
+async function stripExternalSkillData(root) {
+  const agentsRoot = join(root, ".agents");
+  const lockPath = join(agentsRoot, "skills.lock.json");
+  let managedNames = [];
+  try {
+    const lock = JSON.parse(await readFile(lockPath, "utf8"));
+    managedNames = (Array.isArray(lock.sources) ? lock.sources : []).flatMap((source) => (Array.isArray(source.skills) ? source.skills : []).map((skill) => skill.name));
+  } catch {
+    // 无 lock 时工作副本未物化，无需剪枝。
+  }
+  const manifest = JSON.parse(await readFile(join(agentsRoot, "skills.sources.json"), "utf8"));
+  await writeJson(join(agentsRoot, "skills.sources.json"), { ...manifest, sources: [] });
+  await rm(lockPath, { force: true });
+  const skillsRoot = join(agentsRoot, "skills");
+  for (const name of managedNames) {
+    await rm(join(skillsRoot, name), { recursive: true, force: true });
+  }
+  await rm(join(skillsRoot, ".sources"), { recursive: true, force: true });
+  await rm(join(skillsRoot, ".staging"), { recursive: true, force: true });
+  await rm(join(skillsRoot, ".gitignore"), { force: true });
+}
+
 async function makeBase(root) {
   await cp(overlayRoot, root, { recursive: true });
+  await stripExternalSkillData(root);
   await writeJson(join(root, ".harness", "config.json"), CONFIG);
   await fillArchitecture(root);
   await fillContracts(root);

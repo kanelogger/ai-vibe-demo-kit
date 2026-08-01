@@ -29,30 +29,36 @@ git diff
 1. 审查复制产生的所有冲突和覆盖；合并已有 `AGENTS.md`，保留项目原有高优先级约束。
 2. 填写 `HARNESS.md` 相关章节与 `SPECS/architecture.md` 中的项目事实。
 3. 在 `.harness/config.json` 登记可执行验证、关键路径、清理、回退、报告有效期和工作区指纹。
-4. 需要外部 Skills 时在 `.agents/skills.sources.json` 登记来源并执行 `node scripts/skills-sync.mjs`；不需要时保持 `sources` 为空数组。
+4. 外部 Skills 默认跟踪三个上游（见 `.agents/skills.sources.json`）；首次使用执行 `node scripts/skills-sync.mjs --update` 解析并锁定，之后复制到目标项目用 `node scripts/skills-sync.mjs` 按锁恢复；不需要时把 `sources` 置为空数组并执行一次 `--update` 清理。
 5. 按 `overlay/.agents/hooks/README.md` 注册平台阻断点；不支持 Hook 时登记相同节点的人工命令。
 6. 执行 `node scripts/harness-check.mjs all` 并修复全部结构错误。
 7. 形成一次独立、可回退的 Harness 接入提交。
 
 ## 外部 Skills
 
-`.agents/skills.json` 是 Harness 路由索引；外部 Skill 的**来源**由 `.agents/skills.sources.json` 声明，二者职责不同：
+`.agents/skills.json` 是 Harness 路由索引；外部 Skill 的**来源**由 `.agents/skills.sources.json` 声明（v2），二者职责不同。清单表达更新意图（track），`.agents/skills.lock.json` 记录本次解析到的完整 commit SHA 与内容摘要：
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "sources": [
-    { "repo": "https://github.com/<owner>/<repo>", "path": "skills", "ref": "<tag-or-full-sha>", "exclude": ["deprecated/"] }
+    { "id": "mattpocock-skills", "repo": "https://github.com/<owner>/<repo>", "path": "skills", "track": { "kind": "branch", "value": "main" }, "exclude": ["deprecated/"] }
   ]
 }
 ```
 
-- `path` 指向含 `SKILL.md` 的单个 Skill 目录，或含多个 Skill 的父目录（技能组）；`only` / `exclude` 可选，按 Skill 名或目录前缀（以 `/` 结尾）过滤。
-- `ref` 必须钉 tag 或完整 commit SHA；浮动分支会破坏可复现性。
-- `node scripts/skills-sync.mjs` 把 Skills 拉入 `.agents/skills/`，生成 `.agents/skills.lock.json`（提交以复现）和 `.agents/skills/.gitignore`（受管目录不入库）。重复执行幂等；`--force` 强制重新拉取。
-- 技能在 Agent 会话启动时加载，sync 必须在会话开始前运行，不做会话内懒加载。清单、锁文件与磁盘漂移由 `harness-check context` 报错。
+- `path` 指向含 `SKILL.md` 的单个 Skill 目录，或含多个 Skill 的父目录（技能组）；`only` / `exclude` 可选，按 Skill 名或目录前缀（以 `/` 结尾）过滤，`exclude` 最后执行。
+- `track.kind` 为 `branch`、`tag` 或 `commit`；普通 sync 永不重新解析，`--update` 才把 branch 解析为该次 fetch 观察到的 tip。
+- **锁定 sync**：`node scripts/skills-sync.mjs` 严格恢复 lock 中的 resolved SHA（上游 branch 前移也不影响），READY 时零网络零写入；`--force` 从同一锁定 SHA 重新物化。
+- **显式更新**：`node scripts/skills-sync.mjs --update` 联网解析全部来源，报告旧/新 SHA 与技能增删，原子替换 lock 并物化；更新前请审查 lock diff。
+- 两个命令都生成 `.agents/skills/.gitignore`（受管目录与 `.sources` 不入库，内置 Skill 不受影响）；失败时现有可用状态字节不变。
+- 技能在 Agent 会话启动时加载，sync / update 必须在会话开始前运行，`--update` 成功后请开启新会话，不做会话内懒加载。清单、锁文件、磁盘摘要与 provenance 漂移由 `harness-check context` 只读报错。
 - Overlay 自带的三个 Harness Skill（source-register、verification-closeout、memory-writeback）照常提交，sync 不会覆盖锁文件之外的目录。
-- 同步后如需接入 Harness 路由，在 `.agents/skills.json` 登记对应 alias。
+- 同步后如需接入 Harness 路由，在 `.agents/skills.json` 人工登记对应 alias；同步器不改写路由。
+
+从 v1（`ref` 字段与扁平 `managed` lock）迁移：先提交或备份工作区，再用本版本替换控制面文件（`skills.sources.json`、`scripts/skills-sync*.mjs`、检查器），删除旧 lock 后执行一次 `node scripts/skills-sync.mjs --update`；系统不会把旧 lock 静默升级为 v2。
+
+注意：本仓库根的 `/.agents/` 忽略规则只作用于根仓库，不会覆盖 `overlay/.agents/`；`git check-ignore` 与 `harness-check context` 都必须针对目标项目实际的 `skillsRoot` 执行。
 
 ## Harness 检查
 

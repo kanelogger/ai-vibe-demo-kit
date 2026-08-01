@@ -24,7 +24,7 @@
 - `node scripts/harness-verify.mjs full --sprint <path>`：生成进入 `accepted` 所需的完整报告。
 - `node scripts/harness-stage.mjs status`：查看当前阶段、允许的下一阶段和最近一次放行记录。
 - `node scripts/harness-stage.mjs advance --to <stage> --by user --quote "<用户原话>"`：阶段推进的唯一入口。
-- `node scripts/skills-sync.mjs`：按 `.agents/skills.sources.json` 同步外部 Skills（会话开始前运行，幂等）。
+- `node scripts/skills-sync.mjs`：按 `.agents/skills.lock.json` 锁定恢复外部 Skills（会话开始前运行，READY 时零网络零写入）；`--update` 解析 track 拉取上游最新并重写 lock（成功后需开启新会话）。
 
 检查器只读。`harness-stage.mjs` 对候选状态执行完整 preflight，全部通过后才原子更新 `workflow-state.json`；Agent 不得直接编辑状态文件。
 

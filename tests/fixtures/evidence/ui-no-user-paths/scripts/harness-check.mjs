@@ -94,6 +94,7 @@ const CONTROL_PATHS = [
   ".harness/config.json",
   ".harness/manifest.json",
   ".agents/skills.json",
+  ".agents/mcp.json",
   "workflow/README.md",
   "workflow/requirements.template.md",
   "workflow/design.template.md",

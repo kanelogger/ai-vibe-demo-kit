@@ -31,8 +31,9 @@ git diff
 3. 在 `.harness/config.json` 登记可执行验证、关键路径、清理、回退、报告有效期和工作区指纹。
 4. 外部 Skills 默认跟踪三个上游（见 `.agents/skills.sources.json`）；首次使用执行 `node scripts/skills-sync.mjs --update` 解析并锁定，之后复制到目标项目用 `node scripts/skills-sync.mjs` 按锁恢复；不需要时把 `sources` 置为空数组并执行一次 `--update` 清理。
 5. 按 `overlay/.agents/hooks/README.md` 注册平台阻断点；不支持 Hook 时登记相同节点的人工命令。
-6. 执行 `node scripts/harness-check.mjs all` 并修复全部结构错误。
-7. 形成一次独立、可回退的 Harness 接入提交。
+6. 在 `.agents/mcp.json` 登记 MCP 外部连接并同步到平台配置；无外部连接时保持空 `mcpServers`，文件本身保留。
+7. 执行 `node scripts/harness-check.mjs all` 并修复全部结构错误。
+8. 形成一次独立、可回退的 Harness 接入提交。
 
 ## 外部 Skills
 

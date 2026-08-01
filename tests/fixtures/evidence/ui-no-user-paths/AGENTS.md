@@ -56,7 +56,7 @@ initialized
 - `tasks/` 保存当前可执行单元。
 - `memory/decisions.md` 保存简单决策，新决策覆盖旧决策时写明谱系；重要决策进入 `memory/adr/`。
 - `rules/` 保存按主题加载的工程约束。
-- `.agents/` 保存 Harness 专属 Skills、外部 Skill 来源清单和 Hook 适配。
+- `.agents/` 保存 Harness 专属 Skills、外部 Skill 来源清单、Hook 适配和 MCP 外部连接声明。
 
 需求、方案、feature spec 和实现计划必须维护 Source Register。记录用户原话、文档、现有代码、设计、测试和日志来源；没有来源时显式写明“无来源”及原因。
 

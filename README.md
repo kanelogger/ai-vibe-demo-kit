@@ -27,7 +27,7 @@ git diff
 首次适配：
 
 1. 审查复制产生的所有冲突和覆盖；合并已有 `AGENTS.md`，保留项目原有高优先级约束。
-2. 填写 `HARNESS.md` 相关章节与 `SPECS/ARCHITECTURE.md` 中的项目事实。
+2. 填写 `HARNESS.md` 相关章节与 `SPECS/architecture.md` 中的项目事实。
 3. 在 `.harness/config.json` 登记可执行验证、关键路径、清理、回退、报告有效期和工作区指纹。
 4. 需要外部 Skills 时在 `.agents/skills.sources.json` 登记来源并执行 `node scripts/skills-sync.mjs`；不需要时保持 `sources` 为空数组。
 5. 按 `overlay/.agents/hooks/README.md` 注册平台阻断点；不支持 Hook 时登记相同节点的人工命令。

@@ -89,10 +89,10 @@ test("复制 Overlay 后既有应用文件保持不变，AGENTS 冲突可见", a
     await writeFile(configPath, JSON.stringify(config, null, 2), "utf8");
 
     // 演练项目是纯 CLI、无对外契约：删除契约模板并留空 contracts（显式缺口路径）。
-    await rm(join(root, "SPECS", "API.md"));
-    await rm(join(root, "SPECS", "DATABASE.md"));
+    await rm(join(root, "SPECS", "api.md"));
+    await rm(join(root, "SPECS", "database.md"));
 
-    const archPath = join(root, "SPECS", "ARCHITECTURE.md");
+    const archPath = join(root, "SPECS", "architecture.md");
     await writeFile(
       archPath,
       (await readFile(archPath, "utf8"))

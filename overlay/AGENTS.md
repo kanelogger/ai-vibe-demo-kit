@@ -1,17 +1,17 @@
 # Agent 指南
 
-本仓库已接入 AI Native Harness Overlay。Overlay 只管理 Agent 研发装甲层，不规定应用技术栈、源码目录或部署方式；项目事实以 `SPECS/ARCHITECTURE.md` 和 `.harness/config.json` 为准。
+本仓库已接入 AI Native Harness Overlay。Overlay 只管理 Agent 研发装甲层，不规定应用技术栈、源码目录或部署方式；项目事实以 `SPECS/architecture.md` 和 `.harness/config.json` 为准。
 
 ## 冷启动顺序
 
 1. 读 `workflow-state.json`，确认当前阶段和允许动作。
 2. 读 `HARNESS.md`，理解 Harness 边界和目录职责。
-3. 读 `SPECS/ARCHITECTURE.md`，获取真实技术栈、模块位置和风险事实。
+3. 读 `SPECS/architecture.md`，获取真实技术栈、模块位置和风险事实。
 4. 读 `.harness/config.json`，获取机器可执行的验证命令和关键用户路径。
 5. 按任务读取 `workflow/`、`SPECS/FEATURES/`、`tasks/`、`memory/` 与相关 `rules/`。
 6. 需要 Harness 流程帮助时读取 `.agents/skills.json` 中的最小 Skill 路由；外部 Skills 由 `.agents/skills.sources.json` 声明、`scripts/skills-sync.mjs` 在会话开始前同步。
 
-`AGENTS.md` 是索引。技术栈、测试、安全和 Git 细则分别维护在 `SPECS/ARCHITECTURE.md` 与 `rules/` 中，不在这里重复。
+`AGENTS.md` 是索引。技术栈、测试、安全和 Git 细则分别维护在 `SPECS/architecture.md` 与 `rules/` 中，不在这里重复。
 
 ## 检查命令
 
@@ -52,7 +52,7 @@ initialized
 ## 上下文闭环
 
 - `workflow/` 保存本轮需求、方案和确认过程，完成后可以归档。
-- `SPECS/` 保存长期有效的架构、行为契约和 feature spec，必须随代码演进；`SPECS/API.md` 和 `SPECS/DATABASE.md` 是前后端共享的唯一契约来源，字段一致性由 `commands.contracts` 机器校验。
+- `SPECS/` 保存长期有效的架构、行为契约和 feature spec，必须随代码演进；`SPECS/api.md` 和 `SPECS/database.md` 是前后端共享的唯一契约来源，字段一致性由 `commands.contracts` 机器校验。
 - `tasks/` 保存当前可执行单元。
 - `memory/decisions.md` 保存简单决策，新决策覆盖旧决策时写明谱系；重要决策进入 `memory/adr/`。
 - `rules/` 保存按主题加载的工程约束。

@@ -16,7 +16,7 @@
     ".agents/skills/": "Harness 专属最小 Skills（source-register、verification-closeout、memory-writeback）与 skills-sync 拉取的受管外部 Skills（不入库）",
     ".agents/hooks/check-harness.mjs": "Hook 适配层，只调用 scripts/harness-check.mjs",
     "workflow/": "本轮需求、方案和放行过程的模板与说明",
-    "SPECS/": "长期有效的项目事实、唯一契约来源（API.md / DATABASE.md）与 feature spec 骨架",
+    "SPECS/": "长期有效的项目事实、唯一契约来源（api.md / database.md）与 feature spec 骨架",
     "tasks/": "当前执行单元模板",
     "memory/": "决策谱系和 ADR 骨架",
     "rules/": "按主题加载的工程约束",

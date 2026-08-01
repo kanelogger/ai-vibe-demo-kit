@@ -388,7 +388,7 @@ async function writeVerificationReport(root, config) {
 }
 
 async function fillArchitecture(root) {
-  const path = join(root, "SPECS", "ARCHITECTURE.md");
+  const path = join(root, "SPECS", "architecture.md");
   let content = await readFile(path, "utf8");
   content = content
     .replace("- Product / service:", "- Product / service: Fixture project for harness checker tests")
@@ -461,8 +461,8 @@ const DATABASE_FILLED = `# 数据库契约（唯一来源）
 `;
 
 async function fillContracts(root) {
-  await writeFile(join(root, "SPECS", "API.md"), API_FILLED, "utf8");
-  await writeFile(join(root, "SPECS", "DATABASE.md"), DATABASE_FILLED, "utf8");
+  await writeFile(join(root, "SPECS", "api.md"), API_FILLED, "utf8");
+  await writeFile(join(root, "SPECS", "database.md"), DATABASE_FILLED, "utf8");
 }
 
 async function makeBase(root) {
@@ -527,13 +527,13 @@ async function main() {
   await makeBase(valid);
   await writeJson(join(valid, "workflow-state.json"), stateFor("initialized"));
 
-  // invalid-context：缺少 AGENTS.md、SPECS/ARCHITECTURE.md 和 .harness/config.json。
+  // invalid-context：缺少 AGENTS.md、SPECS/architecture.md 和 .harness/config.json。
   const invalid = join(fixturesRoot, "invalid-context");
   await rm(invalid, { recursive: true, force: true });
   await makeBase(invalid);
   await writeJson(join(invalid, "workflow-state.json"), stateFor("initialized"));
   await rm(join(invalid, "AGENTS.md"));
-  await rm(join(invalid, "SPECS", "ARCHITECTURE.md"));
+  await rm(join(invalid, "SPECS", "architecture.md"));
   await rm(join(invalid, ".harness", "config.json"));
 
   // broken-json：config 与 state 均无法解析。

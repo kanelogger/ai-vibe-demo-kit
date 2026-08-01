@@ -91,7 +91,7 @@ const CONTROL_PATHS = [
   "workflow/implementation-ready.template.md",
   "workflow/acceptance.template.md",
   "SPECS/README.md",
-  "SPECS/ARCHITECTURE.md",
+  "SPECS/architecture.md",
   "SPECS/FEATURES",
   "tasks/README.md",
   "tasks/backlog.template.md",
@@ -114,15 +114,15 @@ const CONTROL_PATHS = [
 const PLACEHOLDER_SCAN_FILES = [
   "AGENTS.md",
   "HARNESS.md",
-  "SPECS/ARCHITECTURE.md",
+  "SPECS/architecture.md",
   "SPECS/README.md",
-  "SPECS/API.md",
-  "SPECS/DATABASE.md",
+  "SPECS/api.md",
+  "SPECS/database.md",
   "memory/decisions.md",
 ];
 
 // 唯一契约来源：任一存在即要求项目登记机器契约校验。
-const CONTRACT_SOURCE_FILES = ["SPECS/API.md", "SPECS/DATABASE.md"];
+const CONTRACT_SOURCE_FILES = ["SPECS/api.md", "SPECS/database.md"];
 
 const ARCHITECTURE_IDENTITY_FIELDS = ["Product / service", "Primary users", "Primary outcome"];
 
@@ -348,8 +348,8 @@ async function checkContext(root, reporter) {
     }
   }
 
-  // 5. ARCHITECTURE.md 的项目身份与运行时地图必须填写。
-  const archPath = "SPECS/ARCHITECTURE.md";
+  // 5. architecture.md 的项目身份与运行时地图必须填写。
+  const archPath = "SPECS/architecture.md";
   if (await exists(join(root, archPath))) {
     const content = await readText(root, archPath);
     for (const field of ARCHITECTURE_IDENTITY_FIELDS) {
@@ -359,7 +359,7 @@ async function checkContext(root, reporter) {
           "context.architecture-unfilled",
           archPath,
           `Project identity field "${field}" is empty.`,
-          `Fill "${field}" in SPECS/ARCHITECTURE.md from repository evidence; write 待确认 only with an explicit reason.`,
+          `Fill "${field}" in SPECS/architecture.md from repository evidence; write 待确认 only with an explicit reason.`,
         );
       }
     }
@@ -374,7 +374,7 @@ async function checkContext(root, reporter) {
             "context.architecture-unfilled",
             archPath,
             `Runtime And Tooling row "${label}" is empty.`,
-            `Fill the "${label}" row in SPECS/ARCHITECTURE.md from repository evidence; write 待确认 only with an explicit reason.`,
+            `Fill the "${label}" row in SPECS/architecture.md from repository evidence; write 待确认 only with an explicit reason.`,
           );
         }
       }

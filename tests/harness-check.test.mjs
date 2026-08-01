@@ -377,8 +377,8 @@ test("evidence: 存在唯一契约来源但未登记契约校验失败", () => {
 test("evidence: 无契约项目删除契约文件后不强制 contracts 命令", async () => {
   const root = await mutableCopy("valid-context");
   try {
-    await rm(join(root, "SPECS", "API.md"));
-    await rm(join(root, "SPECS", "DATABASE.md"));
+    await rm(join(root, "SPECS", "api.md"));
+    await rm(join(root, "SPECS", "database.md"));
     const configPath = join(root, ".harness", "config.json");
     const config = JSON.parse(await readFile(configPath, "utf8"));
     config.commands.contracts = ["无对外契约：纯 CLI 项目"];

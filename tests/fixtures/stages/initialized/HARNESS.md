@@ -63,7 +63,7 @@ node scripts/harness-check.mjs context
 
 1. 审查复制产生的所有冲突和覆盖。
 2. 合并已有 `AGENTS.md`，保留项目原有高优先级约束。
-3. 填写 `HARNESS.md` 相关章节与 `SPECS/ARCHITECTURE.md` 中的项目事实。
+3. 填写 `HARNESS.md` 相关章节与 `SPECS/architecture.md` 中的项目事实。
 4. 在 `.harness/config.json` 登记可执行的静态检查、测试、契约、关键路径和清理步骤，并配置报告有效期与工作区指纹。
 5. 需要外部 Skills 时在 `.agents/skills.sources.json` 登记来源并执行 `node scripts/skills-sync.mjs`。
 6. 按 `.agents/hooks/README.md` 在目标平台注册会话启动、实现前和提交前阻断点；平台不支持 Hook 时登记对应人工命令节点。
@@ -109,7 +109,7 @@ node scripts/harness-stage.mjs advance --to <stage> --by user --quote "<用户�
 
 ## 契约唯一来源
 
-`SPECS/API.md` 和 `SPECS/DATABASE.md` 是前后端共享的唯一契约来源。任一文件存在时，`.harness/config.json` 的 `commands.contracts` 必须登记机器校验命令；项目没有对应契约时删除该文件并在 config 中写明显式说明。契约只有一份，实现侧引用路径而不复制内容。
+`SPECS/api.md` 和 `SPECS/database.md` 是前后端共享的唯一契约来源。任一文件存在时，`.harness/config.json` 的 `commands.contracts` 必须登记机器校验命令；项目没有对应契约时删除该文件并在 config 中写明显式说明。契约只有一份，实现侧引用路径而不复制内容。
 
 通过 Harness 检查不代表应用已经验收通过。真实构建、测试和用户路径结果仍以目标项目的验证报告为准。
 

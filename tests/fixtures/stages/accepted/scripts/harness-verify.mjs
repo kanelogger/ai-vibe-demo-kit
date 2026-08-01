@@ -16,7 +16,7 @@ import {
 } from "./harness-runtime.mjs";
 
 const execAsync = promisify(exec);
-const CONTRACT_SOURCES = ["SPECS/API.md", "SPECS/DATABASE.md"];
+const CONTRACT_SOURCES = ["SPECS/api.md", "SPECS/database.md"];
 const REPORT_FIELDS = [
   "Machine report",
   "Commands",

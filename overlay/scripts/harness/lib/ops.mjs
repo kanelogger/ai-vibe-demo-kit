@@ -1,5 +1,5 @@
-// ops.mjs — 领域动作：start / advance / suspend / resume / close 及原子组合。
-// 每个动作恰好一个状态事务；registry 与 Work Item 在同一 commit 中更新（FR-G02）。
+// ops.mjs — 领域动作：start / advance / suspend / resume / close、原子组合与 Slice 动作。
+// 每个动作恰好一个状态事务；registry 与 Work Item/Slice 在同一 commit 中更新（FR-G02）。
 
 import { E } from "./errors.mjs";
 import { transact } from "./state-store.mjs";
@@ -14,6 +14,14 @@ import {
   markClosed,
   deriveAcceptedLineage,
 } from "./registry.mjs";
+import {
+  collectSlices,
+  computeFrontier,
+  createSlice,
+  applySliceAdvance,
+  applyScopeRevision,
+  slicePath,
+} from "./slice.mjs";
 import {
   createWorkItem,
   validateWorkItem,
@@ -363,6 +371,119 @@ export async function opRollback(root, ctx, { targetId, only = false, quote, now
       tx.emit({ action: "start", workItemId: id, detail: { type: "rollback", rollbackOf: [targetId], cascade } });
       tx.emit({ action: "rollback-plan", workItemId: id, detail: { target: targetId, cascade, digest: plan.digest } });
       tx.result = { workItemId: id, target: targetId, cascade, stage: item.stage, suspendedWorkItemId };
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Slice 动作（PRD 9.1–9.3）。每个动作恰好一个状态事务；Slice 状态唯一真相在
+// work-items/<id>/slices/<slice-id>.json（stateRef，单一事实源）。
+
+/** 从事务视图（snapshot + 未提交 writes）收集 active 项的全部 Slice。 */
+function readSlices(tx, workItemId) {
+  const merged = new Map(tx.snapshot.files);
+  for (const [path, text] of tx.writes) merged.set(path, text);
+  return collectSlices(merged, workItemId);
+}
+
+function readSlice(tx, slices, sliceId) {
+  const slice = slices.get(sliceId);
+  if (slice === undefined) throw E.SLICE_NOT_FOUND(sliceId);
+  return slice;
+}
+
+/** slice create：声明六态 Slice；dependsOn/环/scope 冲突/未固定契约在创建时拒绝（PRD 9.3）。 */
+export async function opSliceCreate(root, ctx, { spec, now = () => new Date() }) {
+  return transact(root, ctx.stateRef, {
+    message: `harness: slice create ${spec?.sliceId ?? "?"}`,
+    now,
+    mutate: async (tx) => {
+      const registry = tx.registry();
+      if (registry.activeWorkItemId === null) throw E.NO_ACTIVE();
+      const item = readItem(tx, registry.activeWorkItemId);
+      const slices = readSlices(tx, item.workItemId);
+      const slice = createSlice({
+        workItemId: item.workItemId,
+        spec,
+        slices,
+        at: tx.at,
+        transactionId: tx.transactionId,
+        sequence: registry.sequence + 1,
+      });
+      slices.set(slice.sliceId, slice);
+      tx.writeJson(slicePath(item.workItemId, slice.sliceId), slice);
+      tx.emit({
+        action: "slice-create",
+        workItemId: item.workItemId,
+        detail: { sliceId: slice.sliceId, revision: 1, dependsOn: slice.dependsOn },
+      });
+      tx.result = {
+        workItemId: item.workItemId,
+        sliceId: slice.sliceId,
+        revision: slice.revision,
+        status: slice.status,
+        frontier: computeFrontier(slices),
+      };
+    },
+  });
+}
+
+/** slice advance：六态逐态推进（FR-S01）；进入 implementing 要求全部前驱 done（FR-S07）。 */
+export async function opSliceAdvance(root, ctx, { sliceId, to, now = () => new Date() }) {
+  return transact(root, ctx.stateRef, {
+    message: `harness: slice advance ${sliceId} → ${to}`,
+    now,
+    mutate: async (tx) => {
+      const registry = tx.registry();
+      if (registry.activeWorkItemId === null) throw E.NO_ACTIVE();
+      const item = readItem(tx, registry.activeWorkItemId);
+      const slices = readSlices(tx, item.workItemId);
+      const slice = readSlice(tx, slices, sliceId);
+      const from = slice.status;
+      applySliceAdvance(slice, to, {
+        slices,
+        at: tx.at,
+        transactionId: tx.transactionId,
+        sequence: registry.sequence + 1,
+      });
+      tx.writeJson(slicePath(item.workItemId, slice.sliceId), slice);
+      tx.emit({
+        action: "slice-advance",
+        workItemId: item.workItemId,
+        detail: { sliceId, from, to, revision: slice.revision },
+      });
+      tx.result = { workItemId: item.workItemId, sliceId, from, to, revision: slice.revision };
+    },
+  });
+}
+
+/**
+ * slice update-scope：扩缩 Write Scope 创建新 revision、重算冲突（FR-S06），
+ * 既有 Quick/Human Review 失效，Slice 回 ready 重新走正常路径。
+ */
+export async function opSliceUpdateScope(root, ctx, { sliceId, writeScope, now = () => new Date() }) {
+  return transact(root, ctx.stateRef, {
+    message: `harness: slice update-scope ${sliceId}`,
+    now,
+    mutate: async (tx) => {
+      const registry = tx.registry();
+      if (registry.activeWorkItemId === null) throw E.NO_ACTIVE();
+      const item = readItem(tx, registry.activeWorkItemId);
+      const slices = readSlices(tx, item.workItemId);
+      const slice = readSlice(tx, slices, sliceId);
+      const revised = applyScopeRevision(slice, writeScope, {
+        slices,
+        at: tx.at,
+        transactionId: tx.transactionId,
+        sequence: registry.sequence + 1,
+      });
+      tx.writeJson(slicePath(item.workItemId, slice.sliceId), slice);
+      tx.emit({
+        action: "slice-update-scope",
+        workItemId: item.workItemId,
+        detail: { sliceId, ...revised },
+      });
+      tx.result = { workItemId: item.workItemId, sliceId, status: slice.status, ...revised };
     },
   });
 }

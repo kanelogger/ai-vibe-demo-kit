@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// cli.mjs — 统一 harness CLI（PRD 12.1，Phase A 状态根基 + Phase B 快路径子集）。
+// cli.mjs — 统一 harness CLI（PRD 12.1，Phase A 状态根基 + Phase B 快路径 + Phase C Slice 模型）。
 // 子命令：status / migrate-state / start / confirm / advance / suspend / resume / close /
-//         rollback / suspend-and-start / close-and-start。
+//         rollback / suspend-and-start / close-and-start / slice {create,list,advance,update-scope}。
 // 契约：--json 稳定输出；退出码 0 成功、1 领域门禁拒绝、2 用法/IO/Git 错误。
 
 import { HarnessError, E, EXIT_OK } from "./lib/errors.mjs";
@@ -18,8 +18,12 @@ import {
   opRollback,
   opSuspendAndStart,
   opCloseAndStart,
+  opSliceCreate,
+  opSliceAdvance,
+  opSliceUpdateScope,
 } from "./lib/ops.mjs";
 import { allowedActions, itemStatePath } from "./lib/work-item.mjs";
+import { collectSlices, computeFrontier, depsPending } from "./lib/slice.mjs";
 import { WORK_ITEM_TYPES, OUTCOMES, RESULTS } from "./lib/lifecycle.mjs";
 
 const USAGE = `用法:
@@ -34,6 +38,10 @@ const USAGE = `用法:
   harness resume <work-item-id> [--json]
   harness close --outcome <${OUTCOMES.join("|")}> [--result <${RESULTS.join("|")}>] [--quote "<原话>"] [--json]
   harness rollback <work-item-id> --quote "<回退原话>" [--only] [--json]
+  harness slice create --spec '<json>' [--json]
+  harness slice list [--json]
+  harness slice advance --slice <slice-id> --to <status> [--json]
+  harness slice update-scope --slice <slice-id> --spec '<json>' [--json]
   harness suspend-and-start --type <type> --quote "<任务原话>" --reason "<暂停原因>" [--contract-ref <引用>] [--json]
   harness close-and-start --outcome <outcome> [--result <result>] --type <type> --quote "<任务原话>" [--reason "<原因>"] [--contract-ref <引用>] [--json]`;
 
@@ -144,6 +152,107 @@ async function cmdStatus(options) {
   process.stdout.write(`${lines.join("\n")}\n`);
 }
 
+/** 解析 --spec JSON 参数；必须是非数组对象。 */
+function parseSpec(raw, repair) {
+  if (!raw) throw E.USAGE("缺少 --spec '<json>'", USAGE);
+  let spec;
+  try {
+    spec = JSON.parse(raw);
+  } catch {
+    throw E.USAGE("--spec 不是合法 JSON", repair);
+  }
+  if (spec === null || typeof spec !== "object" || Array.isArray(spec)) {
+    throw E.USAGE("--spec 必须是非数组 JSON 对象", repair);
+  }
+  return spec;
+}
+
+/** slice 子命令：create / list / advance / update-scope（PRD 9.1–9.3）。 */
+async function cmdSlice(options, ctx) {
+  const sub = options._[0];
+  switch (sub) {
+    case "create": {
+      const { result } = await opSliceCreate(ctx.root, ctx, {
+        spec: parseSpec(options.spec, "harness slice create --spec '<json>'"),
+      });
+      out(
+        options,
+        result,
+        `已创建 Slice ${result.sliceId}（revision ${result.revision}，status=${result.status}）；frontier: ${result.frontier.join(", ") || "无"}`,
+      );
+      return;
+    }
+    case "list": {
+      const data = await sliceListData(ctx);
+      if (options.json) {
+        out(options, data, "");
+        return;
+      }
+      if (data.workItemId === null) {
+        process.stdout.write("无 active Work Item，Slice 列表为空。\n");
+        return;
+      }
+      const lines = [`work-item: ${data.workItemId}`, `frontier: ${data.frontier.join(", ") || "无"}`];
+      for (const slice of data.slices) {
+        const blocked = slice.blockedBy.length > 0 ? `（等待前驱: ${slice.blockedBy.join(", ")}）` : "";
+        lines.push(
+          `slice: ${slice.sliceId} r${slice.revision} status=${slice.status}${slice.frontier ? " [frontier]" : ""}${blocked}`,
+        );
+      }
+      process.stdout.write(`${lines.join("\n")}\n`);
+      return;
+    }
+    case "advance": {
+      if (!options.slice || !options.to) throw E.USAGE("slice advance 缺少 --slice 或 --to", USAGE);
+      const { result } = await opSliceAdvance(ctx.root, ctx, { sliceId: options.slice, to: options.to });
+      out(options, result, `${result.sliceId}: ${result.from} → ${result.to}（revision ${result.revision}）`);
+      return;
+    }
+    case "update-scope": {
+      if (!options.slice) throw E.USAGE("slice update-scope 缺少 --slice", USAGE);
+      const spec = parseSpec(options.spec, "harness slice update-scope --slice <slice-id> --spec '<json>'");
+      if (spec.writeScope === undefined) throw E.USAGE("update-scope 的 --spec 必须包含 writeScope", USAGE);
+      const { result } = await opSliceUpdateScope(ctx.root, ctx, {
+        sliceId: options.slice,
+        writeScope: spec.writeScope,
+      });
+      out(
+        options,
+        result,
+        `${result.sliceId}: scope 已修订 r${result.fromRevision} → r${result.toRevision}，回 ready` +
+          `（失效证据: ${result.invalidatedEvidence.join(", ") || "无"}）`,
+      );
+      return;
+    }
+    default:
+      throw E.USAGE(`未知 slice 子命令 ${sub ?? "(空)"}`, USAGE);
+  }
+}
+
+/** 只读 slice 列表 + 派生 frontier；无 active 项时返回空列表（同 status 的 idle 语义）。 */
+async function sliceListData(ctx) {
+  const { registry, snapshot } = await loadRegistry(ctx.root, ctx.stateRef);
+  if (registry === null) throw E.NOT_MIGRATED(ctx.stateRef);
+  if (registry.activeWorkItemId === null) {
+    return { workItemId: null, frontier: [], slices: [] };
+  }
+  const workItemId = registry.activeWorkItemId;
+  const slices = collectSlices(snapshot.files, workItemId);
+  const frontier = new Set(computeFrontier(slices));
+  const list = [...slices.values()]
+    .map((slice) => ({
+      sliceId: slice.sliceId,
+      revision: slice.revision,
+      status: slice.status,
+      dependsOn: slice.dependsOn,
+      frontier: frontier.has(slice.sliceId),
+      blockedBy: depsPending(slice, slices),
+      writeScope: slice.writeScope,
+    }))
+    .sort((a, b) => a.sliceId.localeCompare(b.sliceId));
+  return { workItemId, frontier: [...frontier].sort(), slices: list };
+}
+
 async function run(argv) {
   const [command, ...rest] = argv;
   const options = parseArgs(rest);
@@ -164,6 +273,9 @@ async function run(argv) {
       );
       return;
     }
+    case "slice":
+      await cmdSlice(options, ctx);
+      return;
     case "start": {
       if (!options.type) throw E.USAGE("start 缺少 --type", USAGE);
       const { result } = await opStart(ctx.root, ctx, {

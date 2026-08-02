@@ -1,9 +1,10 @@
-# harness v2 — Phase A + B：Domain/stateRef、Core CLI 与快路径
+# harness v2 — Phase A + B + C(1/9)：Domain/stateRef、Core CLI、快路径与 Slice 模型
 
 统一 `harness` CLI。Phase A：Project Registry、Work Item namespace、Audit Ledger、stateRef
 原子事务、六类型生命周期表、v1→v2 一次性迁移与 rollback ref。Phase B：六轴风险画像与
 low allowlist、Brief 批量确认快路径（Feature/Bugfix/Maintenance）、不可变 Fact Revision、
-人工停顿预算、Rollback 级联 inverse 与 `rollback` 命令。
+人工停顿预算、Rollback 级联 inverse 与 `rollback` 命令。Phase C slice 01：Slice 模型——
+六态正常路径 + invalidated、dependsOn DAG 与 frontier、Write Scope 语法/冲突与 revision 冻结。
 
 依据：`docs/full-gate-product-requirements.md`（Confirmed v2.0）、ADR-0007、ADR-0010～0016。
 `CONTEXT.md` 是领域语言唯一来源。Phase B 票：`.scratch/phase-b-core-cli/issues/`。
@@ -13,7 +14,7 @@ low allowlist、Brief 批量确认快路径（Feature/Bugfix/Maintenance）、�
 以下属于后续 Phase，刻意不在此实现：
 
 - reopen 表与下游失效（Phase C 事实层语义）
-- Slice DAG、Write Scope、Quick/Human Review、Promotion、targetRef 更新（Phase C）
+- Quick/Human Review 证据门禁、done 的集成语义、Promotion、targetRef 更新（Phase C slice 02–09）
 - Hooks、Skill 路由、Claude Adapter（Phase D）
 
 v1 公共脚本（`harness-check.mjs`、`harness-stage.mjs`、`harness-verify.mjs`、`skills-sync.mjs`）
@@ -29,6 +30,7 @@ refs/heads/harness/state
     state.json                   # Work Item 外壳：status × outcome × result + 类型阶段
     audit.ndjson                 # 派生视图：根账本按 workItemId 过滤，随 namespace 冻结
     facts/  slices/  reports/  reviews/  sources/   # Phase B/C 填充
+    slices/<slice-id>.json           # Slice 状态：六态 × revision × Write Scope（单一事实源）
 ```
 
 `registry.json`：
@@ -58,7 +60,7 @@ refs/heads/harness/state
 6. 关闭项 namespace 冻结；后继关系写在新项与 registry，不改历史项。
 7. status 永远只读；默认离线，不调用模型，不联网。
 
-## CLI（Phase A + B 子集）
+## CLI（Phase A + B + C(1) 子集）
 
 ```text
 harness status [--json]                       # 只读：active/suspended/baseline/允许动作
@@ -71,6 +73,10 @@ harness suspend --reason "<原因>"
 harness resume <work-item-id>
 harness close --outcome <o> [--result <r>] [--quote "<原话>"]
 harness rollback <work-item-id> --quote "<原话>" [--only]
+harness slice create --spec '<json>'            # 声明 Slice：DAG/scope/契约校验后入 ready
+harness slice list [--json]                     # 只读：Slice 列表 + 派生 frontier
+harness slice advance --slice <id> --to <status>  # 六态逐态推进；invalidated 为异常态
+harness slice update-scope --slice <id> --spec '<json>'  # 扩缩 scope → 新 revision，证据失效回 ready
 harness suspend-and-start --type <t> --quote "<原话>" --reason "<原因>" [--contract-ref <引用>]
 harness close-and-start --outcome <o> --type <t> --quote "<原话>" [--result <r>] [--contract-ref <引用>]
 ```
@@ -91,6 +97,29 @@ harness close-and-start --outcome <o> --type <t> --quote "<原话>" [--result <r
   `--only` 有后继时拒绝（`E_ROLLBACK_REQUIRES_CASCADE`）；有 active 项时同事务原子 suspend；
   计划冻结为 `rollbackPlan` 事实并声明单原子 Rollback Slice。inverse 的实际应用（revert 集成）
   与 executed/verified 的证据门禁属 Phase C。
+
+## Phase C slice 01 语义（Slice 模型，PRD 9.1–9.3）
+
+- 六态正常路径 `ready → implementing → runnable → human-reviewed → verified → done` 加异常态
+  `invalidated`（任意下游状态含 done 可进入；reopen 级联驱动属 slice 06）；转移表在
+  `lib/slice.mjs`，跳态拒绝 `E_ILLEGAL_SLICE_TRANSITION`（FR-S01）。invalidated 只能经
+  `update-scope` 新 revision 回 ready（重新规划，PRD 9.1）；done Slice 的 scope 冻结不可修订。
+- Slice 状态唯一真相在 stateRef `work-items/<id>/slices/<slice-id>.json`；最小字段按 §9.2。
+- `dependsOn` 只在前驱 done 时满足（FR-S07）：frontier 由 `slice list` 派生（live 且前驱全部
+  done）；进入 `implementing` 要求前驱全部 done，否则 `E_SLICE_BLOCKED`。
+- 创建时拒绝：环依赖（`E_SLICE_CYCLE`）、未知 dependsOn（`E_UNKNOWN_SLICE_REF`）、live Slice
+  scope 重叠（`E_SCOPE_OVERLAP`，含 rename source/destination，大小写不敏感）、未固定 digest 的
+  contractRefs/dependencyDigests（`E_UNPINNED_CONTRACT`）。done Slice 释放 scope，同一路径可被
+  后续 Slice 串行复用。
+- Write Scope 只有 exact file 与 directory subtree 两种语法；glob、绝对路径、反斜杠、`..`/`.`
+  段一律拒绝（NFR-06 路径层，`E_INVALID_WRITE_SCOPE`）。rename 必须同时有 source 与
+  destination：source 必须已拥有（exact 或 subtree），destination（新文件）只能落在 owned subtree。
+  存在性检查（exact 是否指向既有文件、新文件写时拦截）与 canonical realpath/symlink 规范化
+  属集成/写时 Hook 路径层（slice 02/04 与 Phase D FR-H03/H04），本层只做词法与声明间一致性。
+- scope 随 revision 冻结（FR-S06）：`update-scope` 创建新 revision、重算冲突、使既有
+  Quick/Human Review 标记失效并回 `ready`；done Slice 的 scope 不可修订。
+- Quick/Human Review 证据门禁（FR-S02/S03）与 done 的集成语义（FR-S08）属 slice 02–04，
+  将在转移上叠加，不改变本转移表。
 
 ## 表驱动 fixtures（NFR-10）
 
@@ -119,5 +148,7 @@ node --test 'overlay/scripts/harness/test/*.test.mjs'
 ```
 
 覆盖：六类型转移表（允许/拒绝/accepted-非阶段）、事务 CAS 漂移、账本一致性阻断、
-迁移幂等与 rollback ref、CLI 全流程与退出码契约，以及 Phase B 全部表驱动 fixtures
-（转换表 26 例、风险画像 22 例、low 快路径 17 例、Rollback 6 例）。
+迁移幂等与 rollback ref、CLI 全流程与退出码契约，Phase B 全部表驱动 fixtures
+（转换表 26 例、风险画像 22 例、low 快路径 17 例、Rollback 6 例），以及 Phase C slice 01
+（Slice 模型 26 例 fixtures + 15 例纯函数单测：六态/跳态拒绝、DAG/frontier、scope 语法与
+重叠矩阵、rename 边界、revision 冻结与证据失效、稳定错误契约）。

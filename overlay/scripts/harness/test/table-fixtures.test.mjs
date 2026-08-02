@@ -8,6 +8,7 @@ import { featureFastPathCases } from "./cases/feature-fast-path-cases.mjs";
 import { bugfixFastPathCases } from "./cases/bugfix-fast-path-cases.mjs";
 import { maintenanceFastPathCases } from "./cases/maintenance-fast-path-cases.mjs";
 import { rollbackCases } from "./cases/rollback-cases.mjs";
+import { sliceCases } from "./cases/slice-cases.mjs";
 
 runCases("转换表", transitionCases);
 runCases("风险画像", riskCases);
@@ -15,3 +16,4 @@ runCases("low Feature 快路径", featureFastPathCases);
 runCases("low Bugfix 快路径", bugfixFastPathCases);
 runCases("low Maintenance 快路径", maintenanceFastPathCases);
 runCases("Rollback", rollbackCases);
+runCases("Slice 模型", sliceCases);

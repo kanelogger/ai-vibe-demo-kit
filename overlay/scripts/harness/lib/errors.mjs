@@ -118,6 +118,48 @@ export const E = {
     new HarnessError("E_DEFECT_NO_CONTRACT", "Bugfix 必须声明要恢复的既有承诺（契约、不变量或已验收行为）", {
       repair: "harness start --type bugfix --contract-ref <契约引用>；没有既有承诺的新增期望应改用 --type feature",
     }),
+  SLICE_NOT_FOUND: (id) =>
+    new HarnessError("E_SLICE_NOT_FOUND", `Slice ${id} 不存在于当前 Work Item`, {
+      repair: "harness slice list --json 查看当前 Work Item 的 Slice",
+    }),
+  SLICE_EXISTS: (id) =>
+    new HarnessError("E_SLICE_EXISTS", `Slice ${id} 已存在`, {
+      repair: "harness slice list 查看已有 Slice；换用唯一 sliceId 或 update-scope 修订既有 Slice",
+    }),
+  SLICE_INCOMPLETE: (missing) =>
+    new HarnessError("E_SLICE_INCOMPLETE", `Slice spec 缺项：${missing.join("、")}`, {
+      repair: "spec 必须包含 sliceId、primaryUncertainty、acceptanceCriteria、writeScope、verification.quick",
+    }),
+  ILLEGAL_SLICE_TRANSITION: (from, to) =>
+    new HarnessError("E_ILLEGAL_SLICE_TRANSITION", `Slice 不允许 ${from} → ${to}`, {
+      repair:
+        "六态须逐态推进 ready → implementing → runnable → human-reviewed → verified → done；harness slice list 查看当前状态",
+    }),
+  SLICE_BLOCKED: (id, pending) =>
+    new HarnessError("E_SLICE_BLOCKED", `Slice ${id} 的前驱未完成（${pending.join("、")}），不进入 frontier`, {
+      repair: "等待前驱 Slice 全部 done 后再 advance；harness slice list --json 查看 frontier",
+    }),
+  INVALID_WRITE_SCOPE: (reason) =>
+    new HarnessError("E_INVALID_WRITE_SCOPE", `Write Scope 非法：${reason}`, {
+      repair:
+        "Write Scope 只支持 exact file 与 directory subtree（不支持 glob）；rename 必须同时有 source 与 destination，且 destination 落在 owned subtree",
+    }),
+  UNKNOWN_SLICE_REF: (ref) =>
+    new HarnessError("E_UNKNOWN_SLICE_REF", `dependsOn 引用未知 Slice ${ref}`, {
+      repair: "harness slice list --json 查看已有 Slice；先创建被依赖的 Slice",
+    }),
+  SLICE_CYCLE: (detail) =>
+    new HarnessError("E_SLICE_CYCLE", `dependsOn 构成环依赖：${detail}`, {
+      repair: "调整 dependsOn 使 Slice 依赖图保持 DAG",
+    }),
+  SCOPE_OVERLAP: (id, other, detail) =>
+    new HarnessError("E_SCOPE_OVERLAP", `Slice ${id} 与 ${other} 的 Write Scope 重叠：${detail}`, {
+      repair: "缩小一方 scope，或用 dependsOn 串行化共享路径的修改",
+    }),
+  UNPINNED_CONTRACT: (ref) =>
+    new HarnessError("E_UNPINNED_CONTRACT", `共享契约 ${ref} 未固定 digest，Slice 不进入 frontier`, {
+      repair: "contractRefs/dependencyDigests 条目必须携带固定 digest（{ref, digest}）；先形成 Contract Baseline",
+    }),
   ROLLBACK_TARGET_NOT_ACCEPTED: (id) =>
     new HarnessError("E_ROLLBACK_TARGET_NOT_ACCEPTED", `Rollback 目标 ${id} 不在 accepted lineage 中`, {
       repair: "harness status --json 查看 Accepted Baseline；目标必须是已 accepted 关闭的 Work Item",

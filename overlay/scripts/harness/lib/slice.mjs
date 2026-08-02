@@ -1,10 +1,11 @@
 // slice.mjs — Slice 模型：六态正常路径 + invalidated、DAG/frontier、Write Scope、revision（PRD 9.1–9.3）。
 // 纯数据驱动转移表（同 lifecycle.mjs 约定）；状态唯一真相在 stateRef 的
 // work-items/<work-item-id>/slices/<slice-id>.json，单一事实源。
-// Quick/Human Review 证据门禁（FR-S02/S03）与 done 的集成语义（FR-S08）属后续 slice；
-// 本模块只保证状态机、依赖与 scope 边界不可绕过。
+// Quick 证据门禁（FR-S02）在 lib/quick.mjs 并叠加于 ops 层；Human Review（FR-S03）与 done 的
+// 集成语义（FR-S08）属后续 slice；本模块保证状态机、依赖与 scope 边界不可绕过。
 
 import { E } from "./errors.mjs";
+import { normalizeQuickPlan } from "./quick.mjs";
 
 export const SLICE_VERSION = 2;
 
@@ -256,6 +257,7 @@ export function createSlice({ workItemId, spec, slices, at, transactionId, seque
     missing.push("verification.quick");
   }
   if (missing.length > 0) throw E.SLICE_INCOMPLETE(missing);
+  normalizeQuickPlan(spec.verification.quick); // 非法条目（空命令/负 TTL）在创建时拒绝
 
   const sliceId = spec.sliceId.trim();
   if (!SLICE_ID_PATTERN.test(sliceId)) {

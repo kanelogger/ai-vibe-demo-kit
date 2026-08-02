@@ -20,8 +20,21 @@ import {
   createSlice,
   applySliceAdvance,
   applyScopeRevision,
+  isLegalSliceTransition,
   slicePath,
 } from "./slice.mjs";
+import {
+  QUICK_ALLOWED_STATUSES,
+  QUICK_GATED_TARGETS,
+  QUICK_TTL_REFRESH_STATUSES,
+  assertNoContractDrift,
+  buildQuickReport,
+  computeQuickInputs,
+  digestsMatch,
+  quickCurrency,
+  requireQuickForAdvance,
+} from "./quick.mjs";
+import { DEFAULT_CONFIG_PATH, currentBaseline } from "./context.mjs";
 import {
   createWorkItem,
   validateWorkItem,
@@ -440,6 +453,15 @@ export async function opSliceAdvance(root, ctx, { sliceId, to, now = () => new D
       const slices = readSlices(tx, item.workItemId);
       const slice = readSlice(tx, slices, sliceId);
       const from = slice.status;
+      // 转移表优先于证据门禁：跳态必须报 E_ILLEGAL_SLICE_TRANSITION 而非 E_QUICK_REQUIRED（FR-S01）。
+      if (!isLegalSliceTransition(from, to)) throw E.ILLEGAL_SLICE_TRANSITION(from, to);
+      // FR-S02：runnable 及之后的目标态叠加 Quick 门禁——当前 revision 必须有通过的、
+      // 未 stale 的 Quick 报告（场景 10：内容/config/contract/dependency 变化立即失效）。
+      if (QUICK_GATED_TARGETS.has(to)) {
+        const baseline = await currentBaseline(root, ctx.targetRef);
+        const inputs = await computeQuickInputs(root, slice, baseline.commit, ctx.configPath ?? DEFAULT_CONFIG_PATH);
+        requireQuickForAdvance(slice, to, quickCurrency(slice, inputs, tx.at));
+      }
       applySliceAdvance(slice, to, {
         slices,
         at: tx.at,
@@ -453,6 +475,95 @@ export async function opSliceAdvance(root, ctx, { sliceId, to, now = () => new D
         detail: { sliceId, from, to, revision: slice.revision },
       });
       tx.result = { workItemId: item.workItemId, sliceId, from, to, revision: slice.revision };
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Quick 验证（PRD 9.5/16.1/16.4、FR-S02、FR-E01）。Quick 只执行 Slice 声明的
+// verification.quick——不要求每个 Slice 运行 Work Item Full。
+
+/**
+ * verify quick：实际执行 Slice 声明的验证命令，报告绑定 §9.5 全部字段。
+ * digest 绑定未漂移且无过期 environment-sensitive check 时原样复用（本地确定性结果
+ * 不因时间过期）；TTL 过期只重跑该 check；任何 drift 全部重跑。失败的报告同样落账（可审计），
+ * 由 CLI 以 E_QUICK_FAILED 退出码 1 拒绝。
+ */
+export async function opVerifyQuick(root, ctx, { sliceId, now = () => new Date() }) {
+  return transact(root, ctx.stateRef, {
+    message: `harness: verify quick ${sliceId}`,
+    now,
+    mutate: async (tx) => {
+      const registry = tx.registry();
+      if (registry.activeWorkItemId === null) throw E.NO_ACTIVE();
+      const item = readItem(tx, registry.activeWorkItemId);
+      const slices = readSlices(tx, item.workItemId);
+      const slice = readSlice(tx, slices, sliceId);
+      const configPath = ctx.configPath ?? DEFAULT_CONFIG_PATH;
+      const baseline = await currentBaseline(root, ctx.targetRef);
+      const inputs = await computeQuickInputs(root, slice, baseline.commit, configPath);
+      assertNoContractDrift([...inputs.contractRefs, ...inputs.dependencyDigests]);
+      // 曾解析为本地文件的契约/依赖被删除：视为漂移，拒绝删除后重新背书（actual null 歧义防护）。
+      const priorReport = slice.quickReport;
+      if (priorReport !== null) {
+        const current = [...inputs.contractRefs, ...inputs.dependencyDigests];
+        for (const prev of [...priorReport.contractRefs, ...priorReport.dependencyDigests]) {
+          const nowEntry = current.find((entry) => entry.ref === prev.ref);
+          if (prev.actual !== null && nowEntry !== undefined && nowEntry.actual === null) {
+            throw E.CONTRACT_DRIFT(prev.ref, prev.actual, "文件已删除");
+          }
+        }
+      }
+      if (!QUICK_ALLOWED_STATUSES.has(slice.status)) {
+        // 下游状态只允许纯 TTL 刷新（§16.4）：报告通过且 digest 未漂移时重跑过期
+        // environment-sensitive check；其余一切（含内容漂移）必须回 implementing。
+        const report = slice.quickReport;
+        const ttlRefreshOnly =
+          QUICK_TTL_REFRESH_STATUSES.has(slice.status) &&
+          report !== null &&
+          report.revision === slice.revision &&
+          report.passed &&
+          digestsMatch(report, inputs);
+        if (!ttlRefreshOnly) throw E.QUICK_NOT_ALLOWED(sliceId, slice.status);
+      }
+      const { report, ran, reused } = await buildQuickReport(root, slice, inputs, tx.at);
+      // 命令后复核：验证命令不得修改 scope 内容/config/契约——报告必须绑定经验证的
+      // 最终内容，否则落账即 stale。drift 时拒绝落账，重跑一次即可绑定稳定内容。
+      if (ran.length > 0) {
+        const post = await computeQuickInputs(root, slice, baseline.commit, configPath);
+        assertNoContractDrift([...post.contractRefs, ...post.dependencyDigests]);
+        if (!digestsMatch(report, post)) {
+          throw E.QUICK_STALE("验证命令修改了 scope 内容、config 或契约，报告无法绑定经验证的最终内容");
+        }
+      }
+      slice.quickReport = report;
+      tx.writeJson(slicePath(item.workItemId, slice.sliceId), slice);
+      tx.emit({
+        action: "slice-quick",
+        workItemId: item.workItemId,
+        detail: { sliceId, revision: slice.revision, passed: report.passed, ran, reused, contentDigest: report.content.digest },
+      });
+      tx.result = {
+        workItemId: item.workItemId,
+        sliceId,
+        revision: slice.revision,
+        status: slice.status,
+        passed: report.passed,
+        baseIntegrationCommit: report.baseIntegrationCommit,
+        contentDigest: report.content.digest,
+        configDigest: report.config.digest,
+        checks: report.checks.map((check) => ({
+          command: check.command,
+          exitCode: check.exitCode,
+          passed: check.passed,
+          environmentSensitiveTtlSeconds: check.environmentSensitiveTtlSeconds,
+          executedAt: check.executedAt,
+          expiresAt: check.expiresAt,
+        })),
+        ran,
+        reused,
+        executedAt: report.executedAt,
+      };
     },
   });
 }

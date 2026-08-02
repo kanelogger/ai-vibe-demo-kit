@@ -11,7 +11,8 @@ const BASE_SPEC = {
   contractRefs: [],
   dependencyDigests: [],
   reviewPath: "src/a.js",
-  verification: { quick: ["node --test"] },
+  // Quick 实际执行（slice 02 起）：用确定性瞬时命令，fixtures 不依赖外部工具链。
+  verification: { quick: ['node -e "process.exit(0)"'] },
 };
 
 const spec = (over = {}) => JSON.stringify({ ...BASE_SPEC, ...over });
@@ -30,10 +31,17 @@ const START_CAPTURED = [
 
 const advance = (sliceId, to) => ["slice", "advance", "--slice", sliceId, "--to", to];
 
-/** 创建 s1 并推进到指定状态之前。 */
-const walkTo = (before) => {
+const verifyQuick = (sliceId) => ["verify", "quick", "--slice", sliceId];
+
+/** 创建 Slice 并推进到指定状态之前；进入 runnable 前先跑 Quick（FR-S02，slice 02）。 */
+const walkTo = (before, sliceId = "s1") => {
+  const steps = [];
   const path = ["implementing", "runnable", "human-reviewed", "verified", "done"];
-  return path.slice(0, path.indexOf(before)).map((to) => advance("s1", to));
+  for (const to of path.slice(0, path.indexOf(before))) {
+    if (to === "runnable") steps.push(verifyQuick(sliceId));
+    steps.push(advance(sliceId, to));
+  }
+  return steps;
 };
 
 export const sliceCases = [
@@ -60,8 +68,8 @@ export const sliceCases = [
           dependencyDigests: [],
           acceptanceCriteria: ["slice 状态可在 stateRef 中逐态推进"],
           reviewPath: "src/a.js",
-          verificationPlan: { quick: ["node --test"] },
-          quickReport: null,
+          verificationPlan: { quick: ['node -e "process.exit(0)"'] },
+          quickReport: { passed: true, revision: 1 },
           reviewAttempts: [],
           currentHumanReview: null,
           feedback: [],
@@ -133,10 +141,7 @@ export const sliceCases = [
       ...START,
       create({ sliceId: "a" }),
       create({ sliceId: "b", dependsOn: ["a"], writeScope: { exact: ["src/b.js"], subtrees: [], renames: [] } }),
-      advance("a", "implementing"),
-      advance("a", "runnable"),
-      advance("a", "human-reviewed"),
-      advance("a", "verified"),
+      ...walkTo("done", "a"),
       advance("a", "done"),
     ],
     run: ["slice", "list", "--json"],
@@ -181,10 +186,7 @@ export const sliceCases = [
     seed: [
       ...START,
       create({ sliceId: "a", writeScope: { exact: [], subtrees: ["src"], renames: [] } }),
-      advance("a", "implementing"),
-      advance("a", "runnable"),
-      advance("a", "human-reviewed"),
-      advance("a", "verified"),
+      ...walkTo("done", "a"),
       advance("a", "done"),
     ],
     run: create({ sliceId: "b", writeScope: { exact: [], subtrees: ["src/lib"], renames: [] } }),

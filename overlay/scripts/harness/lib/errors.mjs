@@ -160,6 +160,32 @@ export const E = {
     new HarnessError("E_UNPINNED_CONTRACT", `共享契约 ${ref} 未固定 digest，Slice 不进入 frontier`, {
       repair: "contractRefs/dependencyDigests 条目必须携带固定 digest（{ref, digest}）；先形成 Contract Baseline",
     }),
+  INVALID_QUICK_CHECK: (reason) =>
+    new HarnessError("E_INVALID_QUICK_CHECK", `Quick 验证计划非法：${reason}`, {
+      repair:
+        "verification.quick 条目为命令字符串或 {command, environmentSensitiveTtlSeconds}（TTL 为非负秒数）",
+    }),
+  QUICK_NOT_ALLOWED: (sliceId, status) =>
+    new HarnessError("E_QUICK_NOT_ALLOWED", `Slice ${sliceId} 状态为 ${status}，不能执行 verify quick`, {
+      repair:
+        "全量 Quick 只在 implementing/runnable；human-reviewed/verified 仅允许纯 TTL 刷新（报告通过且 digest 未漂移）；内容修改须回 implementing 重新走正常路径",
+    }),
+  QUICK_REQUIRED: (sliceId, to) =>
+    new HarnessError("E_QUICK_REQUIRED", `Slice ${sliceId} 当前 revision 没有 Quick 报告，不能进入 ${to}`, {
+      repair: `harness verify quick --slice ${sliceId}`,
+    }),
+  QUICK_FAILED: (detail) =>
+    new HarnessError("E_QUICK_FAILED", `Quick 未通过：${detail}`, {
+      repair: "修复失败 check 后重跑 harness verify quick；报告见 stateRef 中 Slice 的 quickReport",
+    }),
+  QUICK_STALE: (reasons) =>
+    new HarnessError("E_QUICK_STALE", `Quick 已 stale：${reasons}`, {
+      repair: "harness verify quick 重新验证；内容/config/contract/dependency 变化立即使 Quick 失效（PRD 9.5）",
+    }),
+  CONTRACT_DRIFT: (ref, pinned, actual) =>
+    new HarnessError("E_CONTRACT_DRIFT", `声明契约 ${ref} 实际内容漂移：pinned ${pinned}，actual ${actual}`, {
+      repair: "恢复契约内容或走新 revision 更新 pin；Quick 不能对漂移契约背书",
+    }),
   ROLLBACK_TARGET_NOT_ACCEPTED: (id) =>
     new HarnessError("E_ROLLBACK_TARGET_NOT_ACCEPTED", `Rollback 目标 ${id} 不在 accepted lineage 中`, {
       repair: "harness status --json 查看 Accepted Baseline；目标必须是已 accepted 关闭的 Work Item",

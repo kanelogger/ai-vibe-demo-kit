@@ -1,10 +1,13 @@
-# harness v2 — Phase A + B + C(1/9)：Domain/stateRef、Core CLI、快路径与 Slice 模型
+# harness v2 — Phase A + B + C(2/9)：Domain/stateRef、Core CLI、快路径、Slice 模型与 Quick 绑定
 
 统一 `harness` CLI。Phase A：Project Registry、Work Item namespace、Audit Ledger、stateRef
 原子事务、六类型生命周期表、v1→v2 一次性迁移与 rollback ref。Phase B：六轴风险画像与
 low allowlist、Brief 批量确认快路径（Feature/Bugfix/Maintenance）、不可变 Fact Revision、
 人工停顿预算、Rollback 级联 inverse 与 `rollback` 命令。Phase C slice 01：Slice 模型——
 六态正常路径 + invalidated、dependsOn DAG 与 frontier、Write Scope 语法/冲突与 revision 冻结。
+Phase C slice 02：Quick 绑定——`verify quick` 实际执行 Slice 声明的验证命令，报告绑定
+workItem/slice/revision、base integration commit、content/config/contract/dependency digest
+与时间；implementing → runnable 必须有当前通过的 Quick，drift 立即 stale。
 
 依据：`docs/full-gate-product-requirements.md`（Confirmed v2.0）、ADR-0007、ADR-0010～0016。
 `CONTEXT.md` 是领域语言唯一来源。Phase B 票：`.scratch/phase-b-core-cli/issues/`。
@@ -14,7 +17,7 @@ low allowlist、Brief 批量确认快路径（Feature/Bugfix/Maintenance）、�
 以下属于后续 Phase，刻意不在此实现：
 
 - reopen 表与下游失效（Phase C 事实层语义）
-- Quick/Human Review 证据门禁、done 的集成语义、Promotion、targetRef 更新（Phase C slice 02–09）
+- Human Review 证据门禁、done 的集成语义、Promotion、targetRef 更新（Phase C slice 03–09）
 - Hooks、Skill 路由、Claude Adapter（Phase D）
 
 v1 公共脚本（`harness-check.mjs`、`harness-stage.mjs`、`harness-verify.mjs`、`skills-sync.mjs`）
@@ -77,6 +80,7 @@ harness slice create --spec '<json>'            # 声明 Slice：DAG/scope/契�
 harness slice list [--json]                     # 只读：Slice 列表 + 派生 frontier
 harness slice advance --slice <id> --to <status>  # 六态逐态推进；invalidated 为异常态
 harness slice update-scope --slice <id> --spec '<json>'  # 扩缩 scope → 新 revision，证据失效回 ready
+harness verify quick --slice <id> [--json]                # 执行 Slice 声明的 Quick，报告绑定 §9.5 全部字段
 harness suspend-and-start --type <t> --quote "<原话>" --reason "<原因>" [--contract-ref <引用>]
 harness close-and-start --outcome <o> --type <t> --quote "<原话>" [--result <r>] [--contract-ref <引用>]
 ```
@@ -118,14 +122,40 @@ harness close-and-start --outcome <o> --type <t> --quote "<原话>" [--result <r
   属集成/写时 Hook 路径层（slice 02/04 与 Phase D FR-H03/H04），本层只做词法与声明间一致性。
 - scope 随 revision 冻结（FR-S06）：`update-scope` 创建新 revision、重算冲突、使既有
   Quick/Human Review 标记失效并回 `ready`；done Slice 的 scope 不可修订。
-- Quick/Human Review 证据门禁（FR-S02/S03）与 done 的集成语义（FR-S08）属 slice 02–04，
+- Human Review 证据门禁（FR-S03）与 done 的集成语义（FR-S08）属 slice 03–04，
   将在转移上叠加，不改变本转移表。
+
+## Phase C slice 02 语义（Quick 绑定，PRD 9.5/16.1/16.4）
+
+- `harness verify quick --slice <id>` 实际执行 Slice 声明的 `verification.quick`（`lib/quick.mjs`）；
+  全量执行只在 implementing/runnable（`E_QUICK_NOT_ALLOWED`）；human-reviewed/verified 仅允许
+  纯 TTL 刷新（报告通过且 digest 未漂移，内容漂移必须回 implementing，PRD 9.6）。Quick 只覆盖
+  当前 Slice 风险，不要求每个 Slice 运行 Work Item Full（FR-E01）。命令以 `sh -c` 流式执行、
+  stdin 关闭、只保留输出尾部。
+- 报告落 stateRef 的 Slice `quickReport`（失败的报告同样落账可审计，CLI 以 `E_QUICK_FAILED`
+  退出码 1 拒绝），绑定 §9.5 全部字段：workItem/slice/revision、base integration commit
+  （targetRef tip）、content digest（scope 内逐文件原始字节 SHA-256 + Git 模式 100644/100755/
+  120000 的 manifest，含 ABSENT 标记，可对实际内容反查，NFR-12）、config digest（resolveContext
+  实际生效的配置路径，含 overlay 回退）、contract/dependency digests（声明 pin + 实际内容双录；
+  ref 漂移或曾解析文件被删除 → `E_CONTRACT_DRIFT` 拒绝背书）、commands/results/时间与
+  environment-sensitive TTL。验证命令执行后复核 digest：命令修改 scope 内容/config/契约时报告
+  拒绝落账（`E_QUICK_STALE`），重跑绑定稳定内容。
+- Quick 不以 HEAD 作为唯一内容身份：内容、config、声明的 contract/dependency 或 base commit
+  漂移立即使 Quick stale（场景 10）。advance 到 runnable/human-reviewed/verified/done 都要求
+  当前 revision 有通过的、未 stale 的 Quick：无报告 `E_QUICK_REQUIRED`、未通过
+  `E_QUICK_FAILED`、stale `E_QUICK_STALE`（FR-S02）。转移表优先于证据门禁，跳态仍报
+  `E_ILLEGAL_SLICE_TRANSITION`（FR-S01）。`slice list` 实时派生 Quick 时效：漂移后 status
+  虽仍是持久化的 runnable，`quick.state=stale` 表明 Slice 不能再宣称 runnable（FR-S02）。
+- 内容驱动失效而非 TTL（§16.4）：本地确定性 check 无 TTL，digest 未漂移时重复 verify quick
+  原样复用报告，不因时间经过失效；`{command, environmentSensitiveTtlSeconds}` 声明的
+  environment-sensitive check 独立 TTL，过期后 verify quick 只重跑该 check、其余结果保留。
+  quick 条目非法（空命令、负 TTL）在 slice create 时拒绝（`E_INVALID_QUICK_CHECK`）。
 
 ## 表驱动 fixtures（NFR-10）
 
 `test/fixture-runner.mjs` 重放声明式用例行：seed 命令序列（可 `{as}` 捕获 workItemId）→
 run 探针 → 断言（退出码/错误码/JSON 子集/stateRef 文件子集/文件树精确集）→ 可选修复。
-用例表在 `test/cases/`：转换表、风险画像、三种 low 快路径、Rollback。
+用例表在 `test/cases/`：转换表、风险画像、三种 low 快路径、Rollback、Slice 模型、Quick 绑定。
 
 退出码：0 成功；1 领域门禁拒绝（`ERROR <code>` + `REPAIR:`）；2 用法/IO/Git 错误。
 配置：`.harness/config.json` 的 `git.targetRef` / `git.stateRef`（默认 `refs/heads/main` 与
@@ -151,4 +181,7 @@ node --test 'overlay/scripts/harness/test/*.test.mjs'
 迁移幂等与 rollback ref、CLI 全流程与退出码契约，Phase B 全部表驱动 fixtures
 （转换表 26 例、风险画像 22 例、low 快路径 17 例、Rollback 6 例），以及 Phase C slice 01
 （Slice 模型 26 例 fixtures + 15 例纯函数单测：六态/跳态拒绝、DAG/frontier、scope 语法与
-重叠矩阵、rename 边界、revision 冻结与证据失效、稳定错误契约）。
+重叠矩阵、rename 边界、revision 冻结与证据失效、稳定错误契约）与 slice 02（Quick 绑定
+10 例 fixtures + 15 例命令式 fixtures + 2 例纯函数单测：绑定字段与 digest 反查、内容/config/
+contract/dependency/base 漂移 stale 矩阵、契约删除漂移、失败报告落账、复用时间无关性、
+TTL 只重跑过期项与下游纯 TTL 刷新、slice list stale 派生、命令后复核、原始字节与配置回退）。

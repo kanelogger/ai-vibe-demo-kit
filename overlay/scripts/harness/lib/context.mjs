@@ -8,15 +8,19 @@ import { E } from "./errors.mjs";
 
 const CONFIG_CANDIDATES = [".harness/config.json", "overlay/.harness/config.json"];
 
+export const DEFAULT_CONFIG_PATH = CONFIG_CANDIDATES[0];
+
 export const DEFAULT_TARGET_REF = "refs/heads/main";
 export const DEFAULT_STATE_REF = "refs/heads/harness/state";
 
 export async function resolveContext({ root = null } = {}) {
   const resolvedRoot = root ?? (await repoRoot(process.cwd()));
   let config = {};
+  let configPath = null; // 实际生效的配置来源；无配置文件时为 null（Quick 摘要用 DEFAULT_CONFIG_PATH）
   for (const candidate of CONFIG_CANDIDATES) {
     try {
       config = JSON.parse(await readFile(join(resolvedRoot, candidate), "utf8"));
+      configPath = candidate;
       break;
     } catch {
       // 尝试下一个候选
@@ -26,6 +30,7 @@ export async function resolveContext({ root = null } = {}) {
   return {
     root: resolvedRoot,
     config,
+    configPath,
     targetRef: typeof git.targetRef === "string" && git.targetRef ? git.targetRef : DEFAULT_TARGET_REF,
     stateRef: typeof git.stateRef === "string" && git.stateRef ? git.stateRef : DEFAULT_STATE_REF,
   };

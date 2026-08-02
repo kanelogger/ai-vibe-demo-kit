@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// cli.mjs — 统一 harness CLI（PRD 12.1，Phase A 状态根基 + Phase B 快路径 + Phase C Slice 模型）。
+// cli.mjs — 统一 harness CLI（PRD 12.1，Phase A 状态根基 + Phase B 快路径 + Phase C Slice 模型/Quick 绑定）。
 // 子命令：status / migrate-state / start / confirm / advance / suspend / resume / close /
-//         rollback / suspend-and-start / close-and-start / slice {create,list,advance,update-scope}。
+//         rollback / suspend-and-start / close-and-start / slice {create,list,advance,update-scope} /
+//         verify {quick}。
 // 契约：--json 稳定输出；退出码 0 成功、1 领域门禁拒绝、2 用法/IO/Git 错误。
 
 import { HarnessError, E, EXIT_OK } from "./lib/errors.mjs";
@@ -21,9 +22,12 @@ import {
   opSliceCreate,
   opSliceAdvance,
   opSliceUpdateScope,
+  opVerifyQuick,
 } from "./lib/ops.mjs";
 import { allowedActions, itemStatePath } from "./lib/work-item.mjs";
 import { collectSlices, computeFrontier, depsPending } from "./lib/slice.mjs";
+import { computeQuickInputs, quickCurrency } from "./lib/quick.mjs";
+import { DEFAULT_CONFIG_PATH, currentBaseline } from "./lib/context.mjs";
 import { WORK_ITEM_TYPES, OUTCOMES, RESULTS } from "./lib/lifecycle.mjs";
 
 const USAGE = `用法:
@@ -42,6 +46,7 @@ const USAGE = `用法:
   harness slice list [--json]
   harness slice advance --slice <slice-id> --to <status> [--json]
   harness slice update-scope --slice <slice-id> --spec '<json>' [--json]
+  harness verify quick --slice <slice-id> [--json]
   harness suspend-and-start --type <type> --quote "<任务原话>" --reason "<暂停原因>" [--contract-ref <引用>] [--json]
   harness close-and-start --outcome <outcome> [--result <result>] --type <type> --quote "<任务原话>" [--reason "<原因>"] [--contract-ref <引用>] [--json]`;
 
@@ -195,8 +200,9 @@ async function cmdSlice(options, ctx) {
       const lines = [`work-item: ${data.workItemId}`, `frontier: ${data.frontier.join(", ") || "无"}`];
       for (const slice of data.slices) {
         const blocked = slice.blockedBy.length > 0 ? `（等待前驱: ${slice.blockedBy.join(", ")}）` : "";
+        const stale = slice.quick?.state === "stale" ? `（Quick 已 stale: ${slice.quick.reasons.join("；")}）` : "";
         lines.push(
-          `slice: ${slice.sliceId} r${slice.revision} status=${slice.status}${slice.frontier ? " [frontier]" : ""}${blocked}`,
+          `slice: ${slice.sliceId} r${slice.revision} status=${slice.status}${slice.frontier ? " [frontier]" : ""}${blocked}${stale}`,
         );
       }
       process.stdout.write(`${lines.join("\n")}\n`);
@@ -229,7 +235,11 @@ async function cmdSlice(options, ctx) {
   }
 }
 
-/** 只读 slice 列表 + 派生 frontier；无 active 项时返回空列表（同 status 的 idle 语义）。 */
+/**
+ * 只读 slice 列表 + 派生 frontier 与 Quick 时效；无 active 项时返回空列表（同 status 的 idle 语义）。
+ * Quick 时效实时重算（PRD 9.5）：内容/config/contract/dependency 漂移或 TTL 过期后，
+ * status 虽是持久化的 runnable，quick.state 必须表明 stale——Slice 不能再宣称 runnable（FR-S02）。
+ */
 async function sliceListData(ctx) {
   const { registry, snapshot } = await loadRegistry(ctx.root, ctx.stateRef);
   if (registry === null) throw E.NOT_MIGRATED(ctx.stateRef);
@@ -239,8 +249,18 @@ async function sliceListData(ctx) {
   const workItemId = registry.activeWorkItemId;
   const slices = collectSlices(snapshot.files, workItemId);
   const frontier = new Set(computeFrontier(slices));
-  const list = [...slices.values()]
-    .map((slice) => ({
+  const baseline = await currentBaseline(ctx.root, ctx.targetRef);
+  const configPath = ctx.configPath ?? DEFAULT_CONFIG_PATH;
+  const now = new Date().toISOString();
+  const list = [];
+  for (const slice of [...slices.values()].sort((a, b) => a.sliceId.localeCompare(b.sliceId))) {
+    let quick = null;
+    if (slice.quickReport !== null && slice.status !== "invalidated") {
+      const inputs = await computeQuickInputs(ctx.root, slice, baseline.commit, configPath);
+      const currency = quickCurrency(slice, inputs, now);
+      quick = { passed: slice.quickReport.passed, state: currency.state, reasons: currency.reasons };
+    }
+    list.push({
       sliceId: slice.sliceId,
       revision: slice.revision,
       status: slice.status,
@@ -248,9 +268,36 @@ async function sliceListData(ctx) {
       frontier: frontier.has(slice.sliceId),
       blockedBy: depsPending(slice, slices),
       writeScope: slice.writeScope,
-    }))
-    .sort((a, b) => a.sliceId.localeCompare(b.sliceId));
+      quick,
+    });
+  }
   return { workItemId, frontier: [...frontier].sort(), slices: list };
+}
+
+/** verify 子命令：quick（Slice 级验证，PRD 16.1）。 */
+async function cmdVerify(options, ctx) {
+  const sub = options._[0];
+  switch (sub) {
+    case "quick": {
+      if (!options.slice) throw E.USAGE("verify quick 缺少 --slice", USAGE);
+      const { result } = await opVerifyQuick(ctx.root, ctx, { sliceId: options.slice });
+      const digest = result.contentDigest.slice(0, 19);
+      out(
+        options,
+        result,
+        `${result.sliceId}: Quick ${result.passed ? "通过" : "未通过"}（revision ${result.revision}，content ${digest}…，` +
+          `执行 ${result.ran.length} 项，复用 ${result.reused.length} 项）`,
+      );
+      // Quick 未通过：报告已落账可审计，以门禁拒绝退出（PRD 12.1 退出码契约）。
+      if (!result.passed) {
+        const failed = result.checks.filter((check) => !check.passed).map((check) => check.command);
+        throw E.QUICK_FAILED(failed.join("、"));
+      }
+      return;
+    }
+    default:
+      throw E.USAGE(`未知 verify 子命令 ${sub ?? "(空)"}`, USAGE);
+  }
 }
 
 async function run(argv) {
@@ -275,6 +322,9 @@ async function run(argv) {
     }
     case "slice":
       await cmdSlice(options, ctx);
+      return;
+    case "verify":
+      await cmdVerify(options, ctx);
       return;
     case "start": {
       if (!options.type) throw E.USAGE("start 缺少 --type", USAGE);

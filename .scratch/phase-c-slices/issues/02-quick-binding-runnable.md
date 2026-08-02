@@ -4,11 +4,11 @@
 
 **Blocked by:** 01 — Slice 模型：六态、DAG/frontier、Write Scope、revision
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] fixture：implementing → runnable 必须有通过的 Quick 报告；无 Quick 或 Quick 失败被拒绝（FR-S01/S02）
-- [ ] fixture：Quick 报告完整记录 §9.5 全部绑定字段，digest 可对实际内容反查（NFR-12）
-- [ ] fixtures：Quick 后内容变化、config 变化、contract/dependency digest 变化分别使 Quick stale，runnable 不可保持（场景 10）
-- [ ] fixture：内容未变化时重复 verify quick 不因时间经过而失效（内容驱动失效，非 TTL）
-- [ ] fixture：声明了 environment-sensitive TTL 的 check 过期后只重跑该 check，其余结果保留（§16.4）
-- [ ] Quick 只覆盖当前 Slice 风险，不要求每个 Slice 运行 Work Item Full（FR-E01）
+- [x] fixture：implementing → runnable 必须有通过的 Quick 报告；无 Quick 或 Quick 失败被拒绝（FR-S01/S02）
+- [x] fixture：Quick 报告完整记录 §9.5 全部绑定字段，digest 可对实际内容反查（NFR-12）
+- [x] fixtures：Quick 后内容变化、config 变化、contract/dependency digest 变化分别使 Quick stale，runnable 不可保持（场景 10）
+- [x] fixture：内容未变化时重复 verify quick 不因时间经过而失效（内容驱动失效，非 TTL）
+- [x] fixture：声明了 environment-sensitive TTL 的 check 过期后只重跑该 check，其余结果保留（§16.4）
+- [x] Quick 只覆盖当前 Slice 风险，不要求每个 Slice 运行 Work Item Full（FR-E01）

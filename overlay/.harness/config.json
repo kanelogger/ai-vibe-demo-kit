@@ -17,6 +17,10 @@
     "contracts": []
   },
   "criticalUserPaths": [],
+  "git": {
+    "targetRef": "refs/heads/main",
+    "stateRef": "refs/heads/harness/state"
+  },
   "verification": {
     "reportPath": ".harness/verification-report.json",
     "maxAgeHours": 24,

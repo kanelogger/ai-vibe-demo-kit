@@ -26,6 +26,7 @@
     "scripts/harness-verify.mjs": "实际执行验证命令、关键用户路径和清理，生成机器报告并回填 Sprint 摘要",
     "scripts/harness-stage.mjs": "候选状态完整预检通过后原子更新 workflow-state.json",
     "scripts/skills-sync.mjs": "外部 Skills 同步 CLI：默认按 lock 锁定恢复，--update 解析 track 并重写 lock；幂等、零依赖",
-    "scripts/skills-sync-core.mjs": "skills-sync 的协议无关核心（parse/resolve/discover/plan/materialize/verify），CLI 与 harness-check 共享 schema 与摘要定义，未来 MCP adapter 复用"
+    "scripts/skills-sync-core.mjs": "skills-sync 的协议无关核心（parse/resolve/discover/plan/materialize/verify），CLI 与 harness-check 共享 schema 与摘要定义，未来 MCP adapter 复用",
+    "scripts/harness/": "v2 统一 harness CLI 与状态根基（Phase A）：stateRef 事务、Registry、Work Item 生命周期表、Audit Ledger、v1→v2 迁移；详见 scripts/harness/README.md"
   }
 }

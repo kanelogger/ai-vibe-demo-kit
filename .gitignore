@@ -31,10 +31,4 @@ desktop.ini
 # Cache
 .cache/
 
-draft/
-private-*
 
-# Skill Port 本地启用的技能链接（仅根目录）
-/.agents/
-
-docs/

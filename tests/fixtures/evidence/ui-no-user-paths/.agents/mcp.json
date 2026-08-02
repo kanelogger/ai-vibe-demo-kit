@@ -1,4 +1,0 @@
-{
-  "mcpServers": {},
-  "notes": "外部连接层载体：登记 Agent 可用的 MCP 服务器（Issue、构建、数据库、内部文档等）。无外部连接时保持 mcpServers 为空对象；本文件是控制面必备文件，不得删除。条目使用平台通用的 mcpServers 结构（command/args/env 或 url）；凭据一律用环境变量引用，不得入库。登记后按目标平台要求同步到平台 MCP 配置，本文件保持仓库内唯一来源。"
-}

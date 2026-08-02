@@ -1,6 +1,0 @@
-{
-  "version": 2,
-  "description": "External Skill sources: track declares update intent; .agents/skills.lock.json records resolved commits; materialized Skill directories are ignored.",
-  "skillsRoot": ".agents/skills",
-  "sources": []
-}

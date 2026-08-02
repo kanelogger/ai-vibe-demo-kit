@@ -57,7 +57,8 @@ test("suspend / resume 与原子组合命令", async () => {
   const a = (await runCli(root, ["start", "--type", "feature", "--quote", "做功能 A", "--json"])).json.workItemId;
 
   let r = await runCli(root, [
-    "suspend-and-start", "--type", "bugfix", "--quote", "紧急修复 B", "--reason", "线上报错", "--json",
+    "suspend-and-start", "--type", "bugfix", "--quote", "紧急修复 B", "--reason", "线上报错",
+    "--contract-ref", "SPECS/payments.md#refund", "--json",
   ]);
   assert.equal(r.code, 0, r.stderr);
   const b = r.json.workItemId;
@@ -110,7 +111,7 @@ test("门禁拒绝与退出码契约", async () => {
   assert.equal(r.code, 1);
   assert.match(r.stderr, /E_NO_ACTIVE/);
 
-  await runCli(root, ["start", "--type", "bugfix", "--quote", "修 B"]);
+  await runCli(root, ["start", "--type", "bugfix", "--quote", "修 B", "--contract-ref", "SPECS/b.md#contract"]);
 
   // 第二个 start 拒绝
   r = await runCli(root, ["start", "--type", "feature", "--quote", "y"]);

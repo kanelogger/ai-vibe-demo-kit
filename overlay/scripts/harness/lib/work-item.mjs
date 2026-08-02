@@ -21,10 +21,14 @@ export function itemAuditPath(workItemId) {
   return `work-items/${workItemId}/audit.ndjson`;
 }
 
-export function createWorkItem({ id, type, quote, baseline, at, derivedFrom = null, supersedes = null, rollbackOf = [] }) {
+export function createWorkItem({ id, type, quote, baseline, at, derivedFrom = null, supersedes = null, rollbackOf = [], contractRef = null }) {
   if (!WORK_ITEM_TYPES.includes(type)) throw E.INVALID_TYPE(type);
   if (typeof quote !== "string" || quote.trim() === "") {
     throw E.USAGE("start 必须携带 Developer 明确任务原话（--quote）", "harness start --type <type> --quote \"<任务原话>\"");
+  }
+  // 创建不变量（PRD 7.3）：Bugfix 恢复既有承诺，无承诺的新增期望不是 Bugfix。
+  if (type === "bugfix" && (typeof contractRef !== "string" || contractRef.trim() === "")) {
+    throw E.DEFECT_NO_CONTRACT();
   }
   return {
     version: STATE_VERSION,
@@ -36,6 +40,7 @@ export function createWorkItem({ id, type, quote, baseline, at, derivedFrom = nu
     outcome: null,
     result: null,
     risk: null,
+    contractRef,
     baseAcceptance: baseline,
     integration: { branch: `harness/wi/${id}`, worktree: null },
     request: { quote, capturedAt: at, sessionRef: null },
@@ -47,6 +52,8 @@ export function createWorkItem({ id, type, quote, baseline, at, derivedFrom = nu
       resumedFromBaseline: null,
     },
     suspension: null,
+    humanStops: { budget: null, count: 0, events: [] },
+    confirmations: [],
     history: [],
     createdAt: at,
     updatedAt: at,
@@ -76,6 +83,20 @@ function touch(item, at) {
 
 function record(item, entry) {
   item.history.push(entry);
+}
+
+export const LOW_STOP_BUDGET = 3;
+
+/**
+ * 记录一次阻塞式人工停顿（FR-U05 / NFR-13）。
+ * budget 只在 low 快路径设置；停顿计数与预算由 event log 计算验证，超预算事件
+ * 标记 overBudget 供指标与 dogfood 分析（PRD 21.3），不阻断命令。
+ */
+export function recordHumanStop(item, { action, quote, at }) {
+  item.humanStops ??= { budget: null, count: 0, events: [] };
+  item.humanStops.count += 1;
+  const overBudget = item.humanStops.budget !== null && item.humanStops.count > item.humanStops.budget;
+  item.humanStops.events.push({ action, quote, at, overBudget });
 }
 
 /** 阶段推进：仅校验转移表与 active 状态；事实/证据门禁属于 Phase B/C。 */
@@ -144,6 +165,7 @@ export function applyClose(item, { outcome, result = null, quote = null }, { at,
   item.outcome = outcome;
   item.result = result;
   item.closedAt = at;
+  if (outcome === "accepted") recordHumanStop(item, { action: "final-acceptance", quote, at });
   record(item, {
     sequence,
     transactionId,

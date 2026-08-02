@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// cli.mjs — 统一 harness CLI（PRD 12.1，Phase A 状态根基子集）。
-// 子命令：status / migrate-state / start / advance / suspend / resume / close /
-//         suspend-and-start / close-and-start。
+// cli.mjs — 统一 harness CLI（PRD 12.1，Phase A 状态根基 + Phase B 快路径子集）。
+// 子命令：status / migrate-state / start / confirm / advance / suspend / resume / close /
+//         rollback / suspend-and-start / close-and-start。
 // 契约：--json 稳定输出；退出码 0 成功、1 领域门禁拒绝、2 用法/IO/Git 错误。
 
 import { HarnessError, E, EXIT_OK } from "./lib/errors.mjs";
@@ -11,9 +11,11 @@ import { migrateState } from "./lib/migrate-v1.mjs";
 import {
   opStart,
   opAdvance,
+  opConfirmBrief,
   opSuspend,
   opResume,
   opClose,
+  opRollback,
   opSuspendAndStart,
   opCloseAndStart,
 } from "./lib/ops.mjs";
@@ -24,12 +26,18 @@ const USAGE = `用法:
   harness status [--json] [--root <dir>]
   harness migrate-state [--json] [--root <dir>]
   harness start --type <${WORK_ITEM_TYPES.join("|")}> --quote "<任务原话>" [--json]
+      [--axes "k=v,..."] [--allowlist "k=true|false,..."] [--triggers "k=true|false,..."]
+      [--risk-level <low|medium|high>] [--contract-ref <既有承诺引用>]
+  harness confirm --brief '<json>' --quote "<确认原话>" [--session <引用>] [--json]
   harness advance --to <stage> [--quote "<确认原话>"] [--json]
   harness suspend --reason "<原因>" [--json]
   harness resume <work-item-id> [--json]
   harness close --outcome <${OUTCOMES.join("|")}> [--result <${RESULTS.join("|")}>] [--quote "<原话>"] [--json]
-  harness suspend-and-start --type <type> --quote "<任务原话>" --reason "<暂停原因>" [--json]
-  harness close-and-start --outcome <outcome> [--result <result>] --type <type> --quote "<任务原话>" [--reason "<原因>"] [--json]`;
+  harness rollback <work-item-id> --quote "<回退原话>" [--only] [--json]
+  harness suspend-and-start --type <type> --quote "<任务原话>" --reason "<暂停原因>" [--contract-ref <引用>] [--json]
+  harness close-and-start --outcome <outcome> [--result <result>] --type <type> --quote "<任务原话>" [--reason "<原因>"] [--contract-ref <引用>] [--json]`;
+
+const BOOL_FLAGS = new Set(["json", "only"]);
 
 function parseArgs(argv) {
   const options = { _: [] };
@@ -37,8 +45,8 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg.startsWith("--")) {
       const key = arg.slice(2);
-      if (key === "json") {
-        options.json = true;
+      if (BOOL_FLAGS.has(key)) {
+        options[key] = true;
       } else {
         const value = argv[i + 1];
         if (value === undefined || value.startsWith("--")) throw E.USAGE(`--${key} 缺少值`, USAGE);
@@ -158,7 +166,17 @@ async function run(argv) {
     }
     case "start": {
       if (!options.type) throw E.USAGE("start 缺少 --type", USAGE);
-      const { result } = await opStart(ctx.root, ctx, { type: options.type, quote: options.quote });
+      const { result } = await opStart(ctx.root, ctx, {
+        type: options.type,
+        quote: options.quote,
+        contractRef: options["contract-ref"] ?? null,
+        risk: {
+          axes: options.axes ?? null,
+          allowlist: options.allowlist ?? null,
+          triggers: options.triggers ?? null,
+          override: options["risk-level"] ?? null,
+        },
+      });
       out(options, result, `已创建 active Work Item ${result.workItemId} [${result.type}] stage=${result.stage}`);
       return;
     }
@@ -166,6 +184,20 @@ async function run(argv) {
       if (!options.to) throw E.USAGE("advance 缺少 --to", USAGE);
       const { result } = await opAdvance(ctx.root, ctx, { to: options.to, quote: options.quote });
       out(options, result, `${result.workItemId}: ${result.from} → ${result.to}`);
+      return;
+    }
+    case "confirm": {
+      if (!options.brief) throw E.USAGE("confirm 缺少 --brief", USAGE);
+      const { result } = await opConfirmBrief(ctx.root, ctx, {
+        brief: options.brief,
+        quote: options.quote,
+        sessionRef: options.session ?? null,
+      });
+      out(
+        options,
+        result,
+        `${result.workItemId}: Brief 已确认，事实冻结并进入 ${result.stage}（人工停顿 ${result.humanStops.count}/${result.humanStops.budget}）`,
+      );
       return;
     }
     case "suspend": {
@@ -201,6 +233,7 @@ async function run(argv) {
         type: options.type,
         quote: options.quote,
         reason: options.reason,
+        contractRef: options["contract-ref"] ?? null,
       });
       out(options, result, `已暂停 ${result.suspendedWorkItemId} 并创建 ${result.workItemId} [${result.type}]`);
       return;
@@ -213,8 +246,24 @@ async function run(argv) {
         type: options.type,
         quote: options.quote,
         reason: options.reason,
+        contractRef: options["contract-ref"] ?? null,
       });
       out(options, result, `已关闭 ${result.closedWorkItemId}（${result.outcome}）并创建 ${result.workItemId} [${result.type}]`);
+      return;
+    }
+    case "rollback": {
+      const targetId = options._[0];
+      if (!targetId) throw E.USAGE("rollback 缺少 <work-item-id>", USAGE);
+      const { result } = await opRollback(ctx.root, ctx, {
+        targetId,
+        only: options.only === true,
+        quote: options.quote,
+      });
+      out(
+        options,
+        result,
+        `已创建 Rollback ${result.workItemId}：级联 ${result.cascade.join(" → ")}${result.suspendedWorkItemId ? `（已暂停 ${result.suspendedWorkItemId}）` : ""}`,
+      );
       return;
     }
     default:

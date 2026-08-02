@@ -77,4 +77,57 @@ export const E = {
       exitCode: EXIT_USAGE,
       repair: "outcome 必须是 accepted|abandoned|superseded",
     }),
+  INVALID_RISK_INPUT: (msg, repair) => new HarnessError("E_INVALID_RISK_INPUT", msg, { exitCode: EXIT_USAGE, repair }),
+  RISK_BELOW_FLOOR: (override, floor) =>
+    new HarnessError("E_RISK_BELOW_FLOOR", `风险等级 ${override} 低于规则下限 ${floor}；Developer 可上调不可下调`, {
+      repair: `harness start 携带 --risk-level ${floor} 或更高，或修正风险事实后重试`,
+    }),
+  RISK_TOO_HIGH_FOR_BRIEF: (level) =>
+    new HarnessError("E_RISK_TOO_HIGH_FOR_BRIEF", `风险等级 ${level} 不满足 low allowlist，不能使用 Brief 批量确认`, {
+      repair: "按 medium/high 分阶段路径逐段 advance 并确认事实；或在 start 时修正风险事实",
+    }),
+  BRIEF_NOT_ALLOWED: (type, reason) =>
+    new HarnessError("E_BRIEF_NOT_ALLOWED", `${type} 不可使用 Brief 批量确认：${reason}`, {
+      repair: "harness status 查看当前允许动作；按类型生命周期分阶段推进",
+    }),
+  BRIEF_INCOMPLETE: (required, missing) =>
+    new HarnessError("E_BRIEF_INCOMPLETE", `Brief 缺段：${missing.join("、")}`, {
+      repair: `Brief 必须包含：${required.join(", ")}`,
+    }),
+  FACT_FROZEN: (kind) =>
+    new HarnessError("E_FACT_FROZEN", `事实 ${kind} 已确认为不可变 revision，不可重复确认`, {
+      repair: "事实错误走 reopen 创建后继 revision（Phase C），不覆盖已冻结事实",
+    }),
+  DEFECT_INCOMPLETE: (missing) =>
+    new HarnessError("E_DEFECT_INCOMPLETE", `defect 事实缺项：${missing.join("、")}`, {
+      repair: "defect 必须同时引用既有契约（contractRef）与可复现偏差（reproduction）",
+    }),
+  DEFECT_CONTRACT_MISMATCH: (expected, actual) =>
+    new HarnessError("E_DEFECT_CONTRACT_MISMATCH", `defect.contractRef ${actual} 与 start 声明的既有承诺 ${expected} 不一致`, {
+      repair: "修正 Brief 的 contractRef；没有既有承诺的新增期望应 close-and-start 为 feature",
+    }),
+  DIAGNOSIS_INCOMPLETE: (missing) =>
+    new HarnessError("E_DIAGNOSIS_INCOMPLETE", `diagnosis 事实缺项：${missing.join("、")}`, {
+      repair: "diagnosis 必须有证据支持的因果解释（causality + evidence），不能只描述症状",
+    }),
+  SCOPE_INCOMPLETE: (missing) =>
+    new HarnessError("E_SCOPE_INCOMPLETE", `maintenance scope 缺项：${missing.join("、")}`, {
+      repair: "scope 必须声明目标（goal）、保持不变量（invariants）、风险画像（riskProfile）与回退边界（rollbackBoundary）",
+    }),
+  DEFECT_NO_CONTRACT: () =>
+    new HarnessError("E_DEFECT_NO_CONTRACT", "Bugfix 必须声明要恢复的既有承诺（契约、不变量或已验收行为）", {
+      repair: "harness start --type bugfix --contract-ref <契约引用>；没有既有承诺的新增期望应改用 --type feature",
+    }),
+  ROLLBACK_TARGET_NOT_ACCEPTED: (id) =>
+    new HarnessError("E_ROLLBACK_TARGET_NOT_ACCEPTED", `Rollback 目标 ${id} 不在 accepted lineage 中`, {
+      repair: "harness status --json 查看 Accepted Baseline；目标必须是已 accepted 关闭的 Work Item",
+    }),
+  ROLLBACK_REQUIRES_CASCADE: (id, successors) =>
+    new HarnessError(
+      "E_ROLLBACK_REQUIRES_CASCADE",
+      `目标 ${id} 之后存在后继 accepted 项（${successors.join("、")}），单独 revert 不安全`,
+      {
+        repair: `harness rollback ${id}（去掉 --only），自动按逆序级联全部后继项`,
+      },
+    ),
 };

@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI 原生开发系统 Architecture Diagram</title>
+  <link rel="icon" href="data:,">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" integrity="sha384-en/ztfPSRkGfME4KIm05joYXynqzUgbsG5nMrj/xEFAHXkeZfO3yMK8QQ+mP7p1/" crossorigin="anonymous"></script>
@@ -54,7 +55,7 @@
     h1 {
       font-size: 1.5rem;
       font-weight: 700;
-      letter-spacing: -0.025em;
+      letter-spacing: 0;
     }
 
     .subtitle {
@@ -73,13 +74,16 @@
 
     svg {
       width: 100%;
-      min-width: 900px;
+      min-width: 1000px;
       display: block;
     }
 
     svg text {
       font-family: 'JetBrains Mono', 'PingFang SC', 'Microsoft YaHei', monospace;
     }
+
+    svg text[fill="#94a3b8"] { fill: #cbd5e1; }
+    svg text[fill="#64748b"] { fill: #94a3b8; }
 
     .cards {
       display: grid;
@@ -90,7 +94,7 @@
 
     .card {
       background: rgba(15, 23, 42, 0.5);
-      border-radius: 0.75rem;
+      border-radius: 0.5rem;
       border: 1px solid #1e293b;
       padding: 1.25rem;
     }
@@ -132,7 +136,7 @@
     .footer {
       text-align: center;
       margin-top: 1.5rem;
-      color: #475569;
+      color: #94a3b8;
       font-size: 0.75rem;
     }
 
@@ -146,7 +150,7 @@
     .toolbar-toggle {
       background: transparent;
       border: none;
-      color: #475569;
+      color: #94a3b8;
       cursor: pointer;
       font-size: 1.25rem;
       line-height: 1;
@@ -178,6 +182,18 @@
       border-color: #475569;
     }
 
+    @media (max-width: 860px) {
+      body { padding: 0.875rem; }
+      .header-row { align-items: flex-start; flex-wrap: wrap; }
+      h1 { max-width: calc(100% - 42px); font-size: 1.1875rem; }
+      .subtitle { margin-left: 0; font-size: 0.75rem; line-height: 1.6; }
+      .toolbar { width: 100%; justify-content: flex-end; }
+      .toolbar-toggle { border: 1px solid #334155; background: rgba(30, 41, 59, 0.8); color: #f8fafc; }
+      .toolbar-actions { flex-wrap: wrap; justify-content: flex-end; }
+      .diagram-container { padding: 0.625rem; }
+      .cards { grid-template-columns: 1fr; }
+    }
+
     @media print {
       body { background: #020617; padding: 1rem; }
       .toolbar { display: none !important; }
@@ -200,12 +216,14 @@
           <button class="toolbar-toggle" onclick="this.parentElement.classList.toggle('expanded')" title="Export options" aria-label="Export options">⋯</button>
         </div>
       </div>
-      <p class="subtitle">上下文闭环 × 执行闭环 —— 让 AI 写代码的速度变成生产力</p>
+      <p class="subtitle">上下文闭环 × 确定性 Skill 编排 × 执行闭环 —— 让 AI 写代码的速度变成生产力</p>
     </div>
 
     <!-- Main Diagram -->
     <div class="diagram-container">
-      <svg viewBox="0 0 1200 720">
+      <svg viewBox="0 0 1200 1020" role="img" aria-labelledby="diagram-title diagram-desc">
+        <title id="diagram-title">AI 原生开发系统总览架构</title>
+        <desc id="diagram-desc">上下文闭环提供事实，确定性 Skill 路由选择阶段内执行链，执行闭环通过小版本、验证、门禁和回滚交付结果。</desc>
         <!-- Definitions -->
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -222,6 +240,9 @@
           </marker>
           <marker id="arrow-rose" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
             <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185" />
+          </marker>
+          <marker id="arrow-orange" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb923c" />
           </marker>
           <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
             <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
@@ -247,11 +268,11 @@
 
         <!-- Context loop -> Execution loop -->
         <line x1="560" y1="315" x2="636" y2="315" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrow-violet)"/>
-        <text x="572" y="307" fill="#a78bfa" font-size="7" text-anchor="middle">事实·契约·状态</text>
+        <text x="600" y="307" fill="#a78bfa" font-size="7" text-anchor="middle">事实·契约·状态</text>
 
         <!-- Execution loop -> Context loop -->
         <line x1="640" y1="345" x2="564" y2="345" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
-        <text x="572" y="360" fill="#34d399" font-size="7" text-anchor="middle">验证·经验回写</text>
+        <text x="600" y="360" fill="#34d399" font-size="7" text-anchor="middle">验证·经验回写</text>
 
         <!-- Execution cycle: A->B -->
         <line x1="874" y1="212" x2="922" y2="212" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
@@ -276,6 +297,21 @@
         <!-- Gate chip arrows -->
         <line x1="808" y1="437" x2="832" y2="437" stroke="#fb7185" stroke-width="1.5" marker-end="url(#arrow-rose)"/>
         <line x1="972" y1="437" x2="996" y2="437" stroke="#fb7185" stroke-width="1.5" marker-end="url(#arrow-rose)"/>
+
+        <!-- Context facts -> Skill routing context -->
+        <path d="M 423.5 368 L 423.5 590 L 595 590 L 595 648" fill="none" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrow-violet)"/>
+        <text x="505" y="584" fill="#a78bfa" font-size="7" text-anchor="middle">stateRef · config · Slice</text>
+
+        <!-- Skill routing control-plane flow -->
+        <line x1="240" y1="685" x2="268" y2="685" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#arrow-orange)"/>
+        <path d="M 370 720 L 370 740 L 705 740 L 705 705 L 718 705" fill="none" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrow-violet)"/>
+        <line x1="690" y1="685" x2="718" y2="685" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+        <line x1="930" y1="685" x2="958" y2="685" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+        <line x1="320" y1="800" x2="348" y2="800" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrow-orange)"/>
+        <line x1="840" y1="800" x2="868" y2="800" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrow-orange)"/>
+        <line x1="1050" y1="720" x2="1050" y2="768" stroke="#64748b" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowhead)"/>
+        <line x1="600" y1="860" x2="600" y2="888" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrow-cyan)"/>
+        <text x="610" y="878" fill="#22d3ee" font-size="7">cold-start check</text>
 
         <!-- ================= ACTORS ================= -->
 
@@ -325,11 +361,11 @@
         <!-- workflow-state.json -->
         <rect x="311" y="256" width="225" height="112" rx="6" fill="#0f172a"/>
         <rect x="311" y="256" width="225" height="112" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
-        <text x="423.5" y="277" fill="white" font-size="11" font-weight="600" text-anchor="middle">workflow-state.json</text>
-        <text x="423.5" y="293" fill="#94a3b8" font-size="8" text-anchor="middle">唯一机器状态源</text>
-        <text x="423.5" y="309" fill="#94a3b8" font-size="8" text-anchor="middle">需求讨论 → 方案选择</text>
-        <text x="423.5" y="323" fill="#94a3b8" font-size="8" text-anchor="middle">→ 实现就绪 → 开发</text>
-        <text x="423.5" y="337" fill="#94a3b8" font-size="8" text-anchor="middle">→ 验收 → 提交</text>
+        <text x="423.5" y="277" fill="white" font-size="11" font-weight="600" text-anchor="middle">workflow-state.json / stateRef</text>
+        <text x="423.5" y="293" fill="#94a3b8" font-size="8" text-anchor="middle">唯一运行时状态源（v1 / v2）</text>
+        <text x="423.5" y="309" fill="#94a3b8" font-size="8" text-anchor="middle">类型化 Work Item 生命周期</text>
+        <text x="423.5" y="323" fill="#94a3b8" font-size="8" text-anchor="middle">Slice DAG · frontier · revision</text>
+        <text x="423.5" y="337" fill="#94a3b8" font-size="8" text-anchor="middle">风险 · 证据 · 审计历史</text>
         <text x="423.5" y="357" fill="#a78bfa" font-size="7" text-anchor="middle">阶段切换保留用户确认原话</text>
 
         <!-- Decision supersession + source registry -->
@@ -372,8 +408,8 @@
         <rect x="926" y="300" width="210" height="64" rx="6" fill="#0f172a"/>
         <rect x="926" y="300" width="210" height="64" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
         <text x="1031" y="321" fill="white" font-size="11" font-weight="600" text-anchor="middle">Run &amp; Check</text>
-        <text x="1031" y="337" fill="#94a3b8" font-size="8" text-anchor="middle">单测 · 集成 · 契约 · E2E</text>
-        <text x="1031" y="352" fill="#34d399" font-size="7" text-anchor="middle">关键用户路径真的运行</text>
+        <text x="1031" y="337" fill="#94a3b8" font-size="8" text-anchor="middle">Quick · Full · 集成 · 契约 · E2E</text>
+        <text x="1031" y="352" fill="#34d399" font-size="7" text-anchor="middle">真实路径运行 · 内容漂移即 stale</text>
 
         <!-- D: Layered fix -->
         <rect x="664" y="300" width="210" height="64" rx="6" fill="#0f172a"/>
@@ -399,22 +435,79 @@
         <text x="900" y="515" fill="#94a3b8" font-size="8" text-anchor="middle">并行实现 → 验证比较 → 替换 → 删除旧路径</text>
         <text x="900" y="528" fill="#fbbf24" font-size="7" text-anchor="middle">独立提交 · 可回退 · 不做原地拆除重建</text>
 
-        <!-- ================= STRIP: SIX QUESTIONS ================= -->
-        <rect x="40" y="600" width="1120" height="92" rx="12" fill="rgba(8, 51, 68, 0.3)" stroke="#22d3ee" stroke-width="1" stroke-dasharray="8,4"/>
-        <text x="56" y="624" fill="#22d3ee" font-size="10" font-weight="600">③ 新会话六问 — 目录存在 ≠ 系统有效：冷启动只读仓库，六问皆答才算闭环</text>
+        <!-- ================= REGION: SKILL ROUTING CONTROL PLANE ================= -->
+        <rect x="40" y="610" width="1120" height="250" rx="12" fill="rgba(251, 146, 60, 0.05)" stroke="#fb923c" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="54" y="634" fill="#fb923c" font-size="10" font-weight="600">③ Skill 编排控制面 — 阶段事实 → 确定性路由 → 阶段内 Skill DAG（只读，不拥有运行时状态）</text>
 
-        <rect x="60" y="646" width="170" height="36" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
-        <text x="145" y="669" fill="white" font-size="9" text-anchor="middle">1. 项目是什么</text>
-        <rect x="242" y="646" width="170" height="36" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
-        <text x="327" y="669" fill="white" font-size="9" text-anchor="middle">2. 当前走到哪步</text>
-        <rect x="424" y="646" width="170" height="36" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
-        <text x="509" y="669" fill="white" font-size="9" text-anchor="middle">3. 允许做什么</text>
-        <rect x="606" y="646" width="170" height="36" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
-        <text x="691" y="669" fill="white" font-size="9" text-anchor="middle">4. 按什么流程</text>
-        <rect x="788" y="646" width="170" height="36" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
-        <text x="873" y="669" fill="white" font-size="9" text-anchor="middle">5. 做完如何验证</text>
-        <rect x="970" y="646" width="170" height="36" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
-        <text x="1055" y="669" fill="white" font-size="9" text-anchor="middle">6. 经验写到哪里</text>
+        <!-- Sources + lock -->
+        <rect x="60" y="650" width="180" height="70" rx="6" fill="#0f172a"/>
+        <rect x="60" y="650" width="180" height="70" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="150" y="674" fill="white" font-size="10" font-weight="600" text-anchor="middle">sources.json + lock</text>
+        <text x="150" y="692" fill="#94a3b8" font-size="8" text-anchor="middle">4 pinned sources · 31 Skills</text>
+        <text x="150" y="708" fill="#fbbf24" font-size="7" text-anchor="middle">commit + disk digest</text>
+
+        <!-- skills.json v2 -->
+        <rect x="270" y="650" width="200" height="70" rx="6" fill="#0f172a"/>
+        <rect x="270" y="650" width="200" height="70" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="370" y="674" fill="white" font-size="10" font-weight="600" text-anchor="middle">.agents/skills.json v2</text>
+        <text x="370" y="692" fill="#94a3b8" font-size="8" text-anchor="middle">20 aliases · 41 routes</text>
+        <text x="370" y="708" fill="#a78bfa" font-size="7" text-anchor="middle">match · nodes · policies</text>
+
+        <!-- Context builder -->
+        <rect x="500" y="650" width="190" height="70" rx="6" fill="#0f172a"/>
+        <rect x="500" y="650" width="190" height="70" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="595" y="674" fill="white" font-size="10" font-weight="600" text-anchor="middle">Runtime Context</text>
+        <text x="595" y="692" fill="#94a3b8" font-size="8" text-anchor="middle">type · stage · risk · UI</text>
+        <text x="595" y="708" fill="#34d399" font-size="7" text-anchor="middle">Slice · tests · trigger</text>
+
+        <!-- Deterministic resolver -->
+        <rect x="720" y="650" width="210" height="70" rx="6" fill="#0f172a"/>
+        <rect x="720" y="650" width="210" height="70" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="825" y="674" fill="white" font-size="10" font-weight="600" text-anchor="middle">Deterministic Resolver</text>
+        <text x="825" y="692" fill="#94a3b8" font-size="8" text-anchor="middle">most-specific route wins</text>
+        <text x="825" y="708" fill="#fb7185" font-size="7" text-anchor="middle">same rank → conflict error</text>
+
+        <!-- Resolved plan -->
+        <rect x="960" y="650" width="180" height="70" rx="6" fill="#0f172a"/>
+        <rect x="960" y="650" width="180" height="70" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="1050" y="674" fill="white" font-size="10" font-weight="600" text-anchor="middle">Resolved Skill DAG</text>
+        <text x="1050" y="692" fill="#94a3b8" font-size="8" text-anchor="middle">required / optional order</text>
+        <text x="1050" y="708" fill="#22d3ee" font-size="7" text-anchor="middle">evidence · humanGate</text>
+
+        <!-- Six paths -->
+        <rect x="60" y="770" width="260" height="60" rx="6" fill="#0f172a"/>
+        <rect x="60" y="770" width="260" height="60" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="190" y="793" fill="white" font-size="10" font-weight="600" text-anchor="middle">Six Work Item Paths</text>
+        <text x="190" y="811" fill="#94a3b8" font-size="8" text-anchor="middle">Feature · Bugfix · Maintenance</text>
+        <text x="190" y="825" fill="#94a3b8" font-size="8" text-anchor="middle">Optimization · Migration · Rollback</text>
+
+        <!-- Matcher precedence bus -->
+        <rect x="350" y="788" width="490" height="24" rx="4" fill="rgba(251, 146, 60, 0.3)" stroke="#fb923c" stroke-width="1"/>
+        <text x="595" y="804" fill="#fb923c" font-size="7" text-anchor="middle">type &gt; stage &gt; risk &gt; UI &gt; Slice &gt; tests &gt; trigger · no model routing</text>
+
+        <!-- Execution boundary -->
+        <rect x="870" y="770" width="270" height="60" rx="6" fill="#0f172a"/>
+        <rect x="870" y="770" width="270" height="60" rx="6" fill="rgba(136, 19, 55, 0.2)" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="1005" y="793" fill="white" font-size="10" font-weight="600" text-anchor="middle">Agent / Hook consumes plan</text>
+        <text x="1005" y="811" fill="#94a3b8" font-size="8" text-anchor="middle">lifecycle · stateRef · Slice · Quick</text>
+        <text x="1005" y="825" fill="#fb7185" font-size="7" text-anchor="middle">路由不写状态 · 不自动执行 Skill</text>
+
+        <!-- ================= STRIP: SIX QUESTIONS ================= -->
+        <rect x="40" y="890" width="1120" height="92" rx="12" fill="rgba(8, 51, 68, 0.3)" stroke="#22d3ee" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="56" y="914" fill="#22d3ee" font-size="10" font-weight="600">④ 新会话六问 — 目录存在 ≠ 系统有效：冷启动只读仓库，六问皆答才算闭环</text>
+
+        <rect x="60" y="936" width="170" height="36" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="145" y="959" fill="white" font-size="9" text-anchor="middle">1. 项目是什么</text>
+        <rect x="242" y="936" width="170" height="36" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="327" y="959" fill="white" font-size="9" text-anchor="middle">2. 当前走到哪步</text>
+        <rect x="424" y="936" width="170" height="36" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="509" y="959" fill="white" font-size="9" text-anchor="middle">3. 允许做什么</text>
+        <rect x="606" y="936" width="170" height="36" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="691" y="959" fill="white" font-size="9" text-anchor="middle">4. 按什么流程</text>
+        <rect x="788" y="936" width="170" height="36" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="873" y="959" fill="white" font-size="9" text-anchor="middle">5. 做完如何验证</text>
+        <rect x="970" y="936" width="170" height="36" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="1055" y="959" fill="white" font-size="9" text-anchor="middle">6. 经验写到哪里</text>
       </svg>
     </div>
 
@@ -428,39 +521,39 @@
         <ul>
           <li>• AGENTS.md 做索引和红线，不做百科全书</li>
           <li>• workflow / specs / tasks / memory 分层，过程与契约分开</li>
-          <li>• workflow-state.json 是唯一机器状态源</li>
+          <li>• workflow-state.json / stateRef 是唯一运行时状态源</li>
           <li>• 决策有废止机制，事实登记来源</li>
         </ul>
       </div>
       <div class="card">
         <div class="card-header">
-          <div class="card-dot emerald"></div>
-          <h3>执行闭环</h3>
+          <div class="card-dot amber"></div>
+          <h3>确定性 Skill 编排</h3>
         </div>
         <ul>
-          <li>• 原型是实现的直接参照物，不是参考图</li>
-          <li>• 每个版本只增加一种主要不确定性</li>
-          <li>• 问题回到产生它的那一层修复</li>
-          <li>• 测试结构跟随风险，关键路径必须真运行</li>
+          <li>• `.agents/skills.json` v2：20 个 alias、41 条 route</li>
+          <li>• matcher 优先级固定，同级冲突直接失败，不交给模型路由</li>
+          <li>• 4 个锁定来源物化 31 个可复现 Skill</li>
+          <li>• 输出阶段内 DAG、证据、测试/UI 策略与 humanGate</li>
         </ul>
       </div>
       <div class="card">
         <div class="card-header">
           <div class="card-dot rose"></div>
-          <h3>门禁与人的职责</h3>
+          <h3>执行闭环与门禁</h3>
         </div>
         <ul>
-          <li>• 阶段推进依赖三类证据：文档、状态、确认原话</li>
-          <li>• 人负责需求、设计、边界和阶段放行</li>
-          <li>• Agent 负责高速探索、实现、验证和修复</li>
-          <li>• 新会话六问检验系统是否真的成立</li>
+          <li>• resolver 只读，不写 stateRef，不复制 lifecycle 或 Slice DAG</li>
+          <li>• Agent / Hook 执行 Skill，人的原话放行关键节点</li>
+          <li>• Quick / Full 跟随风险，内容或契约漂移立即 stale</li>
+          <li>• 原型、小版本、真实路径、分层修复和回滚形成反馈闭环</li>
         </ul>
       </div>
     </div>
 
     <!-- Footer -->
     <p class="footer">
-      AI 原生开发系统 • 上下文闭环 × 执行闭环 • 把代码生成速度变成生产力
+      AI 原生开发系统 • 上下文闭环 × 确定性 Skill 编排 × 执行闭环 • commit 19fad67
     </p>
   </div>
 

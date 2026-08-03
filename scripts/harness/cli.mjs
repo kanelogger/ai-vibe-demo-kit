@@ -5,7 +5,7 @@
 //         verify {quick}。
 // 契约：--json 稳定输出；退出码 0 成功、1 领域门禁拒绝、2 用法/IO/Git 错误。
 
-import { HarnessError, E, EXIT_OK } from "./lib/errors.mjs";
+import { HarnessError, E, EXIT_OK, EXIT_REFUSED } from "./lib/errors.mjs";
 import { resolveContext } from "./lib/context.mjs";
 import { loadRegistry } from "./lib/state-store.mjs";
 import { migrateState } from "./lib/migrate-v1.mjs";
@@ -30,6 +30,7 @@ import { computeQuickInputs, quickCurrency } from "./lib/quick.mjs";
 import { DEFAULT_CONFIG_PATH, currentBaseline } from "./lib/context.mjs";
 import { WORK_ITEM_TYPES, OUTCOMES, RESULTS } from "./lib/lifecycle.mjs";
 import { loadSkillRouting, resolveSkillRoute, SKILL_ROUTING_PATH } from "./lib/skill-routing.mjs";
+import { guardWriteContext } from "./lib/context-guard.mjs";
 
 const USAGE = `用法:
   harness status [--json] [--root <dir>]
@@ -48,6 +49,7 @@ const USAGE = `用法:
   harness slice advance --slice <slice-id> --to <status> [--json]
   harness slice update-scope --slice <slice-id> --spec '<json>' [--json]
   harness verify quick --slice <slice-id> [--json]
+  harness context guard --file <path> --session <id> [--json]
   harness skills route [--type <type> --stage <stage>] [--risk-level <low|medium|high|unclassified>]
       [--slice-status <status> | --slice <slice-id>] [--trigger <name,...>] [--json]
   harness suspend-and-start --type <type> --quote "<任务原话>" --reason "<暂停原因>" [--contract-ref <引用>] [--json]
@@ -235,6 +237,51 @@ async function routeContext(options, ctx) {
   };
 }
 
+function contextHuman(result) {
+  if (result.decision === "unmanaged") return `${result.target}: unmanaged（不在 contextIndex.codeRoots）`;
+  if (result.decision === "allowed") return `${result.target}: allowed（context ${result.resolutionDigest}）`;
+  const lines = [
+    `${result.target}: blocked（已交付前置上下文；使用同一 session 重试）`,
+    `context: ${result.resolutionDigest}`,
+  ];
+  for (const index of result.indexes) lines.push(`index ${index.path}: ${index.summary}`);
+  for (const dependency of result.dependencies) {
+    lines.push(`dependency ${dependency.path} (${dependency.sha256}, declared by ${dependency.declaredBy})`);
+    lines.push(dependency.content);
+  }
+  return lines.join("\n");
+}
+
+function writeContextOutput(options, result) {
+  const text = options.json ? `${JSON.stringify(result, null, 2)}\n` : `${contextHuman(result)}\n`;
+  return new Promise((resolvePromise, rejectPromise) => {
+    process.stdout.write(text, (error) => {
+      if (error) rejectPromise(error);
+      else resolvePromise();
+    });
+  });
+}
+
+async function cmdContext(options, ctx) {
+  const sub = options._[0];
+  if (sub !== "guard") throw E.USAGE(`未知 context 子命令 ${sub ?? "(空)"}`, USAGE);
+  if (!options.file) throw E.CONTEXT_TARGET_INVALID(options.file ?? "(missing)");
+  if (!options.session) throw E.CONTEXT_SESSION_REQUIRED();
+  let delivered = false;
+  const result = await guardWriteContext({
+    root: ctx.root,
+    config: ctx.config,
+    targetPath: options.file,
+    sessionId: options.session,
+    deliver: async (bundle) => {
+      await writeContextOutput(options, bundle);
+      delivered = true;
+    },
+  });
+  if (!delivered) await writeContextOutput(options, result);
+  return result.decision === "blocked" ? EXIT_REFUSED : EXIT_OK;
+}
+
 async function cmdSkills(options, ctx) {
   const sub = options._[0];
   if (sub !== "route") throw E.USAGE(`未知 skills 子命令 ${sub ?? "(空)"}`, USAGE);
@@ -414,6 +461,8 @@ async function run(argv) {
     case "skills":
       await cmdSkills(options, ctx);
       return;
+    case "context":
+      return cmdContext(options, ctx);
     case "slice":
       await cmdSlice(options, ctx);
       return;
@@ -528,14 +577,17 @@ async function run(argv) {
 }
 
 run(process.argv.slice(2)).then(
-  () => process.exit(EXIT_OK),
+  (exitCode) => {
+    process.exitCode = exitCode ?? EXIT_OK;
+  },
   (error) => {
     if (error instanceof HarnessError) {
       process.stderr.write(`ERROR ${error.code}: ${error.message}\n`);
       if (error.repair) process.stderr.write(`REPAIR: ${error.repair}\n`);
-      process.exit(error.exitCode);
+      process.exitCode = error.exitCode;
+      return;
     }
     process.stderr.write(`ERROR E_INTERNAL: ${error?.stack ?? error}\n`);
-    process.exit(2);
+    process.exitCode = 2;
   },
 );

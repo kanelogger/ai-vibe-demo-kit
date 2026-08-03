@@ -7,11 +7,11 @@
   },
   "commands": {
     "quick": {
-      "static": ["node --check scripts/harness/lib/skill-routing.mjs && node --check scripts/harness/cli.mjs && node --check scripts/harness-check.mjs"],
-      "test": ["node --test scripts/harness/test/skill-routing.test.mjs"]
+      "static": ["node --check scripts/harness/lib/skill-routing.mjs && node --check scripts/harness/lib/context.mjs && node --check scripts/harness/lib/context-guard.mjs && node --check scripts/harness/cli.mjs && node --check scripts/harness-check.mjs"],
+      "test": ["node --test scripts/harness/test/skill-routing.test.mjs scripts/harness/test/context-guard.test.mjs"]
     },
     "full": {
-      "static": ["node --check scripts/harness/lib/skill-routing.mjs && node --check scripts/harness/cli.mjs && node --check scripts/harness-check.mjs"],
+      "static": ["node --check scripts/harness/lib/skill-routing.mjs && node --check scripts/harness/lib/context.mjs && node --check scripts/harness/lib/context-guard.mjs && node --check scripts/harness/cli.mjs && node --check scripts/harness-check.mjs"],
       "test": ["node --test scripts/harness/test/*.test.mjs"]
     },
     "contracts": []
@@ -28,8 +28,12 @@
     "workspaceFingerprint": "git"
   },
   "recovery": {
-    "testDataCleanup": [],
-    "rollback": []
+    "testDataCleanup": [
+      { "mode": "none", "reason": "Harness tests run in isolated temporary Git repositories and create no shared test data." }
+    ],
+    "rollback": [
+      "Use git revert on the focused implementation commit recorded in the Sprint verification report."
+    ]
   },
-  "notes": "本文件保存机器需要执行的验证事实。project.name、project.summary 必填；commands.quick.static 和 commands.quick.test 至少各登记一条真实命令；full 组为空时回退到 quick。SPECS/api.md 或 SPECS/database.md 存在时，commands.contracts 必须登记契约校验命令。criticalUserPaths 的 verify 使用 { mode: command, command }，人工路径使用 { mode: manual, instructions, evidence }。recovery.testDataCleanup 使用 { mode: command, command } 或 { mode: none, reason }。verification 控制报告位置、有效期、超时和工作区指纹；workspaceFingerprint 设为 none 时必须在 notes 说明等价审计方式。"
+  "notes": "本文件保存机器需要执行的验证事实。本项目是纯 CLI Overlay，没有对外 API 或数据库，因此不保留 SPECS/api.md、SPECS/database.md，commands.contracts 为空。project.name、project.summary 必填；commands.quick.static 和 commands.quick.test 至少各登记一条真实命令；full 组为空时回退到 quick。criticalUserPaths 的 verify 使用 { mode: command, command }，人工路径使用 { mode: manual, instructions, evidence }。recovery.testDataCleanup 使用 { mode: command, command } 或 { mode: none, reason }。verification 控制报告位置、有效期、超时和工作区指纹；workspaceFingerprint 设为 none 时必须在 notes 说明等价审计方式。"
 }

@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "reportId": "verify-20260803161044709",
+  "reportPath": ".harness/verification-report.json",
+  "generatedAt": "2026-08-03T16:10:44.709Z",
+  "project": "AI Native Harness Overlay",
+  "sourceStage": "implementation-ready",
+  "sprint": "tasks/sprint-01.md",
+  "profile": "quick",
+  "configSha256": "b86f0290fdaf42f792a0dbe73e5c80415e136c300fe79e5870a8956f4ecf574d",
+  "workspace": {
+    "head": "6eb29d49fb3598baf62e50db89727e41c76c1776",
+    "sha256": "27bf817449365b19cc2a68a3f1d32366097d13ab0839b6c2d4ca8f3c481216bc"
+  },
+  "status": "passed",
+  "checks": [
+    {
+      "kind": "static",
+      "command": "node --check scripts/harness/lib/skill-routing.mjs && node --check scripts/harness/lib/context.mjs && node --check scripts/harness/lib/context-guard.mjs && node --check scripts/harness/cli.mjs && node --check scripts/harness-check.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "startedAt": "2026-08-03T16:10:40.784Z",
+      "durationMs": 169,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "kind": "test",
+      "command": "node --test scripts/harness/test/skill-routing.test.mjs scripts/harness/test/context-guard.test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "startedAt": "2026-08-03T16:10:40.954Z",
+      "durationMs": 3736,
+      "stdout": "✔ managed file is blocked with context, then allowed until a prerequisite drifts (310.770542ms)\n✔ disabled context indexes leave files unmanaged (104.624ms)\n✔ ancestor indexes accumulate exact-file and transitive prerequisites in stable order (127.582791ms)\n✔ transitive prerequisite cycles are refused with a stable error (119.877167ms)\n✔ a target whose parent symlink escapes the repository is refused (110.089375ms)\n✔ a prerequisite whose parent symlink escapes the repository is never disclosed (116.610208ms)\n✔ receipts are isolated by session and absolute in-repository targets normalize (247.852625ms)\n✔ invalid context is refused: missing root index (111.184375ms)\n✔ invalid context is refused: unknown index field (112.7345ms)\n✔ invalid context is refused: missing prerequisite (128.035709ms)\n✔ invalid context is refused: directory prerequisite (116.019208ms)\n✔ invalid context is refused: symlink prerequisite (115.298541ms)\n✔ invalid context is refused: NUL prerequisite (116.83575ms)\n✔ invalid context is refused: invalid UTF-8 prerequisite (115.078333ms)\n✔ overlapping Code Roots are refused as ambiguous configuration (112.447541ms)\n✔ receipts use the Git private path in a linked worktree (273.954042ms)\n✔ a failed context delivery does not commit a receipt (89.922875ms)\n✔ a present malformed harness config fails closed (106.620625ms)\n✔ repository-internal symlink aliases are refused before Code Root routing (177.659416ms)\n✔ Git-private files cannot be disclosed as prerequisites (142.695334ms)\n✔ oversized prerequisites are refused before content output (117.325375ms)\n✔ missing target and session use distinct Context Guard errors (146.946417ms)\n✔ the total Context Closure has a bounded byte size (123.780584ms)\n✔ index and transitive prerequisite drift independently invalidate receipts (395.316666ms)\n✔ 六种 Work Item 从 initialized 解析到类型专属 Skill 链 (0.968375ms)\n✔ 风险、UI、Slice 与 trigger matcher 按声明优先级选择唯一具体路由 (0.224458ms)\n✔ 节点按 needs 拓扑排序并注入测试与 UI 策略 (0.159333ms)\n✔ 同优先级双 trigger 不静默合并 (0.27775ms)\n✔ 节点依赖成环在读取控制面时失败 (0.783416ms)\n✔ CLI 在未迁移项目可显式查询，在迁移后默认读取 active Work Item (604.778ms)\nℹ tests 30\nℹ suites 0\nℹ pass 30\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 3694.516417",
+      "stderr": ""
+    }
+  ],
+  "criticalUserPaths": [],
+  "cleanup": [
+    {
+      "mode": "none",
+      "reason": "Harness tests run in isolated temporary Git repositories and create no shared test data.",
+      "status": "passed"
+    }
+  ],
+  "rollback": [
+    "Use git revert on the focused implementation commit recorded in the Sprint verification report."
+  ]
+}

@@ -19,6 +19,54 @@ export class HarnessError extends Error {
 export const E = {
   USAGE: (msg, repair) => new HarnessError("E_USAGE", msg, { repair, exitCode: EXIT_USAGE }),
   GIT: (msg) => new HarnessError("E_GIT", msg, { exitCode: EXIT_USAGE }),
+  CONTEXT_CONFIG_INVALID: (detail) =>
+    new HarnessError("E_CONTEXT_CONFIG_INVALID", `目录上下文配置非法：${detail}`, {
+      repair: "修正生效的 .harness/config.json；contextIndex.codeRoots 使用互不重叠的安全仓库相对目录",
+      exitCode: EXIT_USAGE,
+    }),
+  CONTEXT_TARGET_INVALID: (target) =>
+    new HarnessError("E_CONTEXT_TARGET_INVALID", `Context Guard 目标路径越出仓库或为空：${target}`, {
+      repair: "--file 使用仓库内文件的相对路径或仓库内绝对路径",
+      exitCode: EXIT_USAGE,
+    }),
+  CONTEXT_SESSION_REQUIRED: () =>
+    new HarnessError("E_CONTEXT_SESSION_REQUIRED", "受管文件写入必须提供非空会话标识", {
+      repair: "重试时使用同一个 --session <id>；不同会话必须重新接收上下文",
+      exitCode: EXIT_USAGE,
+    }),
+  CONTEXT_INDEX_REQUIRED: (path) =>
+    new HarnessError("E_CONTEXT_INDEX_REQUIRED", `Code Root 缺少目录索引 ${path}`, {
+      repair: "在每个 contextIndex.codeRoots 根目录创建有效 .harness-index.json",
+    }),
+  CONTEXT_INDEX_INVALID: (path, detail) =>
+    new HarnessError("E_CONTEXT_INDEX_INVALID", `目录索引 ${path} 非法：${detail}`, {
+      repair: "按 version 1 schema 修正 summary、readBeforeWrite 和 files 精确路径",
+    }),
+  CONTEXT_REFERENCE_INVALID: (indexPath, ref, detail) =>
+    new HarnessError("E_CONTEXT_REFERENCE_INVALID", `目录上下文引用非法（${indexPath} → ${ref}）：${detail}`, {
+      repair: "readBeforeWrite 只引用仓库内存在的普通文本文件，不使用绝对路径、glob、目录或 symlink",
+    }),
+  CONTEXT_REFERENCE_NOT_TEXT: (path) =>
+    new HarnessError("E_CONTEXT_REFERENCE_NOT_TEXT", `目录上下文前置不是合法 UTF-8 文本：${path}`, {
+      repair: "从 readBeforeWrite 删除二进制文件，改为引用描述该资产的文本契约",
+    }),
+  CONTEXT_DEPENDENCY_CYCLE: (paths) =>
+    new HarnessError("E_CONTEXT_DEPENDENCY_CYCLE", `目录上下文依赖构成环：${paths.join(" → ")}`, {
+      repair: "删除一条 readBeforeWrite 反向边，使文件前置关系保持 DAG",
+    }),
+  CONTEXT_FILE_TOO_LARGE: (path, limit) =>
+    new HarnessError("E_CONTEXT_FILE_TOO_LARGE", `目录上下文文件超过 ${limit} 字节上限：${path}`, {
+      repair: "拆分前置文本或引用更聚焦的契约文件",
+    }),
+  CONTEXT_CLOSURE_TOO_LARGE: (limit) =>
+    new HarnessError("E_CONTEXT_CLOSURE_TOO_LARGE", `目录上下文闭包超过 ${limit} 字节上限`, {
+      repair: "减少 readBeforeWrite 边或拆分模块索引，使单个目标的前置上下文保持聚焦",
+    }),
+  CONTEXT_DELIVERY_REQUIRED: () =>
+    new HarnessError("E_CONTEXT_DELIVERY_REQUIRED", "Context Guard 缺少可等待的上下文交付 Adapter", {
+      repair: "调用 guardWriteContext 时提供 async deliver(bundle)，并只在输出成功后提交回执",
+      exitCode: EXIT_USAGE,
+    }),
   NOT_MIGRATED: (stateRef) =>
     new HarnessError("E_NOT_MIGRATED", `state ref ${stateRef} 不存在；项目尚未迁移到 v2 状态拓扑`, {
       repair: "harness migrate-state",

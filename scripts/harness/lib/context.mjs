@@ -18,13 +18,20 @@ export async function resolveContext({ root = null } = {}) {
   let config = {};
   let configPath = null; // 实际生效的配置来源；无配置文件时为 null（Quick 摘要用 DEFAULT_CONFIG_PATH）
   for (const candidate of CONFIG_CANDIDATES) {
+    let raw;
     try {
-      config = JSON.parse(await readFile(join(resolvedRoot, candidate), "utf8"));
-      configPath = candidate;
-      break;
-    } catch {
-      // 尝试下一个候选
+      raw = await readFile(join(resolvedRoot, candidate), "utf8");
+    } catch (error) {
+      if (error?.code === "ENOENT") continue;
+      throw E.CONTEXT_CONFIG_INVALID(`${candidate} 无法读取：${error.message}`);
     }
+    try {
+      config = JSON.parse(raw);
+    } catch (error) {
+      throw E.CONTEXT_CONFIG_INVALID(`${candidate} JSON 无法解析：${error.message}`);
+    }
+    configPath = candidate;
+    break;
   }
   const git = config.git ?? {};
   return {

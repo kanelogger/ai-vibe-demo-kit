@@ -26,6 +26,7 @@
 | v2 Work Item 与 Slice 控制面 | `scripts/harness/cli.mjs`、`scripts/harness/lib/` | stateRef registry、Work Item、Slice、Quick 与生命周期契约 |
 | Skill 来源、同步与路由 | `.agents/`、`scripts/skills-sync*.mjs`、`scripts/harness/lib/skill-routing.mjs` | source/lock/catalog 与 active Work Item 上下文 |
 | 平台 Hook 适配 | `.agents/hooks/` | 只调用 Harness 唯一检查或门禁入口，不复制领域规则 |
+| 目录上下文与写前门禁 | `scripts/harness/lib/context-guard.mjs`、`scripts/harness/cli.mjs`、`.agents/hooks/guard-write-context.mjs` | `.harness/config.json` 的 Code Roots、祖先 `.harness-index.json`、Git 私有 Context Receipt |
 | 自动化验证 | `scripts/harness/test/` | Node `node:test`、隔离临时 Git 仓库与表驱动 fixtures |
 
 ## 持久契约
@@ -36,6 +37,7 @@
 | v1 阶段状态 | `workflow-state.json` | `harness-stage.mjs` 与门禁检查器 |
 | v2 状态拓扑 | `refs/heads/harness/state` 下的 registry / Work Item / Slice JSON | `scripts/harness/cli.mjs` |
 | Skill catalog 与路由 | `.agents/skills.json` | Skill resolver 与 Agent 会话 |
+| 目录上下文索引 | 各 Code Root 及子目录的 `.harness-index.json` | Context Guard、`harness-check context`、平台写前 Hook |
 
 ## 验证命令
 

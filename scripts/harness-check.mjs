@@ -38,6 +38,8 @@ import {
   sourceSpecEqual,
 } from "./skills-sync-core.mjs";
 import { validateSkillRoutingValue } from "./harness/lib/skill-routing.mjs";
+import { validateContextIndexes } from "./harness/lib/context-guard.mjs";
+import { HarnessError } from "./harness/lib/errors.mjs";
 
 const STAGES = [
   "initialized",
@@ -325,6 +327,20 @@ async function checkContext(root, reporter) {
           ".harness/config.json",
           "commands must register at least one static-check command and one test command (quick or full group).",
           "Register the project's real static-check and test commands under commands.quick in .harness/config.json.",
+        );
+      }
+    }
+    if (isRecord(value)) {
+      try {
+        await validateContextIndexes({ root, config: value });
+      } catch (error) {
+        if (!(error instanceof HarnessError)) throw error;
+        const suffix = error.code.replace(/^E_/, "").toLowerCase().replaceAll("_", "-");
+        reporter[error.exitCode === 2 ? "parseError" : "error"](
+          `context.${suffix}`,
+          error.facts?.path ?? ".harness/config.json",
+          `${error.code}: ${error.message}`,
+          error.repair ?? "修正目录上下文配置或索引后重试。",
         );
       }
     }

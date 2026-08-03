@@ -36,6 +36,7 @@ AI Native Harness Overlay 是一层可复制到现有代码库的 Agent 开发�
 ├── tasks/                 # 当前执行单元及人类可读验证摘要
 ├── memory/                # 决策谱系和 ADR
 ├── rules/                 # 按主题加载的工程约束
+├── <code-root>/.harness-index.json # 与代码共置的目录摘要、默认前置和精确文件追加前置
 └── scripts/
     ├── harness-check.mjs  # 只读检查器及候选状态 preflight
     ├── harness-runtime.mjs# 检查器与验证器共享的报告/指纹契约
@@ -65,12 +66,28 @@ node scripts/harness-check.mjs context
 2. 合并已有 `AGENTS.md`，保留项目原有高优先级约束。
 3. 填写 `HARNESS.md` 相关章节与 `SPECS/architecture.md` 中的项目事实。
 4. 在 `.harness/config.json` 登记可执行的静态检查、测试、契约、关键路径和清理步骤，并配置报告有效期与工作区指纹。
+   - 在 `contextIndex.codeRoots` 显式登记受管代码根，并为每个根创建 `.harness-index.json`；不得猜测源码目录。
 5. 外部 Skills：复制后先执行 `node scripts/skills-sync.mjs` 按已提交的 lock 恢复锁定版本；需要上游最新版时执行 `node scripts/skills-sync.mjs --update` 并审查 lock diff。`.agents/skills.json` 只引用已同步的真实 Skill。
 6. 按 `.agents/hooks/README.md` 在目标平台注册会话启动、实现前和提交前阻断点；平台不支持 Hook 时登记对应人工命令节点。
 7. 在 `.agents/mcp.json` 登记 Agent 可用的 MCP 外部连接并同步到平台配置；无外部连接时保持空 `mcpServers`，文件本身保留。
 8. 执行 `node scripts/harness-check.mjs all`。
 9. 修复全部结构错误；命令暂不可运行视为未完成，不用说明文字代替执行结果。
 10. 形成一次独立、可回退的 Harness 接入提交。
+
+## Directory Context Guard
+
+`.harness/config.json` 的 `contextIndex.codeRoots` 显式决定哪些代码目录执行写前硬门禁。每个 Code Root 必须有 `.harness-index.json`；子目录可以增加同名索引。目标文件从 Code Root 到所在目录按祖先顺序累加索引，目录默认 `readBeforeWrite` 与 `files` 中的精确文件项只追加、不覆盖。
+
+```sh
+node scripts/harness/cli.mjs context guard --file <repo-path> --session <session-id> --json
+node .agents/hooks/guard-write-context.mjs --file <repo-path> --session <session-id> --json
+```
+
+- 受管目标首次调用返回完整前置文本、写入 Git 私有回执并以退出码 `1` 阻断本次写入；同一 session 重试只在索引与传递前置摘要未漂移时返回 `allowed`。
+- 目标、索引和前置路径拒绝 symlink、Git private、目录、二进制、越界和超限内容；依赖必须保持 DAG。
+- `harness-check context` 复用同一 validator，校验 Code Root 覆盖、全部索引、精确文件目标和传递依赖，不创建回执。
+- Hook 只是平台参数 Adapter，领域规则只存在于 `scripts/harness/lib/context-guard.mjs`。平台需把写工具的目标路径和稳定会话标识传给 Hook；不支持写前 Hook 时，在等价写入节点调用统一 CLI。
+
 
 ## Skill 路由
 
@@ -134,6 +151,7 @@ node scripts/harness-stage.mjs advance --to <stage> --by user --quote "<用户�
 - 不提供模板自动升级、三方合并或迁移平台；复制后文件归目标项目所有，后续更新通过 Git diff 人工吸收。
 - 不替目标项目决定测试金字塔、CI 平台或发布流程。
 - 不因目录或文档存在就宣称实现已经通过验收。
+- 不从语言 import、目录名称或模型推断自动生成文件前置；目录索引由项目显式维护。
 
 ## 冷启动验收
 

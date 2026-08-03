@@ -11,11 +11,14 @@
 5. 按任务读取 `workflow/`、`SPECS/FEATURES/`、`tasks/`、`memory/` 与相关 `rules/`。
 6. 需要 Harness 流程帮助时读取 `.agents/skills.json` 中的最小 Skill 路由；确定性查询使用 `node scripts/harness/cli.mjs skills route`。外部 Skills 由 `.agents/skills.sources.json` 声明、`scripts/skills-sync.mjs` 在会话开始前同步。
 
+写入 `.harness/config.json` 的 `contextIndex.codeRoots` 覆盖范围时，平台必须先调用 `.agents/hooks/guard-write-context.mjs --file <path> --session <id>`。首次退出 `1` 表示本次写入已阻断并交付前置上下文；只能用同一 session 重试，禁止绕过 Hook。
+
 `AGENTS.md` 是索引。技术栈、测试、安全和 Git 细则分别维护在 `SPECS/architecture.md` 与 `rules/` 中，不在这里重复。
 
 ## 检查命令
 
 - `node scripts/harness-check.mjs context`：校验冷启动六问所需入口和关键占位符。
+- `node scripts/harness/cli.mjs context guard --file <path> --session <id>`：解析目标目录索引；首次交付上下文并拒绝，当前回执重试放行。
 - `node scripts/harness-check.mjs gates`：校验阶段状态、文档前置和用户原话证据。
 - `node scripts/harness-check.mjs evidence`：校验 Source Register、契约校验入口、验证入口、验证报告、清理和回退。
 - `node scripts/harness-check.mjs commit`：实现任务收尾校验——工作区不得遗留未提交改动。
@@ -52,7 +55,7 @@ initialized
 ## 上下文闭环
 
 - `workflow/` 保存本轮需求、方案和确认过程，完成后可以归档。
-- `SPECS/` 保存长期有效的架构、行为契约和 feature spec，必须随代码演进；`SPECS/api.md` 和 `SPECS/database.md` 是前后端共享的唯一契约来源，字段一致性由 `commands.contracts` 机器校验。
+- `SPECS/` 保存长期有效的架构、行为契约和 feature spec，必须随代码演进；项目存在 API 或数据库契约时，`SPECS/api.md` / `SPECS/database.md` 是唯一来源并由 `commands.contracts` 机器校验。
 - `tasks/` 保存当前可执行单元。
 - `memory/decisions.md` 保存简单决策，新决策覆盖旧决策时写明谱系；重要决策进入 `memory/adr/`。
 - `rules/` 保存按主题加载的工程约束。
@@ -62,6 +65,7 @@ initialized
 
 ## 执行闭环
 
+- 修改受管代码文件前必须经过 Context Guard；`.harness-index.json` 是目录前置关系的唯一来源，Agent 不得凭记忆跳过首次阻断或复用其他 session 的回执。
 - 一次只交付一个可独立运行的小切片，并限制主要不确定性。
 - 设计问题回设计事实源，规格问题回 `SPECS/`，实现问题回代码。
 - 验证方式按风险选择：核心逻辑用单测，真实依赖用集成测试，共享接口用契约测试，关键用户路径用 E2E 或实际操作。

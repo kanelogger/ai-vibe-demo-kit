@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "summary": "Unified Harness CLI, Work Item and Slice domain modules.",
+  "readBeforeWrite": [
+    "../../HARNESS.md",
+    "../../SPECS/FEATURES/directory-context-guard/spec.md"
+  ],
+  "files": {
+    "cli.mjs": {
+      "readBeforeWrite": [
+        "./lib/context-guard.mjs"
+      ]
+    },
+    "lib/context-guard.mjs": {
+      "readBeforeWrite": [
+        "./lib/context.mjs",
+        "./lib/errors.mjs",
+        "./lib/git.mjs"
+      ]
+    }
+  }
+}

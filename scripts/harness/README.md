@@ -1,4 +1,4 @@
-# harness v2 — Phase A + B + C(2/9) + D(1)：状态根基、Slice/Quick 与 Skill 路由控制面
+# harness v2 — Directory Context Guard + Phase A + B + C(2/9) + D(1)
 
 统一 `harness` CLI。Phase A：Project Registry、Work Item namespace、Audit Ledger、stateRef
 原子事务、六类型生命周期表、v1→v2 一次性迁移与 rollback ref。Phase B：六轴风险画像与
@@ -8,6 +8,7 @@ low allowlist、Brief 批量确认快路径（Feature/Bugfix/Maintenance）、�
 Phase C slice 02：Quick 绑定——`verify quick` 实际执行 Slice 声明的验证命令，报告绑定
 workItem/slice/revision、base integration commit、content/config/contract/dependency digest
 与时间；implementing → runnable 必须有当前通过的 Quick，drift 立即 stale。
+Directory Context Guard：显式 Code Roots、祖先 `.harness-index.json`、传递 Context Closure、首次阻断交付、Git 私有回执与写前 Hook Adapter；不依赖 stateRef 迁移或 active Slice。
 
 依据：`docs/full-gate-product-requirements.md`（Confirmed v2.0）、ADR-0007、ADR-0010～0016。
 `CONTEXT.md` 是领域语言唯一来源。Phase B 票：`.scratch/phase-b-core-cli/issues/`。
@@ -159,6 +160,14 @@ harness close-and-start --outcome <o> --type <t> --quote "<原话>" [--result <r
 - schema 加载时验证六类型全部阶段、low/medium/high/unclassified、UI/测试布尔组合和全部 Slice 状态均有唯一 fallback，同时拒绝未知 alias 与节点环。
 - `harness skills route` 是只读入口：显式 `--type/--stage` 可在迁移前检查；省略时从 stateRef 读取 active Work Item，`--slice` 读取真实 Slice 状态。
 - 当前 Slice 不执行 Skill，也不把路由结果写入 stateRef；生命周期、Slice DAG、Quick 和人工门禁继续由各自唯一事实源执行。
+
+## Directory Context Guard 语义
+
+- `.harness/config.json` 的 `contextIndex.codeRoots` 是受管范围唯一来源；Code Roots 必须存在、互不重叠且各自拥有根 `.harness-index.json`。
+- `context guard --file <path> --session <id>` 先拒绝任何 symlink 分量，再按 Code Root 到目标目录的祖先顺序累加索引；目录默认和精确文件项只追加，传递前置按声明顺序深度优先展开、去重并拒绝环。
+- 前置只接受仓库内普通 UTF-8 文本；Git private、NUL、无效 UTF-8、目录、symlink、单文件超限和总闭包超限在读出前拒绝。
+- 首次受管调用等待完整 Context Bundle 输出成功后，才在 Git private `harness/context-receipts` 原子写回执并以退出码 1 阻断；同 session/target 且 resolution digest current 时返回 allowed。索引或任一传递前置漂移立即重新阻断。
+- `validateContextIndexes` 与 `harness-check context` 复用同一解析器做静态全量校验，不创建回执；`.agents/hooks/guard-write-context.mjs` 只转发平台 file/session 到统一 CLI。
 
 ## 表驱动 fixtures（NFR-10）
 

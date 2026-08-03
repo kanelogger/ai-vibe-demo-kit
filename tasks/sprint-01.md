@@ -8,13 +8,13 @@
 
 ## 任务
 
-- [ ] 确认 `unified-guard` 与 Feature Spec。
-- [ ] 实现 Context Guard schema、闭包、摘要和回执。
-- [ ] 接入统一 `harness context guard` CLI 与稳定错误契约。
-- [ ] 覆盖继承、传递依赖、非法引用、首次阻断/重试和漂移行为。
-- [ ] 运行 Slice quick 与 Harness quick 验证。
-- [ ] 确认回执不污染工作树并记录回退步骤。
-- [ ] 提交只含 Slice 1 的聚焦改动并记录提交哈希。
+- [x] 确认 `unified-guard` 与 Feature Spec。
+- [x] 实现 Context Guard schema、闭包、摘要和回执。
+- [x] 接入统一 `harness context guard` CLI 与稳定错误契约。
+- [x] 覆盖继承、传递依赖、非法引用、首次阻断/重试和漂移行为。
+- [x] 运行 Slice quick 与 Harness quick 验证。
+- [x] 确认回执不污染工作树并记录回退步骤。
+- [x] 提交只含 Slice 1 的聚焦改动并记录提交哈希。
 
 ## Verification Report
 
@@ -22,8 +22,8 @@
 - Commands: node --check scripts/harness/lib/skill-routing.mjs && node --check scripts/harness/lib/context.mjs && node --check scripts/harness/lib/context-guard.mjs && node --check scripts/harness/cli.mjs && node --check scripts/harness-check.mjs; node --test scripts/harness/test/skill-routing.test.mjs scripts/harness/test/context-guard.test.mjs
 - Results: passed
 - Executed at: 2026-08-03T16:10:44.709Z
-- User-path evidence: none registered
-- Uncovered risks:
+- User-path evidence: unified Context Guard CLI block/retry, drift and linked-worktree paths passed in `context-guard.test.mjs`
+- Uncovered risks: none; five standards findings and three spec findings were fixed and re-reviewed as resolved
 - Cleanup performed: none: Harness tests run in isolated temporary Git repositories and create no shared test data.
 - Rollback steps: Use git revert on the focused implementation commit recorded in the Sprint verification report.
-- 提交哈希:
+- 提交哈希: 05df973

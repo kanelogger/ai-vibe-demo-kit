@@ -2,7 +2,7 @@
 
 import { isUtf8 } from "node:buffer";
 import { createHash, randomUUID } from "node:crypto";
-import { lstat, mkdir, readFile, realpath, rename, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, readdir, realpath, rename, writeFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, posix, relative, resolve, sep } from "node:path";
 import { TextDecoder } from "node:util";
 import { E } from "./errors.mjs";
@@ -282,9 +282,8 @@ async function loadIndex(root, path, required) {
   return { path, sha256: sha256(buffer), ...parseIndex(buffer, path, root) };
 }
 
-async function resolveContextClosure(root, roots, target) {
+async function resolveContextClosure(root, roots, target, indexCache = new Map()) {
   const indexes = new Map();
-  const indexCache = new Map();
   const dependencies = new Map();
   let dependencyBytes = 0;
 
@@ -337,6 +336,67 @@ async function resolveContextClosure(root, roots, target) {
     ...dependencyList.map(({ path, sha256: digest, declaredBy }) => ({ kind: "dependency", path, sha256: digest, declaredBy })),
   ];
   return { indexes: indexList, dependencies: dependencyList, manifest, resolutionDigest: sha256(JSON.stringify(manifest)) };
+}
+
+async function codeRootTargets(root, codeRoot) {
+  const targets = [];
+  const walk = async (directory) => {
+    const entries = await readdir(join(root, directory), { withFileTypes: true });
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+    for (const entry of entries) {
+      const path = `${directory}/${entry.name}`;
+      if (entry.isSymbolicLink()) throw E.CONTEXT_CONFIG_INVALID(`Code Root 含 symlink：${path}`);
+      if (entry.isDirectory()) await walk(path);
+      else if (entry.isFile()) targets.push(path);
+      else throw E.CONTEXT_CONFIG_INVALID(`Code Root 含不支持的文件类型：${path}`);
+    }
+  };
+  await walk(codeRoot);
+  return targets;
+}
+
+export async function validateContextIndexes({ root, config }) {
+  const roots = await codeRoots(root, config);
+  const indexCache = new Map();
+  const allTargets = [];
+  const allIndexes = new Map();
+  for (const codeRoot of roots) {
+    const rootIndexPath = `${codeRoot}/${INDEX_NAME}`;
+    const rootIndex = await loadIndex(root, rootIndexPath, true);
+    indexCache.set(rootIndexPath, Promise.resolve(rootIndex));
+    allIndexes.set(rootIndexPath, rootIndex);
+    const targets = await codeRootTargets(root, codeRoot);
+    allTargets.push(...targets);
+    for (const path of targets.filter((path) => posix.basename(path) === INDEX_NAME)) {
+      let pending = indexCache.get(path);
+      if (pending === undefined) {
+        pending = loadIndex(root, path, true);
+        indexCache.set(path, pending);
+      }
+      allIndexes.set(path, await pending);
+    }
+  }
+
+  for (const index of allIndexes.values()) {
+    const directory = posix.dirname(index.path);
+    for (const fileKey of index.files.keys()) {
+      const target = posix.join(directory, fileKey);
+      try {
+        await inspectPath(root, target, "dependency", { expected: "file" });
+      } catch (error) {
+        throw E.CONTEXT_INDEX_INVALID(index.path, `files.${fileKey} 目标非法：${error.message}`);
+      }
+    }
+  }
+  for (const target of allTargets) {
+    try {
+      await resolveContextClosure(root, roots, target, indexCache);
+    } catch (error) {
+      if (error && error.facts === null) error.facts = { path: target };
+      throw error;
+    }
+  }
+  return { codeRoots: roots, indexCount: allIndexes.size, targetCount: allTargets.length };
 }
 
 async function receiptLocation(root, sessionId, target) {

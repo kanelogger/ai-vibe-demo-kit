@@ -30,7 +30,7 @@ AI Native Harness Overlay 是一层可复制到现有代码库的 Agent 开发�
 │   ├── config.json        # 机器配置：验证命令、关键路径、报告绑定、清理和恢复入口
 │   ├── manifest.json      # Overlay 版本和文件职责说明（不驱动自动更新）
 │   └── verification-report.json # full 验证生成的当前机器报告（初始不存在）
-├── .agents/               # Harness 专属 Skills、外部 Skill 来源清单、Hook 适配和 MCP 外部连接声明
+├── .agents/               # Skill catalog 与阶段路由、外部来源/锁、Hook 适配和 MCP 外部连接声明
 ├── workflow/              # 本轮需求、方案和放行过程
 ├── SPECS/                 # 长期有效的项目事实、唯一契约来源和 feature spec
 ├── tasks/                 # 当前执行单元及人类可读验证摘要
@@ -65,12 +65,23 @@ node scripts/harness-check.mjs context
 2. 合并已有 `AGENTS.md`，保留项目原有高优先级约束。
 3. 填写 `HARNESS.md` 相关章节与 `SPECS/architecture.md` 中的项目事实。
 4. 在 `.harness/config.json` 登记可执行的静态检查、测试、契约、关键路径和清理步骤，并配置报告有效期与工作区指纹。
-5. 外部 Skills：复制后先执行 `node scripts/skills-sync.mjs` 按已提交的 lock 恢复锁定版本；需要上游最新版时执行 `node scripts/skills-sync.mjs --update` 并审查 lock diff。两个命令都必须在新 Agent 会话开始前完成。
+5. 外部 Skills：复制后先执行 `node scripts/skills-sync.mjs` 按已提交的 lock 恢复锁定版本；需要上游最新版时执行 `node scripts/skills-sync.mjs --update` 并审查 lock diff。`.agents/skills.json` 只引用已同步的真实 Skill。
 6. 按 `.agents/hooks/README.md` 在目标平台注册会话启动、实现前和提交前阻断点；平台不支持 Hook 时登记对应人工命令节点。
 7. 在 `.agents/mcp.json` 登记 Agent 可用的 MCP 外部连接并同步到平台配置；无外部连接时保持空 `mcpServers`，文件本身保留。
 8. 执行 `node scripts/harness-check.mjs all`。
 9. 修复全部结构错误；命令暂不可运行视为未完成，不用说明文字代替执行结果。
 10. 形成一次独立、可回退的 Harness 接入提交。
+
+## Skill 路由
+
+`.agents/skills.json` v2 是仓库内唯一 Skill catalog 与路由策略源。它按 Work Item 类型、阶段、风险、UI 属性、Slice 状态、测试基础设施和触发事件选择同一阶段内的最小 Skill DAG；同优先级多路由直接失败。它不保存当前状态、不复制生命周期或 Slice `dependsOn`，也不自动执行 Skill。
+
+```sh
+node scripts/harness/cli.mjs skills route --type feature --stage requirements-draft --risk-level high --json
+node scripts/harness/cli.mjs skills route --slice <slice-id> --trigger command-failed --json
+```
+
+第一条命令可在 v2 状态迁移前显式检查路由；第二条从 active Work Item 与 stateRef 读取真实类型、阶段、风险和 Slice 状态。测试与 UI 验证提示由 `policies` 返回，真实命令和关键路径仍以 `.harness/config.json` 为准。
 
 ## 检查契约
 

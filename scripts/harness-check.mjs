@@ -37,6 +37,7 @@ import {
   sha256Hex,
   sourceSpecEqual,
 } from "./skills-sync-core.mjs";
+import { validateSkillRoutingValue } from "./harness/lib/skill-routing.mjs";
 
 const STAGES = [
   "initialized",
@@ -392,6 +393,16 @@ async function checkContext(root, reporter) {
   // 6. Skill 索引只引用真实存在的目录。
   const skills = await readJson(root, ".agents/skills.json", reporter, "context.skills-invalid-json");
   if (skills.ok && isRecord(skills.value)) {
+    try {
+      validateSkillRoutingValue(skills.value);
+    } catch (error) {
+      reporter.error(
+        "context.skill-routing-invalid",
+        ".agents/skills.json",
+        error instanceof Error ? error.message : String(error),
+        "修复 v2 Skill catalog、route matcher、节点依赖或覆盖缺口；用 harness skills route --type <type> --stage <stage> --json 验证。",
+      );
+    }
     const entries = Array.isArray(skills.value.skills) ? skills.value.skills : [];
     const aliases = new Set();
     for (const [index, entry] of entries.entries()) {

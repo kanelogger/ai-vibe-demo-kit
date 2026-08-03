@@ -1,4 +1,4 @@
-# harness v2 — Phase A + B + C(2/9)：Domain/stateRef、Core CLI、快路径、Slice 模型与 Quick 绑定
+# harness v2 — Phase A + B + C(2/9) + D(1)：状态根基、Slice/Quick 与 Skill 路由控制面
 
 统一 `harness` CLI。Phase A：Project Registry、Work Item namespace、Audit Ledger、stateRef
 原子事务、六类型生命周期表、v1→v2 一次性迁移与 rollback ref。Phase B：六轴风险画像与
@@ -18,7 +18,7 @@ workItem/slice/revision、base integration commit、content/config/contract/depe
 
 - reopen 表与下游失效（Phase C 事实层语义）
 - Human Review 证据门禁、done 的集成语义、Promotion、targetRef 更新（Phase C slice 03–09）
-- Hooks、Skill 路由、Claude Adapter（Phase D）
+- Hooks 的阶段证据执行适配与 Claude Adapter（Phase D 后续）
 
 v1 公共脚本（`harness-check.mjs`、`harness-stage.mjs`、`harness-verify.mjs`、`skills-sync.mjs`）
 在 Phase B cutover 前保持原样；本目录与它们不共享状态文件。
@@ -63,7 +63,7 @@ refs/heads/harness/state
 6. 关闭项 namespace 冻结；后继关系写在新项与 registry，不改历史项。
 7. status 永远只读；默认离线，不调用模型，不联网。
 
-## CLI（Phase A + B + C(1) 子集）
+## CLI（Phase A + B + C + D route 子集）
 
 ```text
 harness status [--json]                       # 只读：active/suspended/baseline/允许动作
@@ -81,6 +81,7 @@ harness slice list [--json]                     # 只读：Slice 列表 + 派生
 harness slice advance --slice <id> --to <status>  # 六态逐态推进；invalidated 为异常态
 harness slice update-scope --slice <id> --spec '<json>'  # 扩缩 scope → 新 revision，证据失效回 ready
 harness verify quick --slice <id> [--json]                # 执行 Slice 声明的 Quick，报告绑定 §9.5 全部字段
+harness skills route [--type <t> --stage <stage>] [--risk-level <level>] [--slice-status <status> | --slice <id>] [--trigger <name,...>] [--json]
 harness suspend-and-start --type <t> --quote "<原话>" --reason "<原因>" [--contract-ref <引用>]
 harness close-and-start --outcome <o> --type <t> --quote "<原话>" [--result <r>] [--contract-ref <引用>]
 ```
@@ -151,6 +152,14 @@ harness close-and-start --outcome <o> --type <t> --quote "<原话>" [--result <r
   environment-sensitive check 独立 TTL，过期后 verify quick 只重跑该 check、其余结果保留。
   quick 条目非法（空命令、负 TTL）在 slice create 时拒绝（`E_INVALID_QUICK_CHECK`）。
 
+## Phase D slice 01 语义（Skill 路由控制面）
+
+- `.agents/skills.json` v2 把 Skill catalog 与阶段路由集中管理；路由只引用 lock 已物化的 `SKILL.md`。
+- matcher 依次比较 Work Item 类型、阶段、风险、UI、Slice 状态、测试基础设施和 trigger；同优先级匹配多条时返回 `E_SKILL_ROUTE_CONFLICT`，不隐式合并。
+- schema 加载时验证六类型全部阶段、low/medium/high/unclassified、UI/测试布尔组合和全部 Slice 状态均有唯一 fallback，同时拒绝未知 alias 与节点环。
+- `harness skills route` 是只读入口：显式 `--type/--stage` 可在迁移前检查；省略时从 stateRef 读取 active Work Item，`--slice` 读取真实 Slice 状态。
+- 当前 Slice 不执行 Skill，也不把路由结果写入 stateRef；生命周期、Slice DAG、Quick 和人工门禁继续由各自唯一事实源执行。
+
 ## 表驱动 fixtures（NFR-10）
 
 `test/fixture-runner.mjs` 重放声明式用例行：seed 命令序列（可 `{as}` 捕获 workItemId）→
@@ -174,7 +183,7 @@ run 探针 → 断言（退出码/错误码/JSON 子集/stateRef 文件子集/�
 ## 测试
 
 ```bash
-node --test 'overlay/scripts/harness/test/*.test.mjs'
+node --test scripts/harness/test/*.test.mjs
 ```
 
 覆盖：六类型转移表（允许/拒绝/accepted-非阶段）、事务 CAS 漂移、账本一致性阻断、
@@ -185,3 +194,4 @@ node --test 'overlay/scripts/harness/test/*.test.mjs'
 10 例 fixtures + 15 例命令式 fixtures + 2 例纯函数单测：绑定字段与 digest 反查、内容/config/
 contract/dependency/base 漂移 stale 矩阵、契约删除漂移、失败报告落账、复用时间无关性、
 TTL 只重跑过期项与下游纯 TTL 刷新、slice list stale 派生、命令后复核、原始字节与配置回退）。
+Phase D route 另覆盖六类型分流、matcher 优先级、测试/UI 策略、双 trigger 冲突、节点环拒绝与 CLI active-state 查询。

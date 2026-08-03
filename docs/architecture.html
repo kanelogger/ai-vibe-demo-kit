@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 原生开发系统 Architecture Diagram</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" integrity="sha384-ZZ1pncU3bQe8y31yfZdMFdSpttDoPmOZg2wguVK9almUodir1PghgT0eY7Mrty8H" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js" integrity="sha384-en/ztfPSRkGfME4KIm05joYXynqzUgbsG5nMrj/xEFAHXkeZfO3yMK8QQ+mP7p1/" crossorigin="anonymous"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'JetBrains Mono', 'PingFang SC', 'Microsoft YaHei', monospace;
+      background: #020617;
+      min-height: 100vh;
+      padding: 2rem;
+      color: white;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      margin-bottom: 2rem;
+    }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .pulse-dot {
+      width: 12px;
+      height: 12px;
+      background: #22d3ee;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+
+    .subtitle {
+      color: #94a3b8;
+      font-size: 0.875rem;
+      margin-left: 1.75rem;
+    }
+
+    .diagram-container {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 1rem;
+      border: 1px solid #1e293b;
+      padding: 1.5rem;
+      overflow-x: auto;
+    }
+
+    svg {
+      width: 100%;
+      min-width: 900px;
+      display: block;
+    }
+
+    svg text {
+      font-family: 'JetBrains Mono', 'PingFang SC', 'Microsoft YaHei', monospace;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .card {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 0.75rem;
+      border: 1px solid #1e293b;
+      padding: 1.25rem;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .card-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .card-dot.cyan { background: #22d3ee; }
+    .card-dot.emerald { background: #34d399; }
+    .card-dot.violet { background: #a78bfa; }
+    .card-dot.amber { background: #fbbf24; }
+    .card-dot.rose { background: #fb7185; }
+
+    .card h3 {
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    .card ul {
+      list-style: none;
+      color: #94a3b8;
+      font-size: 0.75rem;
+    }
+
+    .card li {
+      margin-bottom: 0.375rem;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      color: #475569;
+      font-size: 0.75rem;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 0.5rem;
+      margin-left: auto;
+      flex-shrink: 0;
+      align-items: center;
+    }
+    .toolbar-toggle {
+      background: transparent;
+      border: none;
+      color: #475569;
+      cursor: pointer;
+      font-size: 1.25rem;
+      line-height: 1;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+      transition: color 0.2s, background 0.2s;
+    }
+    .toolbar-toggle:hover { color: #94a3b8; background: rgba(30, 41, 59, 0.5); }
+    .toolbar-actions {
+      display: none;
+      gap: 0.5rem;
+    }
+    .toolbar.expanded .toolbar-actions { display: flex; }
+    .toolbar-actions button {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid #334155;
+      color: #94a3b8;
+      padding: 0.375rem 0.75rem;
+      border-radius: 0.375rem;
+      font-family: inherit;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .toolbar-actions button:hover {
+      background: rgba(51, 65, 85, 0.8);
+      color: white;
+      border-color: #475569;
+    }
+
+    @media print {
+      body { background: #020617; padding: 1rem; }
+      .toolbar { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="report-container">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-row">
+        <div class="pulse-dot"></div>
+        <h1>AI 原生开发系统</h1>
+        <div class="toolbar">
+          <div class="toolbar-actions">
+            <button onclick="copyAsImage(this)">📋 Copy</button>
+            <button onclick="downloadPNG(this)">🖼️ PNG</button>
+            <button onclick="downloadPDF(this)">📄 PDF</button>
+          </div>
+          <button class="toolbar-toggle" onclick="this.parentElement.classList.toggle('expanded')" title="Export options" aria-label="Export options">⋯</button>
+        </div>
+      </div>
+      <p class="subtitle">上下文闭环 × 执行闭环 —— 让 AI 写代码的速度变成生产力</p>
+    </div>
+
+    <!-- Main Diagram -->
+    <div class="diagram-container">
+      <svg viewBox="0 0 1200 720">
+        <!-- Definitions -->
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+          </marker>
+          <marker id="arrow-cyan" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#22d3ee" />
+          </marker>
+          <marker id="arrow-violet" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#a78bfa" />
+          </marker>
+          <marker id="arrow-emerald" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#34d399" />
+          </marker>
+          <marker id="arrow-rose" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185" />
+          </marker>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+
+        <!-- Background Grid -->
+        <rect width="100%" height="100%" fill="url(#grid)" />
+
+        <!-- ================= ARROWS (drawn first, behind boxes) ================= -->
+
+        <!-- Human -> Context loop -->
+        <line x1="180" y1="99" x2="180" y2="136" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        <text x="172" y="122" fill="#94a3b8" font-size="8" text-anchor="end">需求 · 确认原话</text>
+
+        <!-- Agent -> Execution loop -->
+        <line x1="1020" y1="99" x2="1020" y2="136" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrow-cyan)"/>
+        <text x="1030" y="122" fill="#22d3ee" font-size="8">探索 · 实现 · 验证 · 修复</text>
+
+        <!-- Human -> Gates (release authority, routed through middle gap) -->
+        <path d="M 250 99 L 250 122 L 614 122 L 614 437 L 658 437" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="4,4" marker-end="url(#arrow-rose)"/>
+        <text x="425" y="116" fill="#fb7185" font-size="8" text-anchor="middle">关键节点由人放行</text>
+
+        <!-- Context loop -> Execution loop -->
+        <line x1="560" y1="315" x2="636" y2="315" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrow-violet)"/>
+        <text x="572" y="307" fill="#a78bfa" font-size="7" text-anchor="middle">事实·契约·状态</text>
+
+        <!-- Execution loop -> Context loop -->
+        <line x1="640" y1="345" x2="564" y2="345" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+        <text x="572" y="360" fill="#34d399" font-size="7" text-anchor="middle">验证·经验回写</text>
+
+        <!-- Execution cycle: A->B -->
+        <line x1="874" y1="212" x2="922" y2="212" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+        <text x="898" y="204" fill="#94a3b8" font-size="7" text-anchor="middle">确认后实现</text>
+
+        <!-- B->C -->
+        <line x1="1031" y1="244" x2="1031" y2="296" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+        <text x="1041" y="272" fill="#94a3b8" font-size="7">运行真实路径</text>
+
+        <!-- C->D -->
+        <line x1="926" y1="324" x2="878" y2="324" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+        <text x="902" y="316" fill="#94a3b8" font-size="7" text-anchor="middle">暴露问题</text>
+
+        <!-- D->C (fix & retry) -->
+        <line x1="878" y1="348" x2="922" y2="348" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+        <text x="900" y="342" fill="#94a3b8" font-size="7" text-anchor="middle">Fix &amp; Retry</text>
+
+        <!-- D->A (design issues return to prototype) -->
+        <line x1="769" y1="300" x2="769" y2="248" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrow-emerald)"/>
+        <text x="779" y="276" fill="#94a3b8" font-size="7">设计问题回原型</text>
+
+        <!-- Gate chip arrows -->
+        <line x1="808" y1="437" x2="832" y2="437" stroke="#fb7185" stroke-width="1.5" marker-end="url(#arrow-rose)"/>
+        <line x1="972" y1="437" x2="996" y2="437" stroke="#fb7185" stroke-width="1.5" marker-end="url(#arrow-rose)"/>
+
+        <!-- ================= ACTORS ================= -->
+
+        <!-- Human -->
+        <rect x="80" y="35" width="200" height="64" rx="6" fill="#0f172a"/>
+        <rect x="80" y="35" width="200" height="64" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
+        <text x="180" y="60" fill="white" font-size="12" font-weight="600" text-anchor="middle">人 · Human</text>
+        <text x="180" y="80" fill="#94a3b8" font-size="9" text-anchor="middle">需求 · 设计 · 边界 · 放行</text>
+
+        <!-- Agent -->
+        <rect x="920" y="35" width="200" height="64" rx="6" fill="#0f172a"/>
+        <rect x="920" y="35" width="200" height="64" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="1020" y="60" fill="white" font-size="12" font-weight="600" text-anchor="middle">Agent</text>
+        <text x="1020" y="80" fill="#94a3b8" font-size="9" text-anchor="middle">高速探索 · 实现 · 验证 · 修复</text>
+
+        <!-- Top annotation -->
+        <text x="600" y="52" fill="#94a3b8" font-size="10" text-anchor="middle">两个闭环同时成立，代码生成再快也不会失控</text>
+        <text x="600" y="72" fill="#64748b" font-size="8" text-anchor="middle">仓库 = 工作环境与长期记忆 · 模型 ≈ 无状态函数，每次从仓库重建上下文</text>
+
+        <!-- ================= REGION: CONTEXT LOOP ================= -->
+        <rect x="40" y="140" width="520" height="430" rx="12" fill="rgba(76, 29, 149, 0.06)" stroke="#a78bfa" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="54" y="164" fill="#a78bfa" font-size="10" font-weight="600">① 上下文闭环 — 仓库 = Agent 的操作环境与长期记忆</text>
+
+        <!-- AGENTS.md -->
+        <rect x="64" y="180" width="225" height="54" rx="6" fill="#0f172a"/>
+        <rect x="64" y="180" width="225" height="54" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="176.5" y="201" fill="white" font-size="11" font-weight="600" text-anchor="middle">AGENTS.md · 总索引</text>
+        <text x="176.5" y="218" fill="#94a3b8" font-size="9" text-anchor="middle">红线 · 项目地图 · 命令 · 门禁</text>
+
+        <!-- Rules x Skills x Hooks -->
+        <rect x="311" y="180" width="225" height="54" rx="6" fill="#0f172a"/>
+        <rect x="311" y="180" width="225" height="54" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="423.5" y="200" fill="white" font-size="11" font-weight="600" text-anchor="middle">Rules × Skills × Hooks</text>
+        <text x="423.5" y="215" fill="#94a3b8" font-size="8" text-anchor="middle">保底线 · 可复用流程 · 机器检查</text>
+        <text x="423.5" y="228" fill="#a78bfa" font-size="7" text-anchor="middle">三者不能互相替代</text>
+
+        <!-- Layered docs -->
+        <rect x="64" y="256" width="225" height="112" rx="6" fill="#0f172a"/>
+        <rect x="64" y="256" width="225" height="112" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="176.5" y="277" fill="white" font-size="11" font-weight="600" text-anchor="middle">事实 · 过程 · 状态 · 经验</text>
+        <text x="176.5" y="295" fill="#94a3b8" font-size="8" text-anchor="middle">workflow/ 过程留痕</text>
+        <text x="176.5" y="309" fill="#94a3b8" font-size="8" text-anchor="middle">specs/ 长期契约与验收</text>
+        <text x="176.5" y="323" fill="#94a3b8" font-size="8" text-anchor="middle">tasks/ 当前执行单元</text>
+        <text x="176.5" y="337" fill="#94a3b8" font-size="8" text-anchor="middle">memory/ 决策谱系 + ADR</text>
+        <text x="176.5" y="357" fill="#a78bfa" font-size="7" text-anchor="middle">生效契约随代码演进</text>
+
+        <!-- workflow-state.json -->
+        <rect x="311" y="256" width="225" height="112" rx="6" fill="#0f172a"/>
+        <rect x="311" y="256" width="225" height="112" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="423.5" y="277" fill="white" font-size="11" font-weight="600" text-anchor="middle">workflow-state.json</text>
+        <text x="423.5" y="293" fill="#94a3b8" font-size="8" text-anchor="middle">唯一机器状态源</text>
+        <text x="423.5" y="309" fill="#94a3b8" font-size="8" text-anchor="middle">需求讨论 → 方案选择</text>
+        <text x="423.5" y="323" fill="#94a3b8" font-size="8" text-anchor="middle">→ 实现就绪 → 开发</text>
+        <text x="423.5" y="337" fill="#94a3b8" font-size="8" text-anchor="middle">→ 验收 → 提交</text>
+        <text x="423.5" y="357" fill="#a78bfa" font-size="7" text-anchor="middle">阶段切换保留用户确认原话</text>
+
+        <!-- Decision supersession + source registry -->
+        <rect x="64" y="390" width="472" height="52" rx="6" fill="#0f172a"/>
+        <rect x="64" y="390" width="472" height="52" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="300" y="411" fill="white" font-size="11" font-weight="600" text-anchor="middle">决策废止机制 × 来源登记</text>
+        <text x="300" y="428" fill="#94a3b8" font-size="9" text-anchor="middle">新决定显式覆盖旧决定 · 关键事实可追溯来源 · 无来源显式标注</text>
+
+        <!-- MCP -->
+        <rect x="64" y="464" width="225" height="52" rx="6" fill="#0f172a"/>
+        <rect x="64" y="464" width="225" height="52" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="176.5" y="485" fill="white" font-size="11" font-weight="600" text-anchor="middle">外部连接 · MCP</text>
+        <text x="176.5" y="502" fill="#94a3b8" font-size="9" text-anchor="middle">Issue · 构建 · 数据库 · 内部文档</text>
+
+        <!-- Plugin -->
+        <rect x="311" y="464" width="225" height="52" rx="6" fill="#0f172a"/>
+        <rect x="311" y="464" width="225" height="52" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="423.5" y="485" fill="white" font-size="11" font-weight="600" text-anchor="middle">能力分发 · Plugin</text>
+        <text x="423.5" y="502" fill="#94a3b8" font-size="9" text-anchor="middle">规则 + 流程 + 连接，安装复用</text>
+
+        <!-- ================= REGION: EXECUTION LOOP ================= -->
+        <rect x="640" y="140" width="520" height="430" rx="12" fill="rgba(6, 78, 59, 0.06)" stroke="#34d399" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="654" y="164" fill="#34d399" font-size="10" font-weight="600">② 执行闭环 — 可执行目标 · 小版本 · 门禁 · 反馈回滚</text>
+
+        <!-- A: Executable prototype -->
+        <rect x="664" y="180" width="210" height="64" rx="6" fill="#0f172a"/>
+        <rect x="664" y="180" width="210" height="64" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="769" y="201" fill="white" font-size="11" font-weight="600" text-anchor="middle">可执行 UI/UX 原型</text>
+        <text x="769" y="217" fill="#94a3b8" font-size="8" text-anchor="middle">HTML/CSS/React · 模拟数据</text>
+        <text x="769" y="232" fill="#34d399" font-size="7" text-anchor="middle">业务规则可见 · 可操作</text>
+
+        <!-- B: Runnable slice -->
+        <rect x="926" y="180" width="210" height="64" rx="6" fill="#0f172a"/>
+        <rect x="926" y="180" width="210" height="64" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="1031" y="201" fill="white" font-size="11" font-weight="600" text-anchor="middle">可运行小版本</text>
+        <text x="1031" y="217" fill="#94a3b8" font-size="8" text-anchor="middle">一次只增一种不确定性</text>
+        <text x="1031" y="232" fill="#34d399" font-size="7" text-anchor="middle">独立运行 · 验收边界明确</text>
+
+        <!-- C: Run & Check -->
+        <rect x="926" y="300" width="210" height="64" rx="6" fill="#0f172a"/>
+        <rect x="926" y="300" width="210" height="64" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="1031" y="321" fill="white" font-size="11" font-weight="600" text-anchor="middle">Run &amp; Check</text>
+        <text x="1031" y="337" fill="#94a3b8" font-size="8" text-anchor="middle">单测 · 集成 · 契约 · E2E</text>
+        <text x="1031" y="352" fill="#34d399" font-size="7" text-anchor="middle">关键用户路径真的运行</text>
+
+        <!-- D: Layered fix -->
+        <rect x="664" y="300" width="210" height="64" rx="6" fill="#0f172a"/>
+        <rect x="664" y="300" width="210" height="64" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
+        <text x="769" y="321" fill="white" font-size="11" font-weight="600" text-anchor="middle">分层修复</text>
+        <text x="769" y="337" fill="#94a3b8" font-size="8" text-anchor="middle">设计改设计 · 规格改规格</text>
+        <text x="769" y="352" fill="#34d399" font-size="7" text-anchor="middle">实现改代码 · 回到正确的层</text>
+
+        <!-- Gates strip -->
+        <rect x="664" y="396" width="472" height="62" rx="8" fill="rgba(136, 19, 55, 0.15)" stroke="#fb7185" stroke-width="1" stroke-dasharray="4,4"/>
+        <text x="672" y="413" fill="#fb7185" font-size="8">阶段门禁：文档就绪 + 状态机允许 + 用户确认原话</text>
+        <rect x="672" y="424" width="136" height="26" rx="4" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1"/>
+        <text x="740" y="441" fill="white" font-size="9" text-anchor="middle">① 需求确认</text>
+        <rect x="836" y="424" width="136" height="26" rx="4" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1"/>
+        <text x="904" y="441" fill="white" font-size="9" text-anchor="middle">② 方案选定</text>
+        <rect x="1000" y="424" width="136" height="26" rx="4" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1"/>
+        <text x="1068" y="441" fill="white" font-size="9" text-anchor="middle">③ 验收通过</text>
+
+        <!-- Post-stability: performance & refactor -->
+        <rect x="664" y="478" width="472" height="56" rx="6" fill="#0f172a"/>
+        <rect x="664" y="478" width="472" height="56" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
+        <text x="900" y="499" fill="white" font-size="11" font-weight="600" text-anchor="middle">稳定之后：性能审查 × 渐进式重构</text>
+        <text x="900" y="515" fill="#94a3b8" font-size="8" text-anchor="middle">并行实现 → 验证比较 → 替换 → 删除旧路径</text>
+        <text x="900" y="528" fill="#fbbf24" font-size="7" text-anchor="middle">独立提交 · 可回退 · 不做原地拆除重建</text>
+
+        <!-- ================= STRIP: SIX QUESTIONS ================= -->
+        <rect x="40" y="600" width="1120" height="92" rx="12" fill="rgba(8, 51, 68, 0.3)" stroke="#22d3ee" stroke-width="1" stroke-dasharray="8,4"/>
+        <text x="56" y="624" fill="#22d3ee" font-size="10" font-weight="600">③ 新会话六问 — 目录存在 ≠ 系统有效：冷启动只读仓库，六问皆答才算闭环</text>
+
+        <rect x="60" y="646" width="170" height="36" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="145" y="669" fill="white" font-size="9" text-anchor="middle">1. 项目是什么</text>
+        <rect x="242" y="646" width="170" height="36" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="327" y="669" fill="white" font-size="9" text-anchor="middle">2. 当前走到哪步</text>
+        <rect x="424" y="646" width="170" height="36" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="509" y="669" fill="white" font-size="9" text-anchor="middle">3. 允许做什么</text>
+        <rect x="606" y="646" width="170" height="36" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="691" y="669" fill="white" font-size="9" text-anchor="middle">4. 按什么流程</text>
+        <rect x="788" y="646" width="170" height="36" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="873" y="669" fill="white" font-size="9" text-anchor="middle">5. 做完如何验证</text>
+        <rect x="970" y="646" width="170" height="36" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="1055" y="669" fill="white" font-size="9" text-anchor="middle">6. 经验写到哪里</text>
+      </svg>
+    </div>
+
+    <!-- Info Cards -->
+    <div class="cards">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot violet"></div>
+          <h3>上下文闭环</h3>
+        </div>
+        <ul>
+          <li>• AGENTS.md 做索引和红线，不做百科全书</li>
+          <li>• workflow / specs / tasks / memory 分层，过程与契约分开</li>
+          <li>• workflow-state.json 是唯一机器状态源</li>
+          <li>• 决策有废止机制，事实登记来源</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot emerald"></div>
+          <h3>执行闭环</h3>
+        </div>
+        <ul>
+          <li>• 原型是实现的直接参照物，不是参考图</li>
+          <li>• 每个版本只增加一种主要不确定性</li>
+          <li>• 问题回到产生它的那一层修复</li>
+          <li>• 测试结构跟随风险，关键路径必须真运行</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot rose"></div>
+          <h3>门禁与人的职责</h3>
+        </div>
+        <ul>
+          <li>• 阶段推进依赖三类证据：文档、状态、确认原话</li>
+          <li>• 人负责需求、设计、边界和阶段放行</li>
+          <li>• Agent 负责高速探索、实现、验证和修复</li>
+          <li>• 新会话六问检验系统是否真的成立</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <p class="footer">
+      AI 原生开发系统 • 上下文闭环 × 执行闭环 • 把代码生成速度变成生产力
+    </p>
+  </div>
+
+  <script>
+    async function copyAsImage(btn) {
+      const orig = btn.textContent;
+      try {
+        const el = document.getElementById('report-container');
+        const r = el.getBoundingClientRect();
+        const pad = 32;
+        const canvas = await html2canvas(document.body, { backgroundColor: '#020617', scale: 2, useCORS: true, ignoreElements: (e) => e.classList && e.classList.contains('toolbar'), x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+        const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        btn.textContent = '✓ Copied!';
+      } catch (e) {
+        btn.textContent = '✗ Failed';
+      }
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
+
+    async function downloadPNG(btn) {
+      const orig = btn.textContent;
+      btn.textContent = '⏳ ...';
+      try {
+        const el = document.getElementById('report-container');
+        const r = el.getBoundingClientRect();
+        const pad = 32;
+        const canvas = await html2canvas(document.body, { backgroundColor: '#020617', scale: 2, useCORS: true, ignoreElements: (e) => e.classList && e.classList.contains('toolbar'), x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+        const link = document.createElement('a');
+        link.download = 'diagram.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        btn.textContent = '✓ Done!';
+      } catch (e) {
+        btn.textContent = '✗ Failed';
+      }
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
+
+    async function downloadPDF(btn) {
+      const orig = btn.textContent;
+      btn.textContent = '⏳ ...';
+      try {
+        const el = document.getElementById('report-container');
+        const r = el.getBoundingClientRect();
+        const pad = 32;
+        const canvas = await html2canvas(document.body, { backgroundColor: '#020617', scale: 2, useCORS: true, ignoreElements: (e) => e.classList && e.classList.contains('toolbar'), x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad, width: r.width + pad * 2, height: r.height + pad * 2 });
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const orientation = canvas.width > canvas.height ? 'landscape' : 'portrait';
+        const pdf = new jsPDF({ orientation, unit: 'px', format: [canvas.width, canvas.height], hotfixes: ['px_scaling'] });
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        pdf.save('diagram.pdf');
+        btn.textContent = '✓ Done!';
+      } catch (e) {
+        btn.textContent = '✗ Failed';
+      }
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
+  </script>
+</body>
+</html>

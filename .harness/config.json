@@ -1,18 +1,18 @@
 {
   "version": 1,
   "project": {
-    "name": "",
-    "summary": "",
+    "name": "AI Native Harness Overlay",
+    "summary": "Repository-owned workflow control plane for Agent context, gates, Skill routing, verification, and recovery.",
     "hasUserInterface": false
   },
   "commands": {
     "quick": {
-      "static": [],
-      "test": []
+      "static": ["node --check scripts/harness/lib/skill-routing.mjs && node --check scripts/harness/cli.mjs && node --check scripts/harness-check.mjs"],
+      "test": ["node --test scripts/harness/test/skill-routing.test.mjs"]
     },
     "full": {
-      "static": [],
-      "test": []
+      "static": ["node --check scripts/harness/lib/skill-routing.mjs && node --check scripts/harness/cli.mjs && node --check scripts/harness-check.mjs"],
+      "test": ["node --test scripts/harness/test/*.test.mjs"]
     },
     "contracts": []
   },

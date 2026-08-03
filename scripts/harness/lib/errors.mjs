@@ -72,6 +72,21 @@ export const E = {
       exitCode: EXIT_USAGE,
       repair: "类型必须是 feature|bugfix|maintenance|optimization|migration|rollback",
     }),
+  SKILL_ROUTING_INVALID: (detail) =>
+    new HarnessError("E_SKILL_ROUTING_INVALID", `Skill 路由配置非法：${detail}`, {
+      exitCode: EXIT_USAGE,
+      repair: "修复 .agents/skills.json 后运行 harness skills route --type <type> --stage <stage> --json",
+    }),
+  SKILL_ROUTE_NOT_FOUND: (context, detail = null) =>
+    new HarnessError("E_SKILL_ROUTE_NOT_FOUND", `没有可用 Skill 路由：${context}${detail ? `；${detail}` : ""}`, {
+      exitCode: EXIT_USAGE,
+      repair: "检查 Work Item 类型/阶段，或在 .agents/skills.json 添加无条件 fallback route",
+    }),
+  SKILL_ROUTE_CONFLICT: (context, routeIds) =>
+    new HarnessError("E_SKILL_ROUTE_CONFLICT", `Skill 路由同优先级冲突：${context} → ${routeIds.join("、")}`, {
+      exitCode: EXIT_USAGE,
+      repair: "收窄 matcher，或按 routing.precedence 增加更具体的唯一 route",
+    }),
   INVALID_OUTCOME: (outcome) =>
     new HarnessError("E_INVALID_OUTCOME", `未知关闭结果 ${outcome}`, {
       exitCode: EXIT_USAGE,

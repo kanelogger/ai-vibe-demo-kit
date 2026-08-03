@@ -21,6 +21,12 @@
       "path": "skills",
       "track": { "kind": "branch", "value": "main" },
       "exclude": ["deprecated/", "in-progress/"]
+    },
+    {
+      "id": "architecture-diagram",
+      "repo": "https://github.com/Cocoon-AI/architecture-diagram-generator.git",
+      "path": ".",
+      "track": { "kind": "branch", "value": "main" }
     }
   ]
 }

@@ -29,6 +29,7 @@ import { collectSlices, computeFrontier, depsPending } from "./lib/slice.mjs";
 import { computeQuickInputs, quickCurrency } from "./lib/quick.mjs";
 import { DEFAULT_CONFIG_PATH, currentBaseline } from "./lib/context.mjs";
 import { WORK_ITEM_TYPES, OUTCOMES, RESULTS } from "./lib/lifecycle.mjs";
+import { loadSkillRouting, resolveSkillRoute, SKILL_ROUTING_PATH } from "./lib/skill-routing.mjs";
 
 const USAGE = `用法:
   harness status [--json] [--root <dir>]
@@ -47,6 +48,8 @@ const USAGE = `用法:
   harness slice advance --slice <slice-id> --to <status> [--json]
   harness slice update-scope --slice <slice-id> --spec '<json>' [--json]
   harness verify quick --slice <slice-id> [--json]
+  harness skills route [--type <type> --stage <stage>] [--risk-level <low|medium|high|unclassified>]
+      [--slice-status <status> | --slice <slice-id>] [--trigger <name,...>] [--json]
   harness suspend-and-start --type <type> --quote "<任务原话>" --reason "<暂停原因>" [--contract-ref <引用>] [--json]
   harness close-and-start --outcome <outcome> [--result <result>] --type <type> --quote "<任务原话>" [--reason "<原因>"] [--contract-ref <引用>] [--json]`;
 
@@ -170,6 +173,94 @@ function parseSpec(raw, repair) {
     throw E.USAGE("--spec 必须是非数组 JSON 对象", repair);
   }
   return spec;
+}
+
+function hasAutomatedTests(config) {
+  const commands = config.commands ?? {};
+  return [commands.quick?.test, commands.full?.test].some(
+    (entries) => Array.isArray(entries) && entries.some((entry) => typeof entry === "string" && entry.trim() !== ""),
+  );
+}
+
+function routeTriggers(raw) {
+  if (raw === undefined) return [];
+  const triggers = String(raw)
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  if (triggers.length === 0) throw E.USAGE("--trigger 必须包含至少一个名称", USAGE);
+  return triggers;
+}
+
+async function routeContext(options, ctx) {
+  const explicitType = options.type !== undefined;
+  const explicitStage = options.stage !== undefined;
+  if (explicitType !== explicitStage) throw E.USAGE("显式路由查询必须同时提供 --type 与 --stage", USAGE);
+  const common = {
+    hasUserInterface: ctx.config.project?.hasUserInterface === true,
+    hasAutomatedTests: hasAutomatedTests(ctx.config),
+    triggers: routeTriggers(options.trigger),
+  };
+  if (explicitType) {
+    if (options.slice !== undefined) throw E.USAGE("显式路由查询使用 --slice-status，不接受 --slice", USAGE);
+    return {
+      ...common,
+      workItemType: options.type,
+      stage: options.stage,
+      riskLevel: options["risk-level"] ?? "unclassified",
+      sliceStatus: options["slice-status"] ?? null,
+    };
+  }
+  if (options["risk-level"] !== undefined || options["slice-status"] !== undefined) {
+    throw E.USAGE("Active Work Item 路由不允许覆盖 risk/stage；使用 --slice 读取真实 Slice 状态", USAGE);
+  }
+  const { registry, snapshot } = await loadRegistry(ctx.root, ctx.stateRef);
+  if (registry === null) throw E.NOT_MIGRATED(ctx.stateRef);
+  if (registry.activeWorkItemId === null) throw E.NO_ACTIVE();
+  const rawItem = snapshot.files.get(itemStatePath(registry.activeWorkItemId));
+  if (rawItem === undefined) throw E.ITEM_NOT_FOUND(registry.activeWorkItemId);
+  const item = JSON.parse(rawItem);
+  let sliceStatus = null;
+  if (options.slice !== undefined) {
+    const slice = collectSlices(snapshot.files, item.workItemId).get(options.slice);
+    if (slice === undefined) throw E.SLICE_NOT_FOUND(options.slice);
+    sliceStatus = slice.status;
+  }
+  return {
+    ...common,
+    workItemType: item.type,
+    stage: item.stage,
+    riskLevel: item.risk?.level ?? "unclassified",
+    sliceStatus,
+  };
+}
+
+async function cmdSkills(options, ctx) {
+  const sub = options._[0];
+  if (sub !== "route") throw E.USAGE(`未知 skills 子命令 ${sub ?? "(空)"}`, USAGE);
+  const config = await loadSkillRouting(ctx.root);
+  const result = {
+    configPath: SKILL_ROUTING_PATH,
+    ...resolveSkillRoute(config, await routeContext(options, ctx)),
+  };
+  if (options.json) {
+    out(options, result, "");
+    return;
+  }
+  const context = result.context;
+  const lines = [
+    `route: ${result.route.id}`,
+    `context: ${context.workItemType}/${context.stage} risk=${context.riskLevel}` +
+      `${context.sliceStatus === null ? "" : ` slice=${context.sliceStatus}`}`,
+  ];
+  for (const node of result.nodes) {
+    const dependencies = node.needs.length === 0 ? "" : ` after=${node.needs.join(",")}`;
+    lines.push(`${node.required ? "required" : "optional"}: ${node.id} → ${node.skillPath}${dependencies}`);
+  }
+  if (result.nodes.length === 0) lines.push("skills: 无（当前节点已完成）");
+  if (result.policies.testing.directive) lines.push(`testing: ${result.policies.testing.directive}`);
+  if (result.route.completion.humanGate) lines.push(`human gate: ${result.route.completion.humanGate}`);
+  process.stdout.write(`${lines.join("\n")}\n`);
 }
 
 /** slice 子命令：create / list / advance / update-scope（PRD 9.1–9.3）。 */
@@ -320,6 +411,9 @@ async function run(argv) {
       );
       return;
     }
+    case "skills":
+      await cmdSkills(options, ctx);
+      return;
     case "slice":
       await cmdSlice(options, ctx);
       return;

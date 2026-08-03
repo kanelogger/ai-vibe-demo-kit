@@ -9,7 +9,7 @@
 3. 读 `SPECS/architecture.md`，获取真实技术栈、模块位置和风险事实。
 4. 读 `.harness/config.json`，获取机器可执行的验证命令和关键用户路径。
 5. 按任务读取 `workflow/`、`SPECS/FEATURES/`、`tasks/`、`memory/` 与相关 `rules/`。
-6. 需要 Harness 流程帮助时读取 `.agents/skills.json` 中的最小 Skill 路由；外部 Skills 由 `.agents/skills.sources.json` 声明、`scripts/skills-sync.mjs` 在会话开始前同步。
+6. 需要 Harness 流程帮助时读取 `.agents/skills.json` 中的最小 Skill 路由；确定性查询使用 `node scripts/harness/cli.mjs skills route`。外部 Skills 由 `.agents/skills.sources.json` 声明、`scripts/skills-sync.mjs` 在会话开始前同步。
 
 `AGENTS.md` 是索引。技术栈、测试、安全和 Git 细则分别维护在 `SPECS/architecture.md` 与 `rules/` 中，不在这里重复。
 

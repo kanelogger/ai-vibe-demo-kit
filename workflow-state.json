@@ -1,15 +1,13 @@
 {
-  "stage": "implementation-ready",
-  "allowedNextStages": [
-    "accepted"
-  ],
-  "currentStageDoc": "workflow/implementation-ready.md",
-  "lastConfirmedDoc": "workflow/implementation-ready.md",
+  "stage": "accepted",
+  "allowedNextStages": [],
+  "currentStageDoc": "workflow/acceptance.md",
+  "lastConfirmedDoc": "workflow/acceptance.md",
   "confirmation": {
     "by": "user",
-    "at": "2026-08-03T15:42:33.997Z",
-    "quote": "批准开始实现",
-    "doc": "workflow/implementation-ready.md"
+    "at": "2026-08-03T16:39:20.909Z",
+    "quote": "验收通过",
+    "doc": "workflow/acceptance.md"
   },
   "selection": {
     "by": "user",
@@ -57,6 +55,14 @@
       "advancedAt": "2026-08-03T15:42:33.997Z",
       "quote": "批准开始实现",
       "doc": "workflow/implementation-ready.md"
+    },
+    {
+      "from": "implementation-ready",
+      "to": "accepted",
+      "advancedBy": "user",
+      "advancedAt": "2026-08-03T16:39:20.909Z",
+      "quote": "验收通过",
+      "doc": "workflow/acceptance.md"
     }
   ]
 }

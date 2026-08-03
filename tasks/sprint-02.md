@@ -15,16 +15,16 @@
 - [x] 实际运行 Hook 首次阻断与同会话重试放行路径。
 - [x] 运行 Slice quick、Harness quick 和 full 验证。
 - [x] 清理验证回执并记录回退步骤。
-- [ ] 提交只含 Slice 2 的聚焦改动并记录提交哈希。
+- [x] 提交只含 Slice 2 的聚焦改动并记录提交哈希。
 
 ## Verification Report
 
-- Machine report: .harness/verification-report.json#verify-20260803163450429
+- Machine report: .harness/verification-report.json#verify-20260803163758110
 - Commands: node --check scripts/harness/lib/skill-routing.mjs && node --check scripts/harness/lib/context.mjs && node --check scripts/harness/lib/context-guard.mjs && node --check scripts/harness/cli.mjs && node --check scripts/harness-check.mjs && node --check .agents/hooks/guard-write-context.mjs; node --test scripts/harness/test/*.test.mjs
 - Results: passed
-- Executed at: 2026-08-03T16:34:50.429Z
+- Executed at: 2026-08-03T16:37:58.110Z
 - User-path evidence: context-guard-hook-block-retry=passed
 - Uncovered risks: 具体 Agent 平台仍需把自身 edit/write 事件字段映射为 Hook 的 `--file` 和稳定 `--session`; Harness Adapter 与 CLI 已验证
 - Cleanup performed: none: Harness tests run in isolated temporary Git repositories and create no shared test data.
 - Rollback steps: Use git revert on the focused implementation commit recorded in the Sprint verification report.
-- 提交哈希:
+- 提交哈希: b0ad93a

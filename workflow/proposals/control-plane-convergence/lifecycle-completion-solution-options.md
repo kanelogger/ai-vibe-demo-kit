@@ -3,7 +3,7 @@ status: proposed
 activity: active-work-item-solution-options
 initiativeId: control-plane-convergence
 workItemId: wi-20260805-31b819fc
-workItemStage: design-confirmed
+workItemStage: solution-options
 designRef: workflow/proposals/control-plane-convergence/lifecycle-completion-design.md
 designConfirmedBy: user
 designConfirmedAt: 2026-08-05T15:20:34.102Z
@@ -11,10 +11,13 @@ designConfirmationQuote: 确认 P0-WI-01 技术设计
 recommendedOptionId: state-parent-anchor
 selectedOptionId: null
 selectionConfirmed: false
+optionsStateCommit: 60c1bd3f29997adb1c2b5d4f3ea8b16e7857d563
+optionsTransactionId: tx-fe6cc58e-3412-470d-9afe-519987d2072c
+optionsPublishedAt: 2026-08-05T15:28:36.180Z
 ---
 # P0-WI-01 Lifecycle Completion 方案选项
 
-> 本文比较满足已确认技术设计的完整 implementation bundles。它不替用户选择，不推进 `solution-selected`，不创建实现规格或 Slice，也不授权编码。
+> 本文比较满足已确认技术设计的完整 implementation bundles。Canonical Work Item 已进入 `solution-options`，但本文不替用户选择、不推进 `solution-selected`、不创建实现规格或 Slice，也不授权编码。
 
 ## 决策问题
 
@@ -220,3 +223,4 @@ stateRef CAS 自然同时保存状态和候选内容；Full 将该子树 materia
 | `scripts/harness-verify.mjs`、`.harness/config.json` | Full command/user path/cleanup 现状 |
 | 本文“先行 Git 实验”记录的命令结果与 OIDs | Option A candidate reachability 与 first-parent observation |
 | stateRef transaction `tx-ba0801f6-57e4-4166-b178-2f02a9baab6f` | Design confirmation identity |
+| stateRef transaction `tx-fe6cc58e-3412-470d-9afe-519987d2072c` | Developer transition to `solution-options`; quote intentionally null |

@@ -39,6 +39,7 @@
 | v2 状态拓扑 | `refs/heads/harness/state` 下的 registry / Work Item / Slice JSON | `scripts/harness/cli.mjs` |
 | Skill catalog 与路由 | `.agents/skills.json` | Skill resolver 与 Agent 会话 |
 | 目录上下文索引 | 各 Code Root 及子目录的 `.harness-index.json` | Context Guard、`harness-check context`、平台写前 Hook |
+| Lifecycle Completion 行为契约 | `SPECS/FEATURES/lifecycle-completion/spec.md` | Canonical Control Plane、CLI/Hook Adapter、实现 Slice 与验证 |
 
 ## 验证命令
 

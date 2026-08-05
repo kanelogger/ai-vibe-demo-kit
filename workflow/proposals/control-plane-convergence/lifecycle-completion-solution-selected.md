@@ -122,6 +122,7 @@ Adapter 只验证基本 JSON shape 并调用 `harness gate stage --event`；work
 ## 固定 External Interface
 
 ```js
+registerImplementationPlan(root, ctx, { plan })
 submitHumanReview(root, ctx, { sliceId, review })
 integrateSlice(root, ctx, { sliceId, sourceCommit })
 runWorkItemFull(root, ctx)
@@ -132,6 +133,7 @@ evaluateStageEvidence(root, ctx, event)
 CLI：
 
 ```text
+harness promotion plan --spec '<json>' [--json]
 harness slice review --slice <id> --spec '<json>'
 harness slice integrate --slice <id> --commit <oid>
 harness verify full [--json]
@@ -151,6 +153,10 @@ CLI 与 Hook 是 Adapter，不拥有第二份领域规则。
 
 共享 module/CLI 文件意味着这些 Slice 按序创建；前一 Slice `done` 释放 scope 后再创建后一 Slice。每个 Slice 必须提供实际可运行能力，不提交 placeholder interface。
 
+**Self-hosting closure:** `human-review-evidence` 同时包含一个只支持 `current candidate == integration base` 的完整 integration kernel，并用它把自身真实推进到 `done`。`slice-integration-done` 再加入 candidate 已在 scope 外演进时的 native three-way merge。禁止用现有 generic `slice advance ... done` 作为自举例外。
+
+**Frozen completion set:** Slice 1 code完成后、Review/integration 前，`promotion plan` 必须把 `tasks.md`/`spec.md` digests、implementation-ready transaction 和五个 ordered Slice IDs 冻结进 stateRef。后续 Slice create、Full 和 seal 不得从“当前已有记录”猜测 Work Item 是否完整。
+
 ## Rollback
 
 - 每个实现 Slice 一个聚焦 code commit；回退使用记录的 source/integration commit 和 Canonical Control Plane rollback/suspend semantics。
@@ -169,6 +175,7 @@ CLI 与 Hook 是 Adapter，不拥有第二份领域规则。
 
 | Source | Purpose |
 | --- | --- |
+| `workflow/proposals/control-plane-convergence/lifecycle-completion-implementation-amendment.md` | Pending implementation-release approval for self-hosting and frozen completion set |
 | `workflow/proposals/control-plane-convergence/requirements.md` | 已确认行为与 P0 边界 |
 | `workflow/proposals/control-plane-convergence/lifecycle-completion-design.md` | 已确认 domain/module/transaction design |
 | `workflow/proposals/control-plane-convergence/lifecycle-completion-solution-options.md` | 三方案比较、推荐和 Git experiment evidence |

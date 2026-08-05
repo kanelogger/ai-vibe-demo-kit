@@ -40,6 +40,10 @@ lastStageTransactionId: tx-d6712e1c-e32f-4e1a-816c-f6a20f1a7635
 | stateRef transaction `tx-fe6cc58e-3412-470d-9afe-519987d2072c` | 无用户 quote 的 developer transition 到 `solution-options` |
 | 用户原话 `state-parent-anchor` | 选择 Lifecycle Completion 方案并推进 `solution-selected` |
 | `workflow/proposals/control-plane-convergence/lifecycle-completion-solution-selected.md` | 选定方案的 Git topology、merge、Full 与 Adapter 细节 |
+| `SPECS/FEATURES/lifecycle-completion/spec.md` | Lifecycle Completion 长期行为、状态、CLI、错误与验证契约 |
+| `SPECS/FEATURES/lifecycle-completion/tasks.md` | 五个顺序 Slice 的 Write Scope、Quick、验收与回退 |
+| `workflow/proposals/control-plane-convergence/lifecycle-completion-implementation-ready.md` | 待用户放行的首 Slice与工作区/验证边界 |
+| `workflow/proposals/control-plane-convergence/lifecycle-completion-implementation-amendment.md` | 首 Slice self-hosting 与 frozen expected-Slice closure 的待放行增量 |
 
 ## 规划原则
 
@@ -92,7 +96,7 @@ State Bootstrap 只显式导入 v1 状态摘要与 legacy history/confirmation/s
 
 **Depends on:** State Bootstrap
 
-**Active Work Item:** `wi-20260805-31b819fc`，stage=`solution-selected`，risk=`high`。选定方案为 `state-parent-anchor`；尚待 implementation spec 与用户实现放行。
+**Active Work Item:** `wi-20260805-31b819fc`，stage=`solution-selected`，risk=`high`。Feature Spec、五 Slice DAG 和 implementation-ready 候选已形成；实现放行将显式包含 self-hosting 与 frozen Slice Plan 增量。
 
 **Outcome:** Canonical Control Plane 能把一组 Slice 从实现推进到唯一、已 Full 验证的 Promotion Candidate，但不更新 targetRef。
 

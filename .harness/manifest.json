@@ -7,6 +7,7 @@
   "files": {
     "AGENTS.md": "冷启动索引和高频门禁；接入时与项目已有 AGENTS.md 人工合并",
     "HARNESS.md": "Harness 地图、边界和接入说明",
+    "CONTEXT.md": "项目领域统一语言；只定义项目特有术语，不保存实现规格或决策",
     "workflow-state.json": "当前阶段的唯一机器状态源；由用户放行动作更新，Agent 不得手改",
     ".harness/config.json": "机器配置：Code Roots、可执行验证、关键路径、报告绑定、清理和恢复入口；必须由目标项目填写",
     ".harness/manifest.json": "本文件",
@@ -18,7 +19,7 @@
     ".agents/hooks/check-harness.mjs": "Hook 适配层，只调用 scripts/harness-check.mjs",
     ".agents/hooks/guard-write-context.mjs": "写工具 Adapter：标准化 file/session 后调用统一 Context Guard CLI，透传上下文与退出码",
     "**/.harness-index.json": "受管代码目录的版本化局部索引：摘要、目录默认前置和精确文件追加前置",
-    "workflow/": "本轮需求、方案和放行过程的模板与说明",
+    "workflow/": "活动需求、方案和放行过程，以及明确标记为 non-active/proposed、无阶段权限的提案包",
     "SPECS/": "长期有效的项目事实、按需存在的唯一契约来源与 feature spec 骨架",
     "tasks/": "当前执行单元模板",
     "memory/": "决策谱系和 ADR 骨架",

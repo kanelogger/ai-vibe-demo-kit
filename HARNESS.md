@@ -14,7 +14,7 @@ AI Native Harness Overlay 是一层可复制到现有代码库的 Agent 开发�
 
 | 装甲层 | 解决的问题 | 主要载体 |
 | --- | --- | --- |
-| 上下文装甲 | Agent 能否恢复项目事实和当前工作环境 | `AGENTS.md`、`HARNESS.md`、`SPECS/`、Source Register |
+| 上下文装甲 | Agent 能否恢复项目事实和当前工作环境 | `AGENTS.md`、`HARNESS.md`、`CONTEXT.md`、`SPECS/`、Source Register |
 | 流程装甲 | Agent 能否识别当前阶段、允许动作和人工放行证据 | `workflow-state.json`、`workflow/`、`tasks/` |
 | 反馈装甲 | Agent 能否看到确定性错误并完成风险匹配验证 | `scripts/harness-check.mjs`、Hooks、项目验证命令 |
 | 恢复装甲 | 失败后能否理解历史、清理数据并回退 | `memory/`、ADR、验证报告、清理与回退记录 |
@@ -25,13 +25,14 @@ AI Native Harness Overlay 是一层可复制到现有代码库的 Agent 开发�
 .
 ├── AGENTS.md              # 冷启动索引和高频门禁
 ├── HARNESS.md             # 本文件：Harness 地图、边界和接入说明
+├── CONTEXT.md             # 项目领域统一语言；只保存术语，不保存实现规格
 ├── workflow-state.json    # 当前阶段的唯一机器状态源
 ├── .harness/
 │   ├── config.json        # 机器配置：验证命令、关键路径、报告绑定、清理和恢复入口
 │   ├── manifest.json      # Overlay 版本和文件职责说明（不驱动自动更新）
 │   └── verification-report.json # full 验证生成的当前机器报告（初始不存在）
 ├── .agents/               # Skill catalog 与阶段路由、外部来源/锁、Hook 适配和 MCP 外部连接声明
-├── workflow/              # 本轮需求、方案和放行过程
+├── workflow/              # 活动工作流文档及无阶段权限的非活动提案
 ├── SPECS/                 # 长期有效的项目事实、唯一契约来源和 feature spec
 ├── tasks/                 # 当前执行单元及人类可读验证摘要
 ├── memory/                # 决策谱系和 ADR

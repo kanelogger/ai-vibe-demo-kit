@@ -15,6 +15,12 @@ initialized
 -> accepted                  workflow/acceptance.md           (status: accepted)
 ```
 
+## 非活动提案
+
+当前状态机无法激活新一轮工作、但团队需要先收敛后续需求时，可以把材料放在 `workflow/proposals/<initiative-id>/`。该目录按同样的前置顺序保存 requirements、solution options、用户选择、roadmap 与 bootstrap planning evidence；只能在上一步由用户原话解锁后创建下一类文档。所有文件必须明确标记 `non-active` / `proposed`，文件存在不改变机器阶段，也不得作为 State Bootstrap 或实现放行证据。
+
+提案激活时必须把已确认事实导入当时的 Canonical Control Plane，并按正式阶段重新保存用户原话；原提案随后转为只读来源或归档。不得让活动状态与 proposal 同时拥有同一事实。
+
 ## 放行规则
 
 - 用户提供原话后运行 `harness-stage.mjs advance`。命令先生成候选状态并运行 `context + gates + evidence`；全部通过后才原子替换正式状态。

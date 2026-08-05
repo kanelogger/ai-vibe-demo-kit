@@ -21,7 +21,7 @@
 
 | 职责 | 位置 | 所需上下文 |
 | --- | --- | --- |
-| 冷启动与流程索引 | `AGENTS.md`、`HARNESS.md`、`workflow/`、`SPECS/`、`tasks/`、`rules/` | `workflow-state.json`、`.harness/config.json` 与当前阶段文档 |
+| 冷启动、领域语言与流程索引 | `AGENTS.md`、`HARNESS.md`、`CONTEXT.md`、`workflow/`、`SPECS/`、`tasks/`、`rules/` | `workflow-state.json`、`.harness/config.json`、统一术语与当前阶段文档 |
 | v1 阶段、验证与报告门禁 | `scripts/harness-check.mjs`、`scripts/harness-stage.mjs`、`scripts/harness-verify.mjs` | `workflow-state.json`、Sprint、验证配置和用户原话 |
 | v2 Work Item 与 Slice 控制面 | `scripts/harness/cli.mjs`、`scripts/harness/lib/` | stateRef registry、Work Item、Slice、Quick 与生命周期契约 |
 | Skill 来源、同步与路由 | `.agents/`、`scripts/skills-sync*.mjs`、`scripts/harness/lib/skill-routing.mjs` | source/lock/catalog 与 active Work Item 上下文 |
@@ -34,6 +34,7 @@
 | 契约 | 位置 | 消费者 |
 | --- | --- | --- |
 | 项目机器配置 | `.harness/config.json` | 检查器、验证器、v2 context resolver |
+| 项目领域统一语言 | `CONTEXT.md` | Agent、workflow、SPECS、Skill 与审查者 |
 | v1 阶段状态 | `workflow-state.json` | `harness-stage.mjs` 与门禁检查器 |
 | v2 状态拓扑 | `refs/heads/harness/state` 下的 registry / Work Item / Slice JSON | `scripts/harness/cli.mjs` |
 | Skill catalog 与路由 | `.agents/skills.json` | Skill resolver 与 Agent 会话 |

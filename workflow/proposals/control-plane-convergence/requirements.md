@@ -15,16 +15,19 @@ activatedBy: user
 activatedAt: 2026-08-05T15:02:55.142Z
 activationQuote: 启动
 activeWorkItemId: wi-20260805-31b819fc
-activeStage: requirements-draft
+activeStage: requirements-confirmed
 canonicalContractRef: workflow/proposals/control-plane-convergence/requirements.md#lifecycle-completion
-lastStageAt: 2026-08-05T15:07:56.639Z
-lastStageQuote: 继续
-lastStageStateCommit: 0fdf24d94dac857d76a4118d3784089ebb0e0853
-lastStageTransactionId: tx-ec8ffd24-5748-4fc5-ba39-a7d12fa4b69b
+lastStageAt: 2026-08-05T15:10:42.981Z
+lastStageQuote: 确认 P0-WI-01 需求基线
+lastStageStateCommit: 61010e5dfa935144538ff7bf2bb40d8311894ca0
+lastStageTransactionId: tx-7fd30187-0c4c-4bf4-9f82-da9ff7821f29
+workItemRequirementsConfirmedBy: user
+workItemRequirementsConfirmedAt: 2026-08-05T15:10:42.981Z
+workItemRequirementsConfirmationQuote: 确认 P0-WI-01 需求基线
 ---
 # Harness Control Plane Convergence 需求
 
-> 本文是已确认的 Initiative/P0 需求，也是 P0-WI-01 的 canonical requirements source。State Bootstrap 已完成；用户原话“启动”创建 Work Item，后续原话“继续”只把它推进到 `requirements-draft`。Legacy `workflow-state.json` 保持 accepted 且冻结；当前尚无新的需求确认、方案推进或实现放行。
+> 本文是已确认的 Initiative/P0 需求，也是 P0-WI-01 的 canonical requirements source。State Bootstrap 已完成；用户原话“启动”创建 Work Item，“继续”进入需求草案，“确认 P0-WI-01 需求基线”将 Canonical Work Item 推进到 `requirements-confirmed`。Legacy `workflow-state.json` 保持 accepted 且冻结；尚未确认设计、选择方案或放行实现。
 
 ## 简报
 
@@ -201,4 +204,4 @@ lastStageTransactionId: tx-ec8ffd24-5748-4fc5-ba39-a7d12fa4b69b
 1. [x] 用户已用原话“我确认”明确确认本需求。
 2. [x] 用户已选择 `rehearsed-guarded-bootstrap`，执行边界与 rollback window 由 `bootstrap-runbook.md` 定义。
 3. [x] 用户已显式授权 State Bootstrap，并以单独原话“启动”通过 v2 Work Item 生命周期放行 P0-WI-01。
-4. 当前目录是 P0-WI-01 的 confirmed requirements source；Canonical Work Item 仍停在 `requirements-draft`，必须取得新的需求确认原话后才能进入 `requirements-confirmed`。
+4. 当前目录是 P0-WI-01 的 confirmed requirements source；Canonical Work Item 已进入 `requirements-confirmed`。下一主路径为技术设计确认，不得直接进入方案选择或实现。

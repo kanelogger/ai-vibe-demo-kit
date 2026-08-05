@@ -1,68 +1,9 @@
 {
-  "stage": "accepted",
-  "allowedNextStages": [],
-  "currentStageDoc": "workflow/acceptance.md",
-  "lastConfirmedDoc": "workflow/acceptance.md",
-  "confirmation": {
-    "by": "user",
-    "at": "2026-08-03T16:39:20.909Z",
-    "quote": "验收通过",
-    "doc": "workflow/acceptance.md"
-  },
-  "selection": {
-    "by": "user",
-    "at": "2026-08-03T15:35:10.332Z",
-    "quote": "unified-guard",
-    "doc": "workflow/solution-selected.md"
-  },
-  "history": [
-    {
-      "from": "initialized",
-      "to": "requirements-draft",
-      "advancedBy": "user",
-      "advancedAt": "2026-08-03T15:30:48.658Z",
-      "quote": "确认并进入规格",
-      "doc": "workflow/requirements.md"
-    },
-    {
-      "from": "requirements-draft",
-      "to": "requirements-confirmed",
-      "advancedBy": "user",
-      "advancedAt": "2026-08-03T15:32:26.355Z",
-      "quote": "确认需求",
-      "doc": "workflow/requirements.md"
-    },
-    {
-      "from": "requirements-confirmed",
-      "to": "solution-options",
-      "advancedBy": "user",
-      "advancedAt": "2026-08-03T15:33:58.504Z",
-      "quote": "确认需求",
-      "doc": "workflow/solution-options.md"
-    },
-    {
-      "from": "solution-options",
-      "to": "solution-selected",
-      "advancedBy": "user",
-      "advancedAt": "2026-08-03T15:35:10.332Z",
-      "quote": "unified-guard",
-      "doc": "workflow/solution-selected.md"
-    },
-    {
-      "from": "solution-selected",
-      "to": "implementation-ready",
-      "advancedBy": "user",
-      "advancedAt": "2026-08-03T15:42:33.997Z",
-      "quote": "批准开始实现",
-      "doc": "workflow/implementation-ready.md"
-    },
-    {
-      "from": "implementation-ready",
-      "to": "accepted",
-      "advancedBy": "user",
-      "advancedAt": "2026-08-03T16:39:20.909Z",
-      "quote": "验收通过",
-      "doc": "workflow/acceptance.md"
-    }
-  ]
+  "stage": "initialized",
+  "allowedNextStages": ["requirements-draft"],
+  "currentStageDoc": null,
+  "lastConfirmedDoc": null,
+  "confirmation": null,
+  "selection": null,
+  "history": []
 }

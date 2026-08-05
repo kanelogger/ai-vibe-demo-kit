@@ -1,6 +1,6 @@
 ---
 status: confirmed
-activity: non-active-proposal
+activity: active-work-item
 initiativeId: control-plane-convergence
 draftAuthorizedBy: user
 draftAuthorizedAt: 2026-08-05T14:06:27Z
@@ -11,10 +11,14 @@ confirmationQuote: 我确认
 lastAmendedBy: user
 lastAmendedAt: 2026-08-05T14:24:47Z
 lastAmendmentQuote: 基线钉住，切换前再索引
+activatedBy: user
+activatedAt: 2026-08-05T15:02:55.142Z
+activationQuote: 启动
+activeWorkItemId: wi-20260805-31b819fc
 ---
 # Harness Control Plane Convergence 需求
 
-> 本文是已确认但非活动的需求提案。用户原话“我确认”确认本文需求，但不等于方案选择、State Bootstrap 或实现放行；当前 `workflow-state.json` 保持 `accepted`。
+> 本文是已确认需求。State Bootstrap 已完成，用户原话“启动”已通过 Canonical Control Plane 创建 P0-WI-01 `wi-20260805-31b819fc`；Legacy `workflow-state.json` 保持 accepted 且冻结。当前 Work Item 仍处于 `initialized`，该原话不等于 Brief 确认、阶段推进或实现放行。
 
 ## 简报
 
@@ -190,5 +194,5 @@ lastAmendmentQuote: 基线钉住，切换前再索引
 
 1. [x] 用户已用原话“我确认”明确确认本需求。
 2. [x] 用户已选择 `rehearsed-guarded-bootstrap`，执行边界与 rollback window 由 `bootstrap-runbook.md` 定义。
-3. 用户显式授权 State Bootstrap；成功后通过 v2 Work Item 生命周期分别放行三个 P0 Work Item。
-4. 未完成上述步骤前，本目录不得作为实现授权证据。
+3. [x] 用户已显式授权 State Bootstrap，并以单独原话“启动”通过 v2 Work Item 生命周期放行 P0-WI-01。
+4. 当前目录是 P0-WI-01 的 confirmed requirements source；Work Item 进入 `implementation-ready` 前不得作为编码授权证据。

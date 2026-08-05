@@ -9,17 +9,22 @@ stateCommit: 1b3976b13ab143e7c4bdf5264941e78f807ce1e0
 transactionId: tx-80730e45-5882-4d20-a975-689aef966b10
 executedAt: 2026-08-05T14:49:42.816Z
 recordedAt: 2026-08-05T14:50:46Z
-rollbackWindow: open
-receiptSha256: b34d8081d77259526a2da233b861746248de58df669efd6cbab55a028680cbc4
+bootstrapClosedAt: 2026-08-05T15:02:55.142Z
+firstWorkItemId: wi-20260805-31b819fc
+startStateCommit: 6285681544bb778dbbe74a67b8136cd3655f6e00
+startTransactionId: tx-5a00920d-1e0c-4bb4-85b9-d77aa30740fe
+startQuote: 启动
+rollbackWindow: closed
+receiptSha256: 062fd5ce20d7dab1740ec8cbfb9f84e87af20744d364673e77aa09470a387c1b
 digestAlgorithm: SHA-256 of this file with receiptSha256 replaced by 64 ASCII zeroes
 ---
 # State Bootstrap Receipt
 
 ## Result
 
-`passed`. The authorized live invocation of the repository-owned migrator created the v2 stateRef and migration backup ref. All Plan identities and expected mappings matched. The target ref, planning commit, v1 file, config and worktree content were not modified by the migration.
+`passed`. The authorized live invocation of the repository-owned migrator created the v2 stateRef and migration backup ref. All Plan identities and expected mappings matched. The target ref, v1 file and config were not modified by migration. A later user release started P0-WI-01 through the Canonical Control Plane and permanently closed the Bootstrap rollback window.
 
-The State Bootstrap rollback window remains `open`. No P0 Work Item has been started.
+The State Bootstrap rollback window is `closed`. The first active Work Item is `wi-20260805-31b819fc` at `initialized`.
 
 ## Authorization
 
@@ -75,11 +80,11 @@ A second invocation returned `migrated:false`, reason `already-migrated`, and th
 | --- | --- |
 | version | `2` |
 | targetRef/stateRef | `refs/heads/main` / `refs/heads/harness/state` |
-| activeWorkItemId | `null` |
+| activeWorkItemId | `wi-20260805-31b819fc` after the separate start transaction |
 | suspendedWorkItemIds | `[]` |
 | lastAcceptedBaseline commit/tree | `4173b4ac...` / `193cdd7c...` |
-| sequence | `1` |
-| lastTransactionId | `tx-80730e45-5882-4d20-a975-689aef966b10` |
+| sequence | `2` after start; migration was sequence `1` |
+| lastTransactionId | `tx-5a00920d-1e0c-4bb4-85b9-d77aa30740fe` |
 | migration source | `workflow-state.json` |
 | migration source digest | `56a42ff5e2771681d91d4df8a16cae94a940afa915df284969b5f469dcf8c59c` |
 | migration rollback ref | `refs/heads/harness/state-migration-backup` |
@@ -111,26 +116,28 @@ The root audit contains `migrate-v1` and `migrate-v1-item`; the per-item audit c
 | `harness-check context` | passed |
 | `harness-check gates` | passed |
 | Full evidence health | unchanged historical stale/workspace divergence; not refreshed |
-| active/suspended Work Items | none |
+| active/suspended Work Items | `wi-20260805-31b819fc` / none; start transaction verified |
 
 ## Rollback Window
 
-Current state: `open`.
+Current state: `closed`.
 
-A rollback is permitted only before any new Work Item starts and only with a new user quote bound to these exact OIDs:
+The user separately released P0-WI-01 with the exact quote `启动`. The Canonical Control Plane committed one atomic start transaction:
 
-| Ref | Expected OID before rollback |
+| Field | Observed |
 | --- | --- |
-| `refs/heads/harness/state` | `1b3976b13ab143e7c4bdf5264941e78f807ce1e0` |
-| `refs/heads/harness/state-migration-backup` | `4173b4ac0639eb8db0623659798363854cde8d25` |
-| `refs/heads/main` | must remain `4173b4ac0639eb8db0623659798363854cde8d25` and is never deleted or moved by rollback |
+| Work Item | `wi-20260805-31b819fc` |
+| Type/stage/status | `feature / initialized / active` |
+| stateRef commit | `6285681544bb778dbbe74a67b8136cd3655f6e00` |
+| sequence | `2` |
+| transaction ID | `tx-5a00920d-1e0c-4bb4-85b9-d77aa30740fe` |
+| request quote/time | `启动` / `2026-08-05T15:02:55.142Z` |
+| contractRef | `workflow/proposals/control-plane-convergence/requirements.md#lifecycle-completion` |
+| risk | `high` floor; `touchesControlPlane` and `crossesCoreModules` fired |
 
-Closing this window and starting P0-WI-01 require a separate user release. Until then:
+Starting the Work Item permanently closed the Bootstrap rollback window under the selected runbook. Direct deletion of stateRef or use of the pre-start Bootstrap CAS rollback is now prohibited. Recovery must use Canonical Control Plane suspend/rollback semantics. The migration backup ref remains an immutable historical recovery identity; targetRef remains unchanged.
 
-- do not run `harness start`;
-- do not delete or mutate stateRef;
-- do not move targetRef as part of State Bootstrap;
-- preserve Plan, Rehearsal, Authorization and this Receipt.
+The start release does not confirm a Brief, advance the Work Item, create a Slice or authorize implementation. The next legal lifecycle action is `advance --to requirements-draft`.
 
 ## Source Register
 
@@ -142,3 +149,5 @@ Closing this window and starting P0-WI-01 require a separate user release. Until
 | live migrator JSON output | State commit and transaction identity |
 | live stateRef registry/item/audit objects | Observable post-migration truth |
 | post-migration CLI status and idempotent rerun | Canonical state and no-op evidence |
+| user quote `启动` | Separate release to close the rollback window and start P0-WI-01 |
+| stateRef start transaction `tx-5a00920d-1e0c-4bb4-85b9-d77aa30740fe` | First active Work Item, request, risk and audit identity |

@@ -1,14 +1,18 @@
 ---
-status: proposed
-activity: non-active-proposal
+status: active
+activity: active-work-item
 initiativeId: control-plane-convergence
 draftAuthorizedBy: user
 draftAuthorizedAt: 2026-08-05T14:06:27Z
 draftAuthorizationQuote: 确认并写文档
+activatedBy: user
+activatedAt: 2026-08-05T15:02:55.142Z
+activationQuote: 启动
+activeWorkItemId: wi-20260805-31b819fc
 ---
 # Harness Control Plane Convergence 路线图
 
-> 本路线图只表达依赖、交付结果和退出标准，不授权 State Bootstrap、实现、迁移或阶段推进。P0 需求以 `requirements.md` 为准；P1/P2 必须在各自启动时重新形成并确认需求。
+> 本路线图表达依赖、交付结果和退出标准。State Bootstrap 已完成，P0-WI-01 已通过 Canonical Control Plane 启动；该启动不自动确认 Brief、推进阶段或授权实现。P0 需求以 `requirements.md` 为准；P1/P2 必须在各自启动时重新形成并确认需求。
 
 ## Source Register
 
@@ -21,6 +25,8 @@ draftAuthorizationQuote: 确认并写文档
 | `SPECS/FEATURES/directory-context-guard/spec.md` | Context Guard 声明完整性与当前非目标 |
 | `private-docs/AI代码生成率94%_我们用一个Skill跑通需求开发全流程.md` | Project Profile、领域语义桥、覆盖校验、运行时验证和度量启发 |
 | 用户 grilling 选择 | P0 三 Work Item、外部 Profile、Skill Run、来源硬门禁、Profile 覆盖和分阶段指标 |
+| `workflow/proposals/control-plane-convergence/bootstrap-receipt.md` | State Bootstrap 完成、rollback window 关闭与首个 Work Item 身份 |
+| 用户原话 `启动` | 单独放行 P0-WI-01；state transaction 保存时间与审计 |
 
 ## 规划原则
 
@@ -72,6 +78,8 @@ State Bootstrap 只显式导入 v1 状态摘要与 legacy history/confirmation/s
 ### P0-WI-01 Lifecycle Completion
 
 **Depends on:** State Bootstrap
+
+**Active Work Item:** `wi-20260805-31b819fc`，stage=`initialized`，risk=`high`。启动 transaction=`tx-5a00920d-1e0c-4bb4-85b9-d77aa30740fe`；尚未确认 Brief 或授权实现。
 
 **Outcome:** Canonical Control Plane 能把一组 Slice 从实现推进到唯一、已 Full 验证的 Promotion Candidate，但不更新 targetRef。
 
@@ -207,7 +215,7 @@ State Bootstrap 只显式导入 v1 状态摘要与 legacy history/confirmation/s
 
 ## 激活与更新规则
 
-- 当前状态：non-active proposal。
-- 需求确认前，只能修订 `requirements.md` 和本路线图；不得创建方案、Feature Spec 或实现 Slice。
+- 当前状态：P0-WI-01 active；Canonical Work Item 为 `wi-20260805-31b819fc`，stage=`initialized`。
+- P0-WI-01 必须继续通过 v2 生命周期确认需求、方案和实现门禁；启动原话不得解释为跳阶段或编码授权。
 - 每个 P1/P2 Work Item 启动时必须重新形成三句话简报、Source Register、需求确认和方案选择。
 - 新证据推翻依赖或边界时，先更新需求事实源，再更新本 DAG；不得从任务文件反向改写需求。

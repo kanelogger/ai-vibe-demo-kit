@@ -2,14 +2,14 @@
 
 ## Status
 
-Selected solution: `state-parent-anchor`. Implementation requires the separate `implementation-ready` user release recorded in `workflow/proposals/control-plane-convergence/lifecycle-completion-implementation-ready.md` and the matching Canonical Control Plane transaction.
+Selected solution: `state-parent-anchor`. Implementation was authorized by user quote `批准 P0-WI-01 implementation-ready（含 self-hosting 与 frozen Slice Plan）`, state commit `97ae02236e36fb84a6ecbd545fbea13c02021f6b`, transaction `tx-e4750135-2f5b-4700-93e2-12d0aa0b3657`.
 
 ## Source Register
 
 | Source | Purpose |
 | --- | --- |
 | `workflow/proposals/control-plane-convergence/requirements.md` | Confirmed REQ-P0-006 through REQ-P0-010 |
-| `workflow/proposals/control-plane-convergence/lifecycle-completion-implementation-amendment.md` | Pending user approval for self-hosting and frozen Implementation Plan closure |
+| `workflow/proposals/control-plane-convergence/lifecycle-completion-implementation-amendment.md` | Approved self-hosting and frozen Implementation Plan closure |
 | `workflow/proposals/control-plane-convergence/lifecycle-completion-design.md` | Confirmed domain model, deep module interface and transaction boundaries |
 | `workflow/proposals/control-plane-convergence/lifecycle-completion-solution-options.md` | Compared reachability, merge and Full isolation bundles |
 | `workflow/proposals/control-plane-convergence/lifecycle-completion-solution-selected.md` | User-selected `state-parent-anchor` details |

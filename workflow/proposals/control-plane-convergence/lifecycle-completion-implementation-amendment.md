@@ -1,15 +1,17 @@
 ---
-status: pending-user-approval
+status: approved
 activity: implementation-planning-amendment
 initiativeId: control-plane-convergence
 workItemId: wi-20260805-31b819fc
-workItemStage: solution-selected
+workItemStage: implementation-ready
 selectedOptionId: state-parent-anchor
 amendmentVersion: 1
-approved: false
-approvedBy: null
-approvedAt: null
-approvalQuote: null
+approved: true
+approvedBy: user
+approvedAt: 2026-08-05T15:47:25.058Z
+approvalQuote: 批准 P0-WI-01 implementation-ready（含 self-hosting 与 frozen Slice Plan）
+approvalStateCommit: 97ae02236e36fb84a6ecbd545fbea13c02021f6b
+approvalTransactionId: tx-e4750135-2f5b-4700-93e2-12d0aa0b3657
 ---
 # P0-WI-01 Implementation Planning Amendment
 
@@ -84,17 +86,19 @@ Future `slice create` must match the next expected ID and requires its predecess
 - Adds immutable `facts/implementationPlan/r1.json` and a pipeline pointer/digest.
 - Adds stable errors `E_IMPLEMENTATION_PLAN_REQUIRED` and `E_IMPLEMENTATION_PLAN_MISMATCH`.
 - Expands Slice 1 scope/tests; Slice count, order, selected reachability solution and P0 boundary do not change.
-- Does not move targetRef, authorize implementation, create a Slice or change current stateRef stage.
+- Does not move targetRef or authorize any scope beyond the selected five-Slice WI-01 implementation; approval evidence is recorded below.
 
-## Approval Gate
+## Approval Evidence
 
-Approval of implementation-ready must explicitly include this amendment. Suggested exact quote:
+The user approved this amendment together with implementation-ready using the exact quote:
 
 ```text
 批准 P0-WI-01 implementation-ready（含 self-hosting 与 frozen Slice Plan）
 ```
 
-This approval authorizes only the selected five-Slice WI-01 implementation path. It does not authorize Acceptance, targetRef Promotion, P0-WI-02 or Cutover.
+Canonical state commit: `97ae02236e36fb84a6ecbd545fbea13c02021f6b`; transaction: `tx-e4750135-2f5b-4700-93e2-12d0aa0b3657`.
+
+The approval authorizes only the selected five-Slice WI-01 implementation path. It does not authorize Acceptance, targetRef Promotion, P0-WI-02 or Cutover.
 
 ## Source Register
 

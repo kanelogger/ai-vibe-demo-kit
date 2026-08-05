@@ -3,14 +3,19 @@ status: selected
 activity: active-work-item-solution
 initiativeId: control-plane-convergence
 workItemId: wi-20260805-31b819fc
-workItemStage: solution-selected
+workItemStage: implementation-ready
 selectedOptionId: state-parent-anchor
 selectedBy: user
 selectedAt: 2026-08-05T15:30:27.539Z
 selectionQuote: state-parent-anchor
 selectionStateCommit: c4bb8e2ea8fa2f9c9ced6b8d68e62f1e2812d85b
 selectionTransactionId: tx-d6712e1c-e32f-4e1a-816c-f6a20f1a7635
-implementationAuthorized: false
+implementationAuthorized: true
+implementationAuthorizedBy: user
+implementationAuthorizedAt: 2026-08-05T15:47:25.058Z
+implementationAuthorizationQuote: 批准 P0-WI-01 implementation-ready（含 self-hosting 与 frozen Slice Plan）
+implementationStateCommit: 97ae02236e36fb84a6ecbd545fbea13c02021f6b
+implementationTransactionId: tx-e4750135-2f5b-4700-93e2-12d0aa0b3657
 ---
 # P0-WI-01 Lifecycle Completion 选定方案
 
@@ -18,7 +23,7 @@ implementationAuthorized: false
 
 用户选择 `state-parent-anchor`。Canonical Control Plane 已用 state commit `c4bb8e2ea8fa2f9c9ced6b8d68e62f1e2812d85b`、transaction `tx-d6712e1c-e32f-4e1a-816c-f6a20f1a7635` 推进到 `solution-selected`。
 
-该选择固定实现方向；不等于 implementation-ready 放行，不创建 Slice，也不授权修改 `scripts/` 或 `.agents/hooks/`。
+该选择已取得独立 implementation-ready 放行；实现仍受五 Slice、Context Guard、Quick/Review/Integration、Full 与 targetRef 不动等门禁约束。
 
 ## 为什么选择
 
@@ -164,12 +169,12 @@ CLI 与 Hook 是 Adapter，不拥有第二份领域规则。
 - Full clone、临时 index 是临时资源，失败必须清理，不进入 repo 事实源。
 - targetRef 在 WI-01 不变，因此任何 Slice 回退不得更新 main。
 
-## 仍未授权
+## Authorization Boundary
 
-- 未进入 `implementation-ready` 前，不得创建实现 Slice 或修改受管代码。
+- 已授权：`human-review-evidence` 起始 Slice，以及按 frozen Implementation Plan 顺序通过门禁的后续四个 Slice。
 - 未经 Context Guard，不得写 `scripts/` 或 `.agents/hooks/`。
 - 不得把本方案扩展为 P0-WI-02 target/state 原子 acceptance。
-- 不得启动 P0-WI-02 或关闭 P0-WI-01。
+- 不得启动 P0-WI-02、移动 main、执行 Acceptance 或 Control Plane Cutover。
 
 ## Source Register
 

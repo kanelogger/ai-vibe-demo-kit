@@ -1,6 +1,6 @@
 # Lifecycle Completion Slice DAG
 
-> 本计划只定义 implementation-ready 后可创建的 Slice。当前未授权实现；所有状态、提交和验证字段在执行前保持未完成。
+> implementation-ready 已由用户放行。每次只创建并交付一个 Slice；未执行的状态、提交和验证字段保持未完成。
 
 ## Shared Rules
 
@@ -40,6 +40,7 @@
 - `.harness/manifest.json`
 - `SPECS/architecture.md`
 - `workflow/README.md`
+- `tasks/sprint-03.md`
 - `scripts/harness/lib/git.mjs`
 - `scripts/harness/lib/state-store.mjs`
 - `scripts/harness/lib/audit.mjs`

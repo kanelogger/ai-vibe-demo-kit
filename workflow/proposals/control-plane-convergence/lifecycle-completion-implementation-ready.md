@@ -1,18 +1,21 @@
 ---
-status: draft
-activity: active-work-item-release-candidate
+status: ready
+activity: active-work-item-release
 initiativeId: control-plane-convergence
 workItemId: wi-20260805-31b819fc
-workItemStage: solution-selected
+workItemStage: implementation-ready
 selectedOptionId: state-parent-anchor
-implementationAuthorized: false
-confirmedBy: null
-confirmedAt: null
-confirmationQuote: null
+implementationAuthorized: true
+confirmedBy: user
+confirmedAt: 2026-08-05T15:47:25.058Z
+confirmationQuote: 批准 P0-WI-01 implementation-ready（含 self-hosting 与 frozen Slice Plan）
+releaseStateCommit: 97ae02236e36fb84a6ecbd545fbea13c02021f6b
+releaseTransactionId: tx-e4750135-2f5b-4700-93e2-12d0aa0b3657
+amendmentApproved: true
 ---
 # P0-WI-01 Lifecycle Completion 实现就绪候选
 
-> 本文是 implementation-ready 放行候选，不是已生效授权。只有用户提供新的明确原话并由 Canonical Control Plane 成功推进到 `implementation-ready` 后，才能创建 Sprint、Work Item implementation worktree 和首个 Slice。
+> 用户已用精确原话放行 implementation-ready，并由 Canonical Control Plane 推进成功。授权范围仅为选定的五 Slice WI-01 路径，包含 self-hosting 与 frozen Slice Plan；不包含 Acceptance、main Promotion、P0-WI-02 或 Cutover。
 
 ## 首个可运行 Slice
 
@@ -61,6 +64,7 @@ Exact governance files:
 - `CONTEXT.md`
 - `HARNESS.md`
 - `.harness/manifest.json`
+- `tasks/sprint-03.md`
 - `SPECS/architecture.md`
 - `workflow/README.md`
 
@@ -85,12 +89,12 @@ Exact code/test files are listed under Slice 1 in `SPECS/FEATURES/lifecycle-comp
 - targetRef/main 在 WI-01 全程不得移动。
 - 临时 index、clone、worktree 测试资源必须在验证后清理。
 
-## Release Gate
+## Release Evidence
 
-建议实现放行原话：
+用户原话：
 
 ```text
 批准 P0-WI-01 implementation-ready（含 self-hosting 与 frozen Slice Plan）
 ```
 
-该原话同时批准 `lifecycle-completion-implementation-amendment.md` 的两个规划增量，只放行五 Slice WI-01 路径；不放行 targetRef Promotion、Acceptance、P0-WI-02 或 Control Plane Cutover。
+Canonical state commit：`97ae02236e36fb84a6ecbd545fbea13c02021f6b`；transaction：`tx-e4750135-2f5b-4700-93e2-12d0aa0b3657`。该原话同时批准 implementation amendment，只放行五 Slice WI-01 路径。

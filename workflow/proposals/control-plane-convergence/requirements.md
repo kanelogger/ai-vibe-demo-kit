@@ -15,12 +15,12 @@ activatedBy: user
 activatedAt: 2026-08-05T15:02:55.142Z
 activationQuote: 启动
 activeWorkItemId: wi-20260805-31b819fc
-activeStage: solution-selected
+activeStage: implementation-ready
 canonicalContractRef: workflow/proposals/control-plane-convergence/requirements.md#lifecycle-completion
-lastStageAt: 2026-08-05T15:30:27.539Z
-lastStageQuote: state-parent-anchor
-lastStageStateCommit: c4bb8e2ea8fa2f9c9ced6b8d68e62f1e2812d85b
-lastStageTransactionId: tx-d6712e1c-e32f-4e1a-816c-f6a20f1a7635
+lastStageAt: 2026-08-05T15:47:25.058Z
+lastStageQuote: 批准 P0-WI-01 implementation-ready（含 self-hosting 与 frozen Slice Plan）
+lastStageStateCommit: 97ae02236e36fb84a6ecbd545fbea13c02021f6b
+lastStageTransactionId: tx-e4750135-2f5b-4700-93e2-12d0aa0b3657
 workItemRequirementsConfirmedBy: user
 workItemRequirementsConfirmedAt: 2026-08-05T15:10:42.981Z
 workItemRequirementsConfirmationQuote: 确认 P0-WI-01 需求基线
@@ -31,10 +31,13 @@ workItemSolutionSelectedBy: user
 workItemSolutionSelectedAt: 2026-08-05T15:30:27.539Z
 workItemSolutionSelectionQuote: state-parent-anchor
 workItemSelectedOptionId: state-parent-anchor
+workItemImplementationAuthorizedBy: user
+workItemImplementationAuthorizedAt: 2026-08-05T15:47:25.058Z
+workItemImplementationAuthorizationQuote: 批准 P0-WI-01 implementation-ready（含 self-hosting 与 frozen Slice Plan）
 ---
 # Harness Control Plane Convergence 需求
 
-> 本文是已确认的 Initiative/P0 需求，也是 P0-WI-01 的 canonical requirements source。Canonical Work Item 已选择 `state-parent-anchor` 并进入 `solution-selected`；Legacy `workflow-state.json` 保持 accepted 且冻结。尚未形成完整 implementation spec 或取得实现放行。
+> 本文是已确认的 Initiative/P0 需求，也是 P0-WI-01 的 canonical requirements source。Canonical Work Item 已进入 `implementation-ready` 并放行选定五 Slice 路径；Legacy `workflow-state.json` 保持 accepted 且冻结。Acceptance、main Promotion、P0-WI-02 与 Cutover 仍未授权。
 
 ## 简报
 
@@ -211,4 +214,4 @@ workItemSelectedOptionId: state-parent-anchor
 1. [x] 用户已用原话“我确认”明确确认本需求。
 2. [x] 用户已选择 `rehearsed-guarded-bootstrap`，执行边界与 rollback window 由 `bootstrap-runbook.md` 定义。
 3. [x] 用户已显式授权 State Bootstrap，并以单独原话“启动”通过 v2 Work Item 生命周期放行 P0-WI-01。
-4. 当前目录是 P0-WI-01 的 confirmed requirements source；Canonical Work Item 已进入 `solution-selected`。implementation spec、Slice 计划和用户放行完成前不得编码。
+4. 当前目录是 P0-WI-01 的 confirmed requirements source；Canonical Work Item 已进入 `implementation-ready`。实现必须严格按 frozen 五 Slice Plan 与每个 Slice 门禁执行。

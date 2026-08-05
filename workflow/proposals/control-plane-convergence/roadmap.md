@@ -9,15 +9,15 @@ activatedBy: user
 activatedAt: 2026-08-05T15:02:55.142Z
 activationQuote: 启动
 activeWorkItemId: wi-20260805-31b819fc
-activeStage: solution-selected
-lastStageAt: 2026-08-05T15:30:27.539Z
-lastStageQuote: state-parent-anchor
-lastStageStateCommit: c4bb8e2ea8fa2f9c9ced6b8d68e62f1e2812d85b
-lastStageTransactionId: tx-d6712e1c-e32f-4e1a-816c-f6a20f1a7635
+activeStage: implementation-ready
+lastStageAt: 2026-08-05T15:47:25.058Z
+lastStageQuote: 批准 P0-WI-01 implementation-ready（含 self-hosting 与 frozen Slice Plan）
+lastStageStateCommit: 97ae02236e36fb84a6ecbd545fbea13c02021f6b
+lastStageTransactionId: tx-e4750135-2f5b-4700-93e2-12d0aa0b3657
 ---
 # Harness Control Plane Convergence 路线图
 
-> 本路线图表达依赖、交付结果和退出标准。State Bootstrap 已完成，P0-WI-01 已选择 `state-parent-anchor` 并进入 `solution-selected`；尚未授权实现。P0 需求以 `requirements.md` 为准；P1/P2 必须在各自启动时重新形成并确认需求。
+> 本路线图表达依赖、交付结果和退出标准。P0-WI-01 已进入 `implementation-ready`，只放行选定五 Slice 路径；Acceptance、main Promotion、P0-WI-02 与 Cutover 未授权。
 
 ## Source Register
 
@@ -42,8 +42,9 @@ lastStageTransactionId: tx-d6712e1c-e32f-4e1a-816c-f6a20f1a7635
 | `workflow/proposals/control-plane-convergence/lifecycle-completion-solution-selected.md` | 选定方案的 Git topology、merge、Full 与 Adapter 细节 |
 | `SPECS/FEATURES/lifecycle-completion/spec.md` | Lifecycle Completion 长期行为、状态、CLI、错误与验证契约 |
 | `SPECS/FEATURES/lifecycle-completion/tasks.md` | 五个顺序 Slice 的 Write Scope、Quick、验收与回退 |
-| `workflow/proposals/control-plane-convergence/lifecycle-completion-implementation-ready.md` | 待用户放行的首 Slice与工作区/验证边界 |
-| `workflow/proposals/control-plane-convergence/lifecycle-completion-implementation-amendment.md` | 首 Slice self-hosting 与 frozen expected-Slice closure 的待放行增量 |
+| `workflow/proposals/control-plane-convergence/lifecycle-completion-implementation-ready.md` | 已生效的五 Slice实现放行、工作区与验证边界 |
+| `workflow/proposals/control-plane-convergence/lifecycle-completion-implementation-amendment.md` | 已批准的首 Slice self-hosting 与 frozen expected-Slice closure |
+| 用户原话 `批准 P0-WI-01 implementation-ready（含 self-hosting 与 frozen Slice Plan）` | 推进 `solution-selected → implementation-ready` 并批准 planning amendment |
 
 ## 规划原则
 
@@ -96,7 +97,7 @@ State Bootstrap 只显式导入 v1 状态摘要与 legacy history/confirmation/s
 
 **Depends on:** State Bootstrap
 
-**Active Work Item:** `wi-20260805-31b819fc`，stage=`solution-selected`，risk=`high`。Feature Spec、五 Slice DAG 和 implementation-ready 候选已形成；实现放行将显式包含 self-hosting 与 frozen Slice Plan 增量。
+**Active Work Item:** `wi-20260805-31b819fc`，stage=`implementation-ready`，risk=`high`。五 Slice实现已放行；当前只创建 `human-review-evidence`。
 
 **Outcome:** Canonical Control Plane 能把一组 Slice 从实现推进到唯一、已 Full 验证的 Promotion Candidate，但不更新 targetRef。
 
@@ -232,7 +233,7 @@ State Bootstrap 只显式导入 v1 状态摘要与 legacy history/confirmation/s
 
 ## 激活与更新规则
 
-- 当前状态：P0-WI-01 active；Canonical Work Item 为 `wi-20260805-31b819fc`，stage=`solution-selected`。
+- 当前状态：P0-WI-01 active；Canonical Work Item 为 `wi-20260805-31b819fc`，stage=`implementation-ready`。
 - P0-WI-01 必须继续通过 v2 生命周期确认需求、方案和实现门禁；启动原话不得解释为跳阶段或编码授权。
 - 每个 P1/P2 Work Item 启动时必须重新形成三句话简报、Source Register、需求确认和方案选择。
 - 新证据推翻依赖或边界时，先更新需求事实源，再更新本 DAG；不得从任务文件反向改写需求。

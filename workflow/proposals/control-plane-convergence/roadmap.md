@@ -34,6 +34,7 @@ lastStageTransactionId: tx-7fd30187-0c4c-4bf4-9f82-da9ff7821f29
 | 用户原话 `启动` | 单独放行 P0-WI-01；state transaction 保存时间与审计 |
 | 用户原话 `继续` | 推进 `initialized → requirements-draft`；未确认需求 |
 | 用户原话 `确认 P0-WI-01 需求基线` | 推进 `requirements-draft → requirements-confirmed`；未确认设计 |
+| `workflow/proposals/control-plane-convergence/lifecycle-completion-design.md` | P0-WI-01 Promotion Pipeline 领域模型、module interface 与事务边界草案 |
 
 ## 规划原则
 
@@ -86,7 +87,7 @@ State Bootstrap 只显式导入 v1 状态摘要与 legacy history/confirmation/s
 
 **Depends on:** State Bootstrap
 
-**Active Work Item:** `wi-20260805-31b819fc`，stage=`requirements-confirmed`，risk=`high`。最新 transaction=`tx-7fd30187-0c4c-4bf4-9f82-da9ff7821f29`；下一主路径为技术设计确认。
+**Active Work Item:** `wi-20260805-31b819fc`，stage=`requirements-confirmed`，risk=`high`。技术设计草案见 `lifecycle-completion-design.md`，尚待用户确认；stateRef 未推进。
 
 **Outcome:** Canonical Control Plane 能把一组 Slice 从实现推进到唯一、已 Full 验证的 Promotion Candidate，但不更新 targetRef。
 

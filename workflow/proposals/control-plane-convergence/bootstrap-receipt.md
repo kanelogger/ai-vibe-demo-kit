@@ -15,7 +15,7 @@ startStateCommit: 6285681544bb778dbbe74a67b8136cd3655f6e00
 startTransactionId: tx-5a00920d-1e0c-4bb4-85b9-d77aa30740fe
 startQuote: 启动
 rollbackWindow: closed
-receiptSha256: dc6cd31fdb7829b4429e24b55b933ab982f17141bb5131bd1cfb5b3c249053de
+receiptSha256: 552960d8bb5a0bb3aead079231142b4aa33163f71d1d7f82687404f4152358ab
 digestAlgorithm: SHA-256 of this file with receiptSha256 replaced by 64 ASCII zeroes
 ---
 # State Bootstrap Receipt
@@ -137,7 +137,7 @@ The user separately released P0-WI-01 with the exact quote `启动`. The Canonic
 
 Starting the Work Item permanently closed the Bootstrap rollback window under the selected runbook. Direct deletion of stateRef or use of the pre-start Bootstrap CAS rollback is now prohibited. Recovery must use Canonical Control Plane suspend/rollback semantics. The migration backup ref remains an immutable historical recovery identity; targetRef remains unchanged.
 
-The start release itself did not confirm a Brief, advance the Work Item, create a Slice or authorize implementation. Subsequent stateRef transactions used quote `继续` for `initialized → requirements-draft`, then quote `确认 P0-WI-01 需求基线` for `requirements-draft → requirements-confirmed` at state commit `61010e5dfa935144538ff7bf2bb40d8311894ca0`, transaction `tx-7fd30187-0c4c-4bf4-9f82-da9ff7821f29`. Neither transition authorizes design, solution selection or implementation; current lifecycle truth remains stateRef.
+The start release itself did not confirm a Brief, advance the Work Item, create a Slice or authorize implementation. The two first lifecycle transitions recorded below likewise did not authorize design, solution selection or implementation. Later lifecycle facts are intentionally tracked by stateRef and the active Work Item documents; this Bootstrap Receipt is immutable startup evidence, not the current lifecycle status.
 
 ## Source Register
 

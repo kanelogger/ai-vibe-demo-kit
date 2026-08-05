@@ -1,19 +1,24 @@
 ---
-status: draft
+status: confirmed
 activity: active-work-item-design
 initiativeId: control-plane-convergence
 workItemId: wi-20260805-31b819fc
-workItemStage: requirements-confirmed
+workItemStage: design-confirmed
 requirementsRef: workflow/proposals/control-plane-convergence/requirements.md#lifecycle-completion
 requirementsConfirmedBy: user
 requirementsConfirmedAt: 2026-08-05T15:10:42.981Z
 requirementsConfirmationQuote: 确认 P0-WI-01 需求基线
 designVersion: 1
-designConfirmed: false
+designConfirmed: true
+designConfirmedBy: user
+designConfirmedAt: 2026-08-05T15:20:34.102Z
+designConfirmationQuote: 确认 P0-WI-01 技术设计
+designStateCommit: f2bb5e29645719104ce0d2808c0947f4e8aaffd8
+designTransactionId: tx-ba0801f6-57e4-4166-b178-2f02a9baab6f
 ---
 # P0-WI-01 Lifecycle Completion 技术设计
 
-> 本文定义 Lifecycle Completion 的领域模型、module interface、状态绑定和事务边界。它是待确认设计，不选择候选持久化方案，不创建 Slice，不推进 `design-confirmed`，也不授权实现。
+> 本文定义并记录已确认的 Lifecycle Completion 领域模型、module interface、状态绑定和事务边界。确认不选择候选持久化方案，不创建 Slice，也不授权实现。
 
 ## 目标
 
@@ -304,15 +309,11 @@ Hook 只读检查返回 decision；真正 `advance` 在同一 stateRef transacti
 
 方案必须满足本设计全部 invariants；不能用“先写状态、后补 ref”“依赖当前工作区 HEAD”或 Hook 内规则复制降低实现难度。
 
-## Design Confirmation Gate
+## Design Confirmation
 
-确认本设计只表示认可领域模型、module seam、状态语义与事务边界。确认后才能推进 `design-confirmed` 并创建 Lifecycle Completion solution options；不等于选择方案或授权实现。
+用户以原话 `确认 P0-WI-01 技术设计` 确认本设计。Canonical Control Plane 已通过 state commit `f2bb5e29645719104ce0d2808c0947f4e8aaffd8`、transaction `tx-ba0801f6-57e4-4166-b178-2f02a9baab6f` 推进到 `design-confirmed`。
 
-建议确认原话：
-
-```text
-确认 P0-WI-01 技术设计
-```
+该确认只认可领域模型、module seam、状态语义与事务边界；不等于选择 solution option 或授权实现。
 
 ## Source Register
 
@@ -329,3 +330,4 @@ Hook 只读检查返回 decision；真正 `advance` 在同一 stateRef transacti
 | `memory/adr/0001-canonical-control-plane-cutover.md` | Bootstrap 与 Cutover 分离 |
 | `memory/adr/0002-acceptance-baseline-health.md` | Acceptance/Promotion 留给 P0-WI-02 的边界 |
 | stateRef transaction `tx-7fd30187-0c4c-4bf4-9f82-da9ff7821f29` | P0-WI-01 requirements confirmation identity |
+| stateRef transaction `tx-ba0801f6-57e4-4166-b178-2f02a9baab6f` | P0-WI-01 design confirmation identity |

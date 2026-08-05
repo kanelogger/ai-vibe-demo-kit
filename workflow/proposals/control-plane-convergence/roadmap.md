@@ -9,15 +9,15 @@ activatedBy: user
 activatedAt: 2026-08-05T15:02:55.142Z
 activationQuote: 启动
 activeWorkItemId: wi-20260805-31b819fc
-activeStage: requirements-confirmed
-lastStageAt: 2026-08-05T15:10:42.981Z
-lastStageQuote: 确认 P0-WI-01 需求基线
-lastStageStateCommit: 61010e5dfa935144538ff7bf2bb40d8311894ca0
-lastStageTransactionId: tx-7fd30187-0c4c-4bf4-9f82-da9ff7821f29
+activeStage: design-confirmed
+lastStageAt: 2026-08-05T15:20:34.102Z
+lastStageQuote: 确认 P0-WI-01 技术设计
+lastStageStateCommit: f2bb5e29645719104ce0d2808c0947f4e8aaffd8
+lastStageTransactionId: tx-ba0801f6-57e4-4166-b178-2f02a9baab6f
 ---
 # Harness Control Plane Convergence 路线图
 
-> 本路线图表达依赖、交付结果和退出标准。State Bootstrap 已完成，P0-WI-01 已通过 Canonical Control Plane 启动并进入 `requirements-confirmed`；这不确认技术设计、选择方案或授权实现。P0 需求以 `requirements.md` 为准；P1/P2 必须在各自启动时重新形成并确认需求。
+> 本路线图表达依赖、交付结果和退出标准。State Bootstrap 已完成，P0-WI-01 已进入 `design-confirmed`；这不选择 solution option 或授权实现。P0 需求以 `requirements.md` 为准；P1/P2 必须在各自启动时重新形成并确认需求。
 
 ## Source Register
 
@@ -35,6 +35,7 @@ lastStageTransactionId: tx-7fd30187-0c4c-4bf4-9f82-da9ff7821f29
 | 用户原话 `继续` | 推进 `initialized → requirements-draft`；未确认需求 |
 | 用户原话 `确认 P0-WI-01 需求基线` | 推进 `requirements-draft → requirements-confirmed`；未确认设计 |
 | `workflow/proposals/control-plane-convergence/lifecycle-completion-design.md` | P0-WI-01 Promotion Pipeline 领域模型、module interface 与事务边界草案 |
+| 用户原话 `确认 P0-WI-01 技术设计` | 推进 `requirements-confirmed → design-confirmed`；未选择方案 |
 
 ## 规划原则
 
@@ -87,7 +88,7 @@ State Bootstrap 只显式导入 v1 状态摘要与 legacy history/confirmation/s
 
 **Depends on:** State Bootstrap
 
-**Active Work Item:** `wi-20260805-31b819fc`，stage=`requirements-confirmed`，risk=`high`。技术设计草案见 `lifecycle-completion-design.md`，尚待用户确认；stateRef 未推进。
+**Active Work Item:** `wi-20260805-31b819fc`，stage=`design-confirmed`，risk=`high`。技术设计已确认；下一主路径为 Lifecycle Completion solution options。
 
 **Outcome:** Canonical Control Plane 能把一组 Slice 从实现推进到唯一、已 Full 验证的 Promotion Candidate，但不更新 targetRef。
 
@@ -223,7 +224,7 @@ State Bootstrap 只显式导入 v1 状态摘要与 legacy history/confirmation/s
 
 ## 激活与更新规则
 
-- 当前状态：P0-WI-01 active；Canonical Work Item 为 `wi-20260805-31b819fc`，stage=`requirements-confirmed`。
+- 当前状态：P0-WI-01 active；Canonical Work Item 为 `wi-20260805-31b819fc`，stage=`design-confirmed`。
 - P0-WI-01 必须继续通过 v2 生命周期确认需求、方案和实现门禁；启动原话不得解释为跳阶段或编码授权。
 - 每个 P1/P2 Work Item 启动时必须重新形成三句话简报、Source Register、需求确认和方案选择。
 - 新证据推翻依赖或边界时，先更新需求事实源，再更新本 DAG；不得从任务文件反向改写需求。

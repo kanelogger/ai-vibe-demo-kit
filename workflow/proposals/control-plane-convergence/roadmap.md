@@ -9,10 +9,15 @@ activatedBy: user
 activatedAt: 2026-08-05T15:02:55.142Z
 activationQuote: 启动
 activeWorkItemId: wi-20260805-31b819fc
+activeStage: requirements-draft
+lastStageAt: 2026-08-05T15:07:56.639Z
+lastStageQuote: 继续
+lastStageStateCommit: 0fdf24d94dac857d76a4118d3784089ebb0e0853
+lastStageTransactionId: tx-ec8ffd24-5748-4fc5-ba39-a7d12fa4b69b
 ---
 # Harness Control Plane Convergence 路线图
 
-> 本路线图表达依赖、交付结果和退出标准。State Bootstrap 已完成，P0-WI-01 已通过 Canonical Control Plane 启动；该启动不自动确认 Brief、推进阶段或授权实现。P0 需求以 `requirements.md` 为准；P1/P2 必须在各自启动时重新形成并确认需求。
+> 本路线图表达依赖、交付结果和退出标准。State Bootstrap 已完成，P0-WI-01 已通过 Canonical Control Plane 启动并进入 `requirements-draft`；原话“继续”只推进到草案阶段，不确认需求、方案或实现。P0 需求以 `requirements.md` 为准；P1/P2 必须在各自启动时重新形成并确认需求。
 
 ## Source Register
 
@@ -27,6 +32,7 @@ activeWorkItemId: wi-20260805-31b819fc
 | 用户 grilling 选择 | P0 三 Work Item、外部 Profile、Skill Run、来源硬门禁、Profile 覆盖和分阶段指标 |
 | `workflow/proposals/control-plane-convergence/bootstrap-receipt.md` | State Bootstrap 完成、rollback window 关闭与首个 Work Item 身份 |
 | 用户原话 `启动` | 单独放行 P0-WI-01；state transaction 保存时间与审计 |
+| 用户原话 `继续` | 推进 `initialized → requirements-draft`；未确认需求 |
 
 ## 规划原则
 
@@ -79,7 +85,7 @@ State Bootstrap 只显式导入 v1 状态摘要与 legacy history/confirmation/s
 
 **Depends on:** State Bootstrap
 
-**Active Work Item:** `wi-20260805-31b819fc`，stage=`initialized`，risk=`high`。启动 transaction=`tx-5a00920d-1e0c-4bb4-85b9-d77aa30740fe`；尚未确认 Brief 或授权实现。
+**Active Work Item:** `wi-20260805-31b819fc`，stage=`requirements-draft`，risk=`high`。最新 transaction=`tx-ec8ffd24-5748-4fc5-ba39-a7d12fa4b69b`；既有 confirmed requirements 是本阶段输入，仍需新的需求确认原话。
 
 **Outcome:** Canonical Control Plane 能把一组 Slice 从实现推进到唯一、已 Full 验证的 Promotion Candidate，但不更新 targetRef。
 
@@ -215,7 +221,7 @@ State Bootstrap 只显式导入 v1 状态摘要与 legacy history/confirmation/s
 
 ## 激活与更新规则
 
-- 当前状态：P0-WI-01 active；Canonical Work Item 为 `wi-20260805-31b819fc`，stage=`initialized`。
+- 当前状态：P0-WI-01 active；Canonical Work Item 为 `wi-20260805-31b819fc`，stage=`requirements-draft`。
 - P0-WI-01 必须继续通过 v2 生命周期确认需求、方案和实现门禁；启动原话不得解释为跳阶段或编码授权。
 - 每个 P1/P2 Work Item 启动时必须重新形成三句话简报、Source Register、需求确认和方案选择。
 - 新证据推翻依赖或边界时，先更新需求事实源，再更新本 DAG；不得从任务文件反向改写需求。

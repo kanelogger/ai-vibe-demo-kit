@@ -19,6 +19,9 @@ test("normal task fast-forwards to implementation and Full closes it", async () 
   result = await runCli(root, ["check", "--json"]);
   assert.equal(result.code, 0, result.stderr);
   assert.equal(result.json.report.passed, true);
+  assert.equal(result.json.report.failureClass, null);
+  assert.equal(result.json.report.failureFacts, null);
+  assert.equal(result.json.report.nextAction, null);
   await commitAll(root);
 
   result = await runCli(root, ["finish", "--json"]);
@@ -89,9 +92,90 @@ test("failed Full keeps the task in implementation and records evidence", async 
   const result = await runCli(root, ["finish", "--json"]);
   assert.equal(result.code, 1);
   assert.equal(result.json.error.code, "E_VERIFY_FAILED");
+  assert.equal(result.json.error.facts.report.failureClass, "command-failed");
+  assert.deepEqual(result.json.error.facts.report.failureFacts.failedCommands, [
+    { command: "node -e \"process.exit(7)\"", exitCode: 7, timedOut: false },
+  ]);
+  assert.match(result.json.error.facts.report.nextAction, /stdout\/stderr/);
   const status = await runCli(root, ["status", "--json"]);
   assert.equal(status.json.active.phase, "implementation");
   assert.equal(status.json.active.full.passed, false);
+});
+
+test("a timed out verification command is reported as command-failed", async () => {
+  const root = await makeRepo({ full: ["node -e \"setTimeout(() => {}, 1000)\""] });
+  const config = await readConfig(root);
+  config.verification.commandTimeoutMs = 50;
+  await writeConfig(root, config);
+  await commitAll(root, "configure timeout");
+  await align(root);
+  await writeRepoFile(root, "src/value.txt", "v2\n");
+  await commitAll(root);
+
+  const result = await runCli(root, ["finish", "--json"]);
+  assert.equal(result.code, 1);
+  assert.equal(result.json.error.facts.report.failureClass, "command-failed");
+  assert.equal(result.json.error.facts.report.failureFacts.failedCommands[0].timedOut, true);
+});
+
+test("a failed Full cleanup command is reported as cleanup-failed", async () => {
+  const root = await makeRepo();
+  const config = await readConfig(root);
+  config.recovery.testDataCleanup = ["node -e \"process.exit(9)\""];
+  await writeConfig(root, config);
+  await commitAll(root, "configure cleanup");
+  await align(root);
+  await writeRepoFile(root, "src/value.txt", "v2\n");
+  await commitAll(root);
+
+  const result = await runCli(root, ["finish", "--json"]);
+  assert.equal(result.code, 1);
+  assert.equal(result.json.error.facts.report.failureClass, "cleanup-failed");
+  assert.deepEqual(result.json.error.facts.report.failureFacts.cleanupFailures, [
+    { command: "node -e \"process.exit(9)\"", exitCode: 9, timedOut: false },
+  ]);
+});
+
+test("a verification worktree side effect is reported as workspace-mutated", async () => {
+  const root = await makeRepo({
+    full: ["node -e \"require('node:fs').writeFileSync('side-effect.txt', 'changed')\""],
+  });
+  await align(root);
+  await writeRepoFile(root, "src/value.txt", "v2\n");
+  await commitAll(root);
+
+  const result = await runCli(root, ["finish", "--json"]);
+  assert.equal(result.code, 1);
+  assert.equal(result.json.error.facts.report.failureClass, "workspace-mutated");
+  assert.equal(result.json.error.facts.report.failureFacts.workspaceChanged, true);
+  assert.equal(result.json.error.facts.report.failureFacts.candidateChanged, false);
+});
+
+test("candidate branch drift during Full is reported as candidate-drift", async () => {
+  const root = await makeRepo({ full: ["git switch -c verification-branch"] });
+  await align(root);
+  await writeRepoFile(root, "src/value.txt", "v2\n");
+  await commitAll(root);
+
+  const result = await runCli(root, ["finish", "--json"]);
+  assert.equal(result.code, 1);
+  assert.equal(result.json.error.facts.report.failureClass, "candidate-drift");
+  assert.equal(result.json.error.facts.report.failureFacts.workspaceChanged, false);
+  assert.equal(result.json.error.facts.report.failureFacts.candidateChanged, true);
+});
+
+test("command-failed wins when a failed command also mutates the workspace", async () => {
+  const root = await makeRepo({
+    full: ["node -e \"require('node:fs').writeFileSync('side-effect.txt', 'changed'); process.exit(4)\""],
+  });
+  await align(root);
+  await writeRepoFile(root, "src/value.txt", "v2\n");
+  await commitAll(root);
+
+  const result = await runCli(root, ["finish", "--json"]);
+  assert.equal(result.code, 1);
+  assert.equal(result.json.error.facts.report.failureClass, "command-failed");
+  assert.equal(result.json.error.facts.report.failureFacts.workspaceChanged, true);
 });
 
 test("branch drift is rejected after a committed candidate", async () => {
@@ -139,6 +223,8 @@ test("Full fails when a verification command changes the candidate HEAD", async 
   assert.equal(result.code, 1);
   assert.equal(result.json.error.code, "E_VERIFY_FAILED");
   assert.equal(result.json.error.facts.report.passed, false);
+  assert.equal(result.json.error.facts.report.failureClass, "candidate-drift");
+  assert.equal(result.json.error.facts.report.failureFacts.candidateChanged, true);
 });
 
 test("a changed high-risk path promotes a normal task before Full", async () => {

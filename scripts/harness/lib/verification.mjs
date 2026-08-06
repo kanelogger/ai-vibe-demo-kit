@@ -5,6 +5,12 @@ import { headSnapshot, workspaceDigest, worktreeStatus } from "./git.mjs";
 
 const execAsync = promisify(exec);
 const OUTPUT_LIMIT = 4096;
+const NEXT_ACTIONS = {
+  "command-failed": "查看失败命令的 stdout/stderr，修复后重新运行当前验证命令",
+  "cleanup-failed": "检查 Full 清理命令并恢复测试数据后重新运行 finish",
+  "workspace-mutated": "检查验证命令的工作区副作用，恢复候选内容后重新运行验证",
+  "candidate-drift": "恢复任务分支和候选 HEAD，确认工作区干净后重新运行 finish",
+};
 
 export function digest(value) {
   return `sha256:${createHash("sha256").update(stableJson(value)).digest("hex")}`;
@@ -40,10 +46,27 @@ async function runCommand(root, command, timeout) {
       passed: false,
       durationMs: Date.now() - startedAt,
       exitCode: Number.isInteger(error.code) ? error.code : null,
+      timedOut: error.killed === true && error.signal === "SIGTERM",
       stdout: String(error.stdout ?? "").slice(-OUTPUT_LIMIT),
       stderr: String(error.stderr ?? error.message ?? "").slice(-OUTPUT_LIMIT),
     };
   }
+}
+
+function failureSummary(entry) {
+  return {
+    command: entry.command,
+    exitCode: entry.exitCode ?? null,
+    timedOut: entry.timedOut ?? false,
+  };
+}
+
+function classifyFailure(facts) {
+  if (facts.failedCommands.length > 0) return "command-failed";
+  if (facts.cleanupFailures.length > 0) return "cleanup-failed";
+  if (facts.workspaceChanged) return "workspace-mutated";
+  if (facts.candidateChanged || !facts.worktreeClean) return "candidate-drift";
+  return null;
 }
 
 export async function runVerification({ root, config, profile, now = () => new Date() }) {
@@ -79,5 +102,16 @@ export async function runVerification({ root, config, profile, now = () => new D
       report.candidate.tree === beforeCandidate.tree;
     report.passed = report.passed && report.clean && report.candidateUnchanged;
   }
+  const candidateChanged = profile === "full" && !report.candidateUnchanged;
+  const failureFacts = {
+    failedCommands: results.filter((entry) => !entry.passed).map(failureSummary),
+    cleanupFailures: cleanup.filter((entry) => !entry.passed).map(failureSummary),
+    workspaceChanged: beforeDigest !== afterDigest && !candidateChanged,
+    candidateChanged,
+    worktreeClean: profile === "full" ? report.clean : true,
+  };
+  report.failureClass = classifyFailure(failureFacts);
+  report.failureFacts = report.failureClass === null ? null : failureFacts;
+  report.nextAction = report.failureClass === null ? null : NEXT_ACTIONS[report.failureClass];
   return report;
 }

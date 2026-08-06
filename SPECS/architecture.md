@@ -40,6 +40,7 @@
 | 项目配置 schema v2 | `.harness/config.json`、`scripts/harness/lib/context.mjs` | 控制面与验证器 |
 | Directory Index schema v1 | `scripts/harness/.harness-index.json`、`context-guard.mjs` | Context Guard |
 | 本地控制状态 v1 | `.git/harness/control.json`、`state.mjs` | 当前 worktree 的控制面 |
+| Quick/Full 验证报告 | `scripts/harness/lib/verification.mjs` | CLI、生命周期控制和任务状态 |
 | Hook 输入输出 | `scripts/harness/adapters/hook-core.mjs` | OMP、Codex、Claude Code Adapter |
 | Skills 来源与 lock v2 | `.agents/skills.sources.json`、`.agents/skills.lock.json` | Skills 同步器 |
 | Overlay 安装接口与发布清单 | `README.md`、`scripts/install-overlay-core.mjs` | 母仓库维护者与目标项目接入者 |
@@ -49,6 +50,19 @@
 - Quick 聚焦 reducer/状态/Context Guard，用于实现中反馈。
 - Full 运行全部保留的 Harness 用例、安装器契约、平台 Adapter 契约、Claude Skills 链接用例和当前 lock 的真实同步检查。
 - 测试全部在临时 Git 仓库运行，不污染项目状态；Full 同时检查候选 HEAD 与工作区前后未漂移。
+- 验证报告以 `failureClass`、`failureFacts` 和 `nextAction` 提供确定性失败分类；不自动重试或修复，既有错误码和退出码保持稳定。
 - 高风险路径是控制面、配置、共享 Agent 指令和三个平台 Adapter；修改后需要两次用户确认。
 - 首选恢复是对候选提交执行 `git revert`。`abort` 本身不修改工作区。
 - 旧 `refs/heads/harness/state` 保持只读历史；新代码没有读取路径。
+
+## 事实回写规则
+
+运行时代码和配置是行为事实的最终来源，文档用于记录稳定边界、不变量和消费者可见契约。以下变化必须与代码放在同一候选提交中：
+
+- 状态机、确认规则或恢复方式变化：更新 `HARNESS.md`。
+- 模块边界、持久契约或非目标变化：更新本文件。
+- CLI、配置 schema 或错误码变化：更新 README 或对应契约说明。
+- 受管代码的读取依赖变化：更新对应 `.harness-index.json`。
+- Skills 来源、锁定版本或同步行为变化：更新供应链事实。
+
+单次实现细节、临时决策和失败日志不进入长期架构文档，也不创建每任务归档目录。文档漂移先通过候选审查和 Full 验证发现，不引入评分或遥测系统。

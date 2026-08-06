@@ -33,6 +33,16 @@ idle -> alignment -> implementation -> acceptance -> idle
 - 验证前后工作区内容、候选 HEAD、配置或命令计划变化都会令证据失败或失效。
 - 报告只保存在当前活动状态中，不创建报告树、审计账本或 Git stateRef 事务。
 - `finish` 不提交、不回滚、不推送；恢复动作由人根据 `abort` 或失败输出执行。
+- 报告成功时 `failureClass`、`failureFacts` 和 `nextAction` 为 `null`；失败时提供确定性的主分类、事实和人工下一步。
+
+失败分类按以下优先级产生：
+
+1. `command-failed`：验证命令返回非零或超时。
+2. `cleanup-failed`：Full 的测试数据清理命令失败。
+3. `workspace-mutated`：候选身份未变化，但验证前后工作区摘要变化。
+4. `candidate-drift`：Full 期间分支、HEAD、tree 或工作区状态发生漂移。
+
+验证器只报告事实，不自动重试、修复或调用 SubAgent。原有 `E_VERIFY_FAILED`、`E_VERIFY_STALE` 和退出码保持不变。
 
 稳定错误族：`E_USAGE`、`E_STATE`、`E_ACTIVE/E_IDLE`、`E_PHASE`、`E_CONFIRM_REQUIRED/E_CONFIRM_STALE`、`E_GIT_DIRTY/E_GIT_DRIFT`、`E_CONTEXT_BLOCKED`、`E_VERIFY_FAILED/E_VERIFY_STALE`。
 
@@ -74,3 +84,27 @@ node scripts/harness/cli.mjs align --intent "..." --done-when "..."
 # 修改；可选 check；由用户提交候选
 node scripts/harness/cli.mjs finish
 ```
+
+## 完成条件与证据
+
+每条 `--done-when` 应只表达一个可判断条件，推荐使用 `GIVEN -> WHEN -> THEN`：
+
+```text
+GIVEN 当前筛选条件已设置
+WHEN 用户点击导出
+THEN 生成的 CSV 只包含当前筛选命中的订单
+```
+
+每条完成条件都必须对应一个测试、验证命令或明确的人工检查证据。无法自动验证的条件要标记为“人工验收”，不要用“功能完成且性能良好”这类无法拆分的复合句。CLI 仍把完成条件作为字符串保存，不强制解析自然语言格式。
+
+## 长期事实回写
+
+稳定规则变化必须和代码放在同一候选提交中：
+
+- 状态机、确认规则或恢复方式变化，更新 `HARNESS.md`。
+- 模块边界、持久契约或非目标变化，更新 `SPECS/architecture.md`。
+- CLI、配置 schema 或错误码变化，更新 README 或对应契约说明。
+- 受管代码的读取依赖变化，更新对应 `.harness-index.json`。
+- Skills 来源、锁定版本或同步行为变化，更新 Skills 供应链事实。
+
+运行时代码和配置是行为事实的最终来源。长期文档只记录稳定边界和不变量；单次实现细节、临时决策和失败日志留在任务交付说明中，不创建每任务归档目录。

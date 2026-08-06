@@ -46,6 +46,7 @@ export const ERR = {
   treeUnsafe: "skills-sync.skill-tree-unsafe",
   verifyFailed: "skills-sync.materialize-verify-failed",
   licenseMissing: "skills-sync.license-missing",
+  agentSkillsConflict: "skills-sync.agent-skills-conflict",
   claudeLinkConflict: "skills-sync.claude-link-conflict",
 };
 
@@ -834,6 +835,33 @@ async function assessLocalState({ root, fs, lock }) {
 }
 
 // ---------------------------------------------------------------------------
+
+// 检测 .agent/skills/ 中的本地 Skill 与 synced skills 的名称冲突（DSC-009）。
+// 遵循 Violin 模式：本地优先，冲突时报告 diagnostic（WARNING），不阻断同步。
+async function checkAgentSkillsConflicts({ root, fs, syncedSkillNames }) {
+  const agentSkillsRoot = join(root, ".agent", "skills");
+  if (!(await pathExists(fs, agentSkillsRoot))) return [];
+  const warnings = [];
+  let entries;
+  try { entries = await fs.readdir(agentSkillsRoot); } catch { return []; }
+  for (const entry of entries) {
+    if (entry.startsWith(".")) continue;
+    const skillDir = join(agentSkillsRoot, entry);
+    let stat;
+    try { stat = await fs.lstat(skillDir); } catch { continue; }
+    if (!stat.isDirectory()) continue;
+    const skillMd = join(skillDir, "SKILL.md");
+    let content;
+    try { content = await fs.readFile(skillMd, "utf8"); } catch { continue; }
+    const name = parseSkillFrontmatterName(content);
+    if (!name || name === "") continue;
+    if (syncedSkillNames.has(name)) {
+      warnings.push({ name, localDir: `.agent/skills/${entry}` });
+    }
+  }
+  return warnings;
+}
+
 // Commit：staging 全部成功后一次性应用（adr/0001；中断仅产生 drift）
 // ---------------------------------------------------------------------------
 
@@ -1105,6 +1133,20 @@ export async function runSkillsSync({ root, update = false, force = false, fs = 
         nameOwners.set(skill.name, { id: staged.spec.id, sourcePath: skill.sourcePath });
       }
     }
+
+    // .agent/skills/ 冲突检测（DSC-009）：本地 Skill 优先，冲突时报告 diagnostic。
+    {
+      const syncedNames = new Set(nameOwners.keys());
+      const agentConflicts = await checkAgentSkillsConflicts({ root, fs, syncedSkillNames: syncedNames });
+      for (const conflict of agentConflicts) {
+        events.push({
+          type: "WARNING",
+          code: ERR.agentSkillsConflict,
+          message: `skill name "${conflict.name}" exists in both ${conflict.localDir} (local, takes priority) and in synced source; the local skill will shadow the synced one at runtime.`,
+        });
+      }
+    }
+
     const skillsRootAbs = join(root, manifest.skillsRoot);
     // 所有权是路径级的（§8.2.6 / MAT-009）：skillsRoot 迁移后，prior lock 只拥有旧根下的目录。
     const rootsMatch = priorLock?.skillsRoot === manifest.skillsRoot;

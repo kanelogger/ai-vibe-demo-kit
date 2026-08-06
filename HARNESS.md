@@ -56,13 +56,13 @@ idle -> alignment -> implementation -> acceptance -> idle
 
 ## 平台适配
 
-共享事实只有根 `AGENTS.md`、`.agents/skills/`、`.harness/config.json`、目录索引和统一 CLI。Adapter 只把平台事件转换为 `{cwd, session_id, tool_name, tool_input}`，不保存状态或复制风险与验证规则。
+共享事实只有根 `AGENTS.md`、`.agent/skills/`（项目本地，优先）、`.agents/skills/`（外部同步）、`.harness/config.json`、目录索引和统一 CLI。Adapter 只把平台事件转换为 `{cwd, session_id, tool_name, tool_input}`，不保存状态或复制风险与验证规则。
 
 | 平台 | 共享指令/Skills | 写前 Adapter |
 | --- | --- | --- |
-| OMP | 原生读取 `AGENTS.md`、`.agents/skills` | `.omp/extensions/harness-context-guard.js` |
-| Codex | 原生读取 `AGENTS.md`、`.agents/skills` | `.codex/hooks.json` -> `pre-tool-use.mjs` |
-| Claude Code | `CLAUDE.md` 导入 `AGENTS.md`；同步生成 `.claude/skills/*` 链接 | `.claude/settings.json` -> `pre-tool-use.mjs` |
+| OMP | 原生读取 `AGENTS.md`、`.agent/skills`（优先）、`.agents/skills` | `.omp/extensions/harness-context-guard.js` |
+| Codex | 原生读取 `AGENTS.md`、`.agent/skills`（优先）、`.agents/skills` | `.codex/hooks.json` -> `pre-tool-use.mjs` |
+| Claude Code | `CLAUDE.md` 导入 `AGENTS.md`；Skill 加载 `.agent/skills`（优先）→ `.agents/skills`；同步生成 `.claude/skills/*` 链接 | `.claude/settings.json` -> `pre-tool-use.mjs` |
 
 Hook 只处理 `apply_patch`、Write/Edit/NotebookEdit 和 OMP 对应的结构化写工具。Bash/Shell 没有可靠目标路径，不宣称硬拦截。
 

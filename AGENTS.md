@@ -7,7 +7,21 @@
 1. 运行 `node scripts/harness/cli.mjs status --json`，读取当前 `idle / alignment / implementation / acceptance` 状态。
 2. 读 `HARNESS.md`、`SPECS/architecture.md` 和 `.harness/config.json`。
 3. 按目标文件读取 `.harness-index.json` 交付的局部上下文，不预载整个仓库。
-4. 外部 Skill 由平台依据 `.agents/skills/*/SKILL.md` 的名称和描述按需选择；禁止恢复确定性路由表。
+4. Skill 按以下优先级加载：`.agent/skills/`（项目本地，手动管理）优先于 `.agents/skills/`（外部同步）；平台根据 SKILL.md 的 frontmatter name 和 description 按需选择。同名冲突时项目本地 Skill 覆盖同步 Skill，skills-sync 会报告 diagnostic。禁止恢复确定性路由表。
+
+## Skills 加载优先级
+
+平台在会话启动时按以下顺序扫描 Skill：
+
+| 优先级 | 路径 | 管理方式 | 说明 |
+| --- | --- | --- | --- |
+| 1（最高） | `.agent/skills/*/SKILL.md` | 手动 | 项目本地 Skill，不被 skills-sync 管理 |
+| 2 | `.agents/skills/*/SKILL.md` | skills-sync | 外部来源同步的 Skill，由 `.agents/skills.lock.json` 锁定版本 |
+
+规则文件加载顺序：`AGENTS.md` → `CLAUDE.md`（Claude Code 通过 `@AGENTS.md` 导入，其他平台直接读第一项）。
+
+同名 Skill 冲突处理：当 `.agent/skills/` 与 `.agents/skills/` 存在同名 Skill 时，本地 Skill 优先（覆盖同步版本），skills-sync 输出 `WARNING skills-sync.agent-skills-conflict` 而非阻断。
+
 
 ## 唯一流程
 

@@ -1,159 +1,70 @@
-# AI Native Harness Overlay
+# Harness Overlay
 
-AI Native Harness Overlay 是一层可复制到现有代码库的 Agent 开发装甲。它为已有项目补充上下文恢复、规格管理、阶段证据、反馈验证和经验回写能力。
+这是一个给单人项目使用的仓库内控制面。核心原则：判断交给模型，确定性约束交给脚本，真实运行定义完成；只有出现独立失败模式、独立回退点和真实需求时才新增实体。
 
-本目录只覆盖 Harness 层：不创建应用，不规定技术栈，不生成业务文档，不替用户推进开发阶段。
+## 控制模型
 
-```text
-已有项目
-  + Harness Overlay
-  = 可以被冷启动 Agent 初步理解、约束、执行和验证的项目
-```
-
-## 四层装甲
-
-| 装甲层 | 解决的问题 | 主要载体 |
-| --- | --- | --- |
-| 上下文装甲 | Agent 能否恢复项目事实和当前工作环境 | `AGENTS.md`、`HARNESS.md`、`CONTEXT.md`、`SPECS/`、Source Register |
-| 流程装甲 | Agent 能否识别当前阶段、允许动作和人工放行证据 | `workflow-state.json`、`workflow/`、`tasks/` |
-| 反馈装甲 | Agent 能否看到确定性错误并完成风险匹配验证 | `scripts/harness-check.mjs`、Hooks、项目验证命令 |
-| 恢复装甲 | 失败后能否理解历史、清理数据并回退 | `memory/`、ADR、验证报告、清理与回退记录 |
-
-## 目录职责
+唯一深模块是 `scripts/harness/lib/control.mjs`，状态路径固定为 Git 私有目录中的 `.git/harness/control.json`：
 
 ```text
-.
-├── AGENTS.md              # 冷启动索引和高频门禁
-├── HARNESS.md             # 本文件：Harness 地图、边界和接入说明
-├── CONTEXT.md             # 项目领域统一语言；只保存术语，不保存实现规格
-├── workflow-state.json    # 当前阶段的唯一机器状态源
-├── .harness/
-│   ├── config.json        # 机器配置：验证命令、关键路径、报告绑定、清理和恢复入口
-│   ├── manifest.json      # Overlay 版本和文件职责说明（不驱动自动更新）
-│   └── verification-report.json # full 验证生成的当前机器报告（初始不存在）
-├── .agents/               # Skill catalog 与阶段路由、外部来源/锁、Hook 适配和 MCP 外部连接声明
-├── workflow/              # 活动工作流文档及无阶段权限的非活动提案
-├── SPECS/                 # 长期有效的项目事实、唯一契约来源和 feature spec
-├── tasks/                 # 当前执行单元及人类可读验证摘要
-├── memory/                # 决策谱系和 ADR
-├── rules/                 # 按主题加载的工程约束
-├── <code-root>/.harness-index.json # 与代码共置的目录摘要、默认前置和精确文件追加前置
-└── scripts/
-    ├── harness-check.mjs  # 只读检查器及候选状态 preflight
-    ├── harness-runtime.mjs# 检查器与验证器共享的报告/指纹契约
-    ├── harness-verify.mjs # 实际执行验证、关键路径和清理，生成机器报告
-    ├── harness-stage.mjs  # 候选状态预检通过后原子推进
-    └── skills-sync.mjs    # 外部 Skills 同步 CLI：默认按 lock 锁定恢复，--update 解析 track 生成新 lock
+idle -> alignment -> implementation -> acceptance -> idle
+          |                |               |
+          +------------- abort ------------+
 ```
 
-应用源码、测试、部署和基础设施目录保持原样，由目标项目继续拥有。
+- 普通任务由 `align` 原子进入 `implementation`，Full 通过后自动回到 `idle`。
+- 显式高风险任务停在 `alignment` 等待 digest 确认；普通任务触及 `risk.highRiskPaths` 时也会升级。
+- 高风险候选 Full 通过后停在 `acceptance`，新的 digest 必须由用户原话确认。
+- 本地状态顶层只有版本/revision、`active` 和 `last`。写入使用短期 lock、revision 检查和同目录原子 rename。
+- 旧 `refs/heads/harness/state` 及其账本只作为 Git 历史存在；稳态代码不读取、不迁移、不删除它。
 
-## 接入流程
+## 验证语义
 
-前提：目标项目已经由 Git 管理。复制前先提交、暂存或备份现有修改，保证覆盖可以恢复。
+`.harness/config.json` 是项目机器事实的唯一入口。
 
-```sh
-git clone <harness-repository> /tmp/ai-native-harness
-cp -R /tmp/ai-native-harness/overlay/. /path/to/existing-project/
-cd /path/to/existing-project
-git status --short
-git diff
-node scripts/harness-check.mjs context
-```
+- Quick 执行 `commands.quick`，允许脏工作区，报告绑定配置、命令计划和当前工作区内容。
+- Full 执行 `commands.full`、`commands.contracts`、`criticalUserPaths` 和清理命令，只接受干净且已提交的候选。
+- 验证前后工作区内容、候选 HEAD、配置或命令计划变化都会令证据失败或失效。
+- 报告只保存在当前活动状态中，不创建报告树、审计账本或 Git stateRef 事务。
+- `finish` 不提交、不回滚、不推送；恢复动作由人根据 `abort` 或失败输出执行。
 
-首次适配顺序：
-
-1. 审查复制产生的所有冲突和覆盖。
-2. 合并已有 `AGENTS.md`，保留项目原有高优先级约束。
-3. 填写 `HARNESS.md` 相关章节与 `SPECS/architecture.md` 中的项目事实。
-4. 在 `.harness/config.json` 登记可执行的静态检查、测试、契约、关键路径和清理步骤，并配置报告有效期与工作区指纹。
-   - 在 `contextIndex.codeRoots` 显式登记受管代码根，并为每个根创建 `.harness-index.json`；不得猜测源码目录。
-5. 外部 Skills：复制后先执行 `node scripts/skills-sync.mjs` 按已提交的 lock 恢复锁定版本；需要上游最新版时执行 `node scripts/skills-sync.mjs --update` 并审查 lock diff。`.agents/skills.json` 只引用已同步的真实 Skill。
-6. 按 `.agents/hooks/README.md` 在目标平台注册会话启动、实现前和提交前阻断点；平台不支持 Hook 时登记对应人工命令节点。
-7. 在 `.agents/mcp.json` 登记 Agent 可用的 MCP 外部连接并同步到平台配置；无外部连接时保持空 `mcpServers`，文件本身保留。
-8. 执行 `node scripts/harness-check.mjs all`。
-9. 修复全部结构错误；命令暂不可运行视为未完成，不用说明文字代替执行结果。
-10. 形成一次独立、可回退的 Harness 接入提交。
+稳定错误族：`E_USAGE`、`E_STATE`、`E_ACTIVE/E_IDLE`、`E_PHASE`、`E_CONFIRM_REQUIRED/E_CONFIRM_STALE`、`E_GIT_DIRTY/E_GIT_DRIFT`、`E_CONTEXT_BLOCKED`、`E_VERIFY_FAILED/E_VERIFY_STALE`。
 
 ## Directory Context Guard
 
-`.harness/config.json` 的 `contextIndex.codeRoots` 显式决定哪些代码目录执行写前硬门禁。每个 Code Root 必须有 `.harness-index.json`；子目录可以增加同名索引。目标文件从 Code Root 到所在目录按祖先顺序累加索引，目录默认 `readBeforeWrite` 与 `files` 中的精确文件项只追加、不覆盖。
+只有 `contextIndex.codeRoots` 中的目标会触发 Guard。每个受管根必须有 `.harness-index.json`；从根到目标目录依次累加默认前置和精确文件前置，传递依赖必须是 DAG。
+
+首次调用会完整输出索引摘要和依赖内容，随后把回执写入 `control.json#active.contextReceipts` 并阻断写入。同一任务 revision、session、target 和 resolution digest 全部一致时，第二次调用才放行。索引或任一依赖漂移后重新交付并阻断。
+
+目标、索引和依赖拒绝 symlink、Git 私有路径、二进制、越界、目录和超限文件。
+
+## 平台适配
+
+共享事实只有根 `AGENTS.md`、`.agents/skills/`、`.harness/config.json`、目录索引和统一 CLI。Adapter 只把平台事件转换为 `{cwd, session_id, tool_name, tool_input}`，不保存状态或复制风险与验证规则。
+
+| 平台 | 共享指令/Skills | 写前 Adapter |
+| --- | --- | --- |
+| OMP | 原生读取 `AGENTS.md`、`.agents/skills` | `.omp/extensions/harness-context-guard.js` |
+| Codex | 原生读取 `AGENTS.md`、`.agents/skills` | `.codex/hooks.json` -> `pre-tool-use.mjs` |
+| Claude Code | `CLAUDE.md` 导入 `AGENTS.md`；同步生成 `.claude/skills/*` 链接 | `.claude/settings.json` -> `pre-tool-use.mjs` |
+
+Hook 只处理 `apply_patch`、Write/Edit/NotebookEdit 和 OMP 对应的结构化写工具。Bash/Shell 没有可靠目标路径，不宣称硬拦截。
+
+## Skills 供应链
+
+`scripts/skills-sync.mjs` 与任务生命周期解耦。默认按 `.agents/skills.lock.json` 恢复固定 SHA；只有 `--update` 解析上游 track 并改 lock。同步成功后，它为 `.agents/skills` 中实际带 `SKILL.md` 的逐项目录创建未跟踪的 `.claude/skills` 相对链接，只删除自己生成且已过期的链接，不覆盖其他条目。
+
+平台依据 Skill 名称和描述按需选择，不再维护 `.agents/skills.json` 路由、阶段 matcher 或 resolver。
+
+## 配置边界
+
+v2 配置只含：`project`、`contextIndex`、`risk.highRiskPaths`、`commands`、`criticalUserPaths`、`verification.commandTimeoutMs` 和 `recovery`。本项目没有 API、数据库、UI、部署或外部系统关键路径，对应命令和路径保持空数组，不创建占位契约。
+
+日常只需要：
 
 ```sh
-node scripts/harness/cli.mjs context guard --file <repo-path> --session <session-id> --json
-node .agents/hooks/guard-write-context.mjs --file <repo-path> --session <session-id> --json
+node scripts/harness/cli.mjs status --json
+node scripts/harness/cli.mjs align --intent "..." --done-when "..."
+# 修改；可选 check；由用户提交候选
+node scripts/harness/cli.mjs finish
 ```
-
-- 受管目标首次调用返回完整前置文本、写入 Git 私有回执并以退出码 `1` 阻断本次写入；同一 session 重试只在索引与传递前置摘要未漂移时返回 `allowed`。
-- 目标、索引和前置路径拒绝 symlink、Git private、目录、二进制、越界和超限内容；依赖必须保持 DAG。
-- `harness-check context` 复用同一 validator，校验 Code Root 覆盖、全部索引、精确文件目标和传递依赖，不创建回执。
-- Hook 只是平台参数 Adapter，领域规则只存在于 `scripts/harness/lib/context-guard.mjs`。平台需把写工具的目标路径和稳定会话标识传给 Hook；不支持写前 Hook 时，在等价写入节点调用统一 CLI。
-
-
-## Skill 路由
-
-`.agents/skills.json` v2 是仓库内唯一 Skill catalog 与路由策略源。它按 Work Item 类型、阶段、风险、UI 属性、Slice 状态、测试基础设施和触发事件选择同一阶段内的最小 Skill DAG；同优先级多路由直接失败。它不保存当前状态、不复制生命周期或 Slice `dependsOn`，也不自动执行 Skill。
-
-```sh
-node scripts/harness/cli.mjs skills route --type feature --stage requirements-draft --risk-level high --json
-node scripts/harness/cli.mjs skills route --slice <slice-id> --trigger command-failed --json
-```
-
-第一条命令可在 v2 状态迁移前显式检查路由；第二条从 active Work Item 与 stateRef 读取真实类型、阶段、风险和 Slice 状态。测试与 UI 验证提示由 `policies` 返回，真实命令和关键路径仍以 `.harness/config.json` 为准。
-
-## 检查契约
-
-`scripts/harness-check.mjs` 是唯一检查入口，无第三方依赖，只读取仓库事实，不创建文档、不修改状态、不推进阶段。
-
-```sh
-node scripts/harness-check.mjs context   # 冷启动六问所需的入口和占位符
-node scripts/harness-check.mjs gates     # 阶段状态、文档前置和用户原话证据
-node scripts/harness-check.mjs evidence  # Source Register、验证入口、报告、清理和回退
-node scripts/harness-check.mjs commit    # 实现任务收尾：工作区不得遗留未提交改动
-node scripts/harness-check.mjs all       # context、gates、evidence 依次执行
-```
-
-实际反馈闭环由验证器执行：
-
-```sh
-node scripts/harness-verify.mjs quick --sprint tasks/sprint-01.md # 迭代反馈
-node scripts/harness-verify.mjs full --sprint tasks/sprint-01.md  # 验收报告
-```
-
-验证器执行登记的命令、关键用户路径和清理步骤，原子写入机器报告并回填 Sprint 摘要。`full` 报告绑定配置哈希和工作区指纹；配置或项目文件变化后自动失效。
-
-退出码：`0` 通过，`1` 存在必须修复的问题，`2` 配置或状态文件无法解析。
-
-## 阶段推进
-
-`workflow-state.json` 的唯一写入入口是 `scripts/harness-stage.mjs`：
-
-```sh
-node scripts/harness-stage.mjs status                                        # 当前阶段与最近放行记录
-node scripts/harness-stage.mjs advance --to <stage> --by user --quote "<用户原话>"
-```
-
-推进是原子硬门禁：`harness-stage` 先写候选状态，再调用同一检查器运行 `context + gates + evidence`。任何文档、Source Register、原话、报告、关键路径、清理、配置哈希或工作区指纹错误都会删除候选状态；正式 `workflow-state.json` 保持不变。全部通过后才原子替换正式状态。
-
-阶段链：`initialized → requirements-draft → requirements-confirmed → solution-options → solution-selected → implementation-ready → accepted`。UI 项目插入 `design-confirmed`，且必须登记可运行原型文件、运行命令和操作证据。进入 `accepted` 必须有当前 `full` 验证报告和用户验收原话。
-
-## 契约唯一来源
-
-`SPECS/api.md` 和 `SPECS/database.md` 是前后端共享的唯一契约来源。任一文件存在时，`.harness/config.json` 的 `commands.contracts` 必须登记机器校验命令；项目没有对应契约时删除该文件并在 config 中写明显式说明。契约只有一份，实现侧引用路径而不复制内容。
-
-通过 Harness 检查不代表应用已经验收通过。真实构建、测试和用户路径结果仍以目标项目的验证报告为准。
-
-## 非目标
-
-- 不创建新项目或业务目录。
-- 不选择或安装前端、后端、数据库模板。
-- 不生成需求、方案、SDD、API 或数据库契约内容。
-- 不自动确认需求、选择方案、推进阶段或伪造用户原话。
-- 不提供模板自动升级、三方合并或迁移平台；复制后文件归目标项目所有，后续更新通过 Git diff 人工吸收。
-- 不替目标项目决定测试金字塔、CI 平台或发布流程。
-- 不因目录或文档存在就宣称实现已经通过验收。
-- 不从语言 import、目录名称或模型推断自动生成文件前置；目录索引由项目显式维护。
-
-## 冷启动验收
-
-新会话只读仓库后，应能回答六个问题：项目是什么、走到哪一步、允许做什么、按什么流程做、如何验证、经验写到哪里。每个答案都必须有唯一仓库证据。

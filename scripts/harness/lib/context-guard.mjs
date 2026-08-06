@@ -1,8 +1,8 @@
 // context-guard.mjs — directory-local context indexes and write-precondition receipts.
 
 import { isUtf8 } from "node:buffer";
-import { createHash, randomUUID } from "node:crypto";
-import { lstat, mkdir, readFile, readdir, realpath, rename, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { lstat, readFile, readdir, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, join, posix, relative, resolve, sep } from "node:path";
 import { TextDecoder } from "node:util";
 import { E } from "./errors.mjs";
@@ -10,7 +10,7 @@ import { git } from "./git.mjs";
 
 const INDEX_NAME = ".harness-index.json";
 const INDEX_VERSION = 1;
-const RECEIPT_VERSION = 1;
+const RECEIPT_VERSION = 2;
 const GLOB_CHARS = /[*?[\]{}]/;
 const UTF8 = new TextDecoder("utf-8", { fatal: true });
 const CANONICAL_ROOTS = new Map();
@@ -272,13 +272,11 @@ function indexDirectories(codeRoot, target) {
 }
 
 async function loadIndex(root, path, required) {
-  let buffer;
-  try {
-    buffer = await regularFile(root, path, "index");
-  } catch (error) {
-    if (!required && error?.code === "E_CONTEXT_INDEX_REQUIRED") return null;
-    throw error;
+  if (!required && (await inspectPath(root, path, "index", { allowMissing: true, expected: "file" })) === null) {
+    return null;
   }
+  let buffer;
+  buffer = await regularFile(root, path, "index");
   return { path, sha256: sha256(buffer), ...parseIndex(buffer, path, root) };
 }
 
@@ -399,38 +397,7 @@ export async function validateContextIndexes({ root, config }) {
   return { codeRoots: roots, indexCount: allIndexes.size, targetCount: allTargets.length };
 }
 
-async function receiptLocation(root, sessionId, target) {
-  const sessionHash = sha256(sessionId).slice("sha256:".length);
-  const targetHash = sha256(target).slice("sha256:".length);
-  const rawRoot = (await git(root, ["rev-parse", "--git-path", "harness/context-receipts"])).trim();
-  const receiptRoot = isAbsolute(rawRoot) ? rawRoot : resolve(root, rawRoot);
-  return {
-    sessionHash,
-    targetHash,
-    directory: join(receiptRoot, sessionHash),
-    path: join(receiptRoot, sessionHash, `${targetHash}.json`),
-    displayPath: `harness/context-receipts/${sessionHash}/${targetHash}.json`,
-  };
-}
-
-async function currentReceipt(path) {
-  try {
-    const receipt = JSON.parse(await readFile(path, "utf8"));
-    return ownRecord(receipt) ? receipt : null;
-  } catch (error) {
-    if (error?.code === "ENOENT" || error instanceof SyntaxError) return null;
-    throw error;
-  }
-}
-
-async function writeReceipt(location, receipt) {
-  await mkdir(location.directory, { recursive: true, mode: 0o700 });
-  const temporary = `${location.path}.tmp-${process.pid}-${randomUUID()}`;
-  await writeFile(temporary, `${JSON.stringify(receipt, null, 2)}\n`, { mode: 0o600 });
-  await rename(temporary, location.path);
-}
-
-export async function guardWriteContext({ root, config, targetPath, sessionId, deliver, now = () => new Date() }) {
+export async function guardWriteContext({ root, config, targetPath, sessionId, deliver, authorize, now = () => new Date() }) {
   const target = normalizeTarget(root, targetPath);
   const roots = await codeRoots(root, config);
   await assertSafeTarget(root, target);
@@ -441,12 +408,15 @@ export async function guardWriteContext({ root, config, targetPath, sessionId, d
   const session = sessionId.trim();
 
   const resolved = await resolveContextClosure(root, roots, target);
-  const location = await receiptLocation(root, session, target);
-  const prior = await currentReceipt(location.path);
+  if (typeof authorize !== "function") throw E.CONTEXT_DELIVERY_REQUIRED();
+  const authorization = await authorize({ target, session, resolutionDigest: resolved.resolutionDigest });
+  const prior = authorization.prior;
   const current =
     prior?.version === RECEIPT_VERSION &&
     prior.target === target &&
-    prior.sessionHash === location.sessionHash &&
+    prior.session === session &&
+    prior.workItemId === authorization.workItemId &&
+    prior.workItemRevision === authorization.workItemRevision &&
     prior.resolutionDigest === resolved.resolutionDigest;
   if (current) {
     return {
@@ -456,7 +426,7 @@ export async function guardWriteContext({ root, config, targetPath, sessionId, d
       indexes: resolved.indexes,
       dependencies: resolved.dependencies.map(({ buffer: _buffer, ...entry }) => entry),
       resolutionDigest: resolved.resolutionDigest,
-      receipt: { path: location.displayPath, createdAt: prior.createdAt },
+      receipt: { path: authorization.displayPath, createdAt: prior.createdAt },
     };
   }
   if (typeof deliver !== "function") throw E.CONTEXT_DELIVERY_REQUIRED();
@@ -465,17 +435,20 @@ export async function guardWriteContext({ root, config, targetPath, sessionId, d
   const result = {
     version: 1,
     decision: "blocked",
+    code: "E_CONTEXT_BLOCKED",
     target,
     indexes: resolved.indexes,
     dependencies: resolved.dependencies.map(({ buffer, ...entry }) => ({ ...entry, content: UTF8.decode(buffer) })),
     resolutionDigest: resolved.resolutionDigest,
-    receipt: { path: location.displayPath, createdAt },
+    receipt: { path: authorization.displayPath, createdAt },
   };
   await deliver(result);
-  await writeReceipt(location, {
+  await authorization.save({
     version: RECEIPT_VERSION,
     target,
-    sessionHash: location.sessionHash,
+    session,
+    workItemId: authorization.workItemId,
+    workItemRevision: authorization.workItemRevision,
     resolutionDigest: resolved.resolutionDigest,
     manifest: resolved.manifest,
     createdAt,

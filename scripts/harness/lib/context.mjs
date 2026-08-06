@@ -1,51 +1,67 @@
-// context.mjs — 项目上下文解析：root、配置、targetRef/stateRef。
-// 配置候选：项目根 .harness/config.json（安装态），overlay/.harness/config.json（本开发仓）。
-
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { repoRoot, resolveRef, commitTreeOid } from "./git.mjs";
+import { join, resolve } from "node:path";
 import { E } from "./errors.mjs";
+import { repoRoot } from "./git.mjs";
 
-const CONFIG_CANDIDATES = [".harness/config.json", "overlay/.harness/config.json"];
-
-export const DEFAULT_CONFIG_PATH = CONFIG_CANDIDATES[0];
-
-export const DEFAULT_TARGET_REF = "refs/heads/main";
-export const DEFAULT_STATE_REF = "refs/heads/harness/state";
-
-export async function resolveContext({ root = null } = {}) {
-  const resolvedRoot = root ?? (await repoRoot(process.cwd()));
-  let config = {};
-  let configPath = null; // 实际生效的配置来源；无配置文件时为 null（Quick 摘要用 DEFAULT_CONFIG_PATH）
-  for (const candidate of CONFIG_CANDIDATES) {
-    let raw;
-    try {
-      raw = await readFile(join(resolvedRoot, candidate), "utf8");
-    } catch (error) {
-      if (error?.code === "ENOENT") continue;
-      throw E.CONTEXT_CONFIG_INVALID(`${candidate} 无法读取：${error.message}`);
-    }
-    try {
-      config = JSON.parse(raw);
-    } catch (error) {
-      throw E.CONTEXT_CONFIG_INVALID(`${candidate} JSON 无法解析：${error.message}`);
-    }
-    configPath = candidate;
-    break;
+function stringArray(value, label) {
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string" || entry.trim() === "")) {
+    throw E.USAGE(`${label} 必须是字符串数组`);
   }
-  const git = config.git ?? {};
+  return value.map((entry) => entry.trim());
+}
+
+function commandGroup(value, label) {
+  if (value === undefined) return { static: [], test: [] };
+  if (value === null || typeof value !== "object" || Array.isArray(value)) throw E.USAGE(`${label} 必须是 object`);
   return {
-    root: resolvedRoot,
-    config,
-    configPath,
-    targetRef: typeof git.targetRef === "string" && git.targetRef ? git.targetRef : DEFAULT_TARGET_REF,
-    stateRef: typeof git.stateRef === "string" && git.stateRef ? git.stateRef : DEFAULT_STATE_REF,
+    static: stringArray(value.static ?? [], `${label}.static`),
+    test: stringArray(value.test ?? [], `${label}.test`),
   };
 }
 
-/** 当前 Accepted Baseline：targetRef tip 的 commit 与 tree。 */
-export async function currentBaseline(root, targetRef) {
-  const commit = await resolveRef(root, targetRef);
-  if (commit === null) throw E.NO_TARGET_REF(targetRef);
-  return { commit, tree: await commitTreeOid(root, commit) };
+export function validateConfig(value) {
+  if (value?.version !== 2) throw E.USAGE(".harness/config.json version 必须是 2");
+  if (typeof value.project?.name !== "string" || value.project.name.trim() === "") throw E.USAGE("project.name 必须非空");
+  if (typeof value.project?.summary !== "string" || value.project.summary.trim() === "") throw E.USAGE("project.summary 必须非空");
+  const config = {
+    version: 2,
+    project: {
+      name: value.project.name.trim(),
+      summary: value.project.summary.trim(),
+      hasUserInterface: value.project.hasUserInterface === true,
+    },
+    contextIndex: { codeRoots: stringArray(value.contextIndex?.codeRoots ?? [], "contextIndex.codeRoots") },
+    risk: { highRiskPaths: stringArray(value.risk?.highRiskPaths ?? [], "risk.highRiskPaths") },
+    commands: {
+      quick: commandGroup(value.commands?.quick, "commands.quick"),
+      full: commandGroup(value.commands?.full, "commands.full"),
+      contracts: stringArray(value.commands?.contracts ?? [], "commands.contracts"),
+    },
+    criticalUserPaths: stringArray(value.criticalUserPaths ?? [], "criticalUserPaths"),
+    verification: {
+      commandTimeoutMs: value.verification?.commandTimeoutMs ?? 600_000,
+    },
+    recovery: {
+      testDataCleanup: stringArray(value.recovery?.testDataCleanup ?? [], "recovery.testDataCleanup"),
+      rollback: stringArray(value.recovery?.rollback ?? [], "recovery.rollback"),
+    },
+  };
+  if (!Number.isInteger(config.verification.commandTimeoutMs) || config.verification.commandTimeoutMs <= 0) {
+    throw E.USAGE("verification.commandTimeoutMs 必须是正整数");
+  }
+  return config;
+}
+
+export async function resolveContext({ root = null } = {}) {
+  const resolvedRoot = await repoRoot(resolve(root ?? process.cwd()));
+  const path = join(resolvedRoot, ".harness", "config.json");
+  let raw;
+  try {
+    raw = JSON.parse(await readFile(path, "utf8"));
+  } catch (error) {
+    if (error?.code === "ENOENT") throw E.USAGE("缺少 .harness/config.json");
+    if (error instanceof SyntaxError) throw E.USAGE(".harness/config.json 不是合法 JSON");
+    throw error;
+  }
+  return { root: resolvedRoot, config: validateConfig(raw) };
 }

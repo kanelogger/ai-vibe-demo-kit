@@ -1,13 +1,21 @@
 {
   "version": 1,
-  "summary": "Unified Harness CLI, Work Item and Slice domain modules.",
+  "summary": "Personal Harness control plane, verification, context guard and platform adapters.",
   "readBeforeWrite": [
     "../../HARNESS.md",
-    "../../SPECS/FEATURES/directory-context-guard/spec.md"
+    "../../SPECS/architecture.md"
   ],
   "files": {
     "cli.mjs": {
       "readBeforeWrite": [
+        "./lib/control.mjs",
+        "./lib/context.mjs"
+      ]
+    },
+    "lib/control.mjs": {
+      "readBeforeWrite": [
+        "./lib/state.mjs",
+        "./lib/verification.mjs",
         "./lib/context-guard.mjs"
       ]
     },
@@ -16,6 +24,11 @@
         "./lib/context.mjs",
         "./lib/errors.mjs",
         "./lib/git.mjs"
+      ]
+    },
+    "adapters/hook-core.mjs": {
+      "readBeforeWrite": [
+        "./cli.mjs"
       ]
     }
   }

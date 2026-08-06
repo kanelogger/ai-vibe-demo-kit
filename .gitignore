@@ -31,5 +31,5 @@ desktop.ini
 # Cache
 .cache/
 .agents/skills/
+.claude/skills/
 private-*/
-

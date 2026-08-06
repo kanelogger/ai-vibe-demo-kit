@@ -1,45 +1,51 @@
 # 项目架构
 
-接入 Harness 后，用仓库证据填写本文件。未知信息写"待确认"，不要猜测。机器可执行命令登记在 `.harness/config.json`，本文件只解释命令的适用条件，不复制命令全文。
-
 ## 项目身份
 
-- Product / service: TODO
-- Primary users: TODO
-- Primary outcome: TODO
+- 产品：AI Native Harness Overlay，一个复制进既有 Git 仓库的个人开发控制面。
+- 主要用户：单人开发者，以及其使用的 OMP、Codex、Claude Code Agent。
+- 主要结果：用最少命令完成任务对齐、局部上下文交付、真实验证和可解释恢复，不引入团队治理实体。
+- 非目标：应用脚手架、团队并发、审计平台、自动提交/回滚、跨机器任务续接、遥测、评分、MCP 编排。
 
 ## Runtime And Tooling
 
-| 领域 | 技术 / 版本 | 证据 |
+| 领域 | 事实 | 证据 |
 | --- | --- | --- |
-| 运行时 | TODO | TODO |
-| 包管理 / 构建工具 | TODO | TODO |
-| 应用框架 | TODO | TODO |
-| 数据 / 外部系统 | TODO | TODO |
+| 运行时 | Node.js ESM，只使用内置模块；当前以 Node.js 24 验证 | `scripts/**/*.mjs`、验证结果 |
+| 版本控制 | Git CLI；任务状态位于当前 worktree 的 Git 私有目录 | `scripts/harness/lib/git.mjs`、`state.mjs` |
+| 测试 | Node 内置 `node:test`，真实临时 Git 仓库 | `scripts/harness/test/` |
+| 外部 Skills | Git 锁定同步，无 npm 依赖 | `scripts/skills-sync-core.mjs`、`.agents/skills.lock.json` |
+| 应用/API/数据库/UI/部署 | 不存在 | `.harness/config.json` 中空 contracts 与 critical paths |
 
 ## 模块映射
 
-| 职责 | 位置 | 所需上下文 |
+| 职责 | 位置 | 边界 |
 | --- | --- | --- |
-| TODO | TODO | TODO |
+| 公共命令解析 | `scripts/harness/cli.mjs` | 只解析参数、输出稳定 JSON/文本和退出码 |
+| 生命周期控制 | `scripts/harness/lib/control.mjs` | 唯一状态机；组合 Git、验证、状态和 Context Guard |
+| 本地原子状态 | `scripts/harness/lib/state.mjs` | 只读写 `.git/harness/control.json`；短锁、revision、原子 rename |
+| Git 事实 | `scripts/harness/lib/git.mjs` | 分支、HEAD/tree、工作区、祖先和变更文件 |
+| Quick/Full | `scripts/harness/lib/verification.mjs` | 执行配置命令并生成活动任务内证据 |
+| Directory Context | `scripts/harness/lib/context-guard.mjs` | 解析局部索引、DAG 和回执，不拥有生命周期 |
+| 平台 Hook | `scripts/harness/adapters/`、`.omp/`、`.codex/`、`.claude/` | 只解析结构化工具输入并调用统一 Guard |
+| Skills 同步 | `scripts/skills-sync-core.mjs`、`scripts/skills-sync.mjs` | 独立供应链；固定来源、物化、校验和 Claude 链接 |
 
 ## 持久契约
 
 | 契约 | 位置 | 消费者 |
 | --- | --- | --- |
-| TODO | TODO | TODO |
+| Harness CLI、阶段和退出码 | `HARNESS.md`、`scripts/harness/cli.mjs` | 人与三个 Agent 平台 |
+| 项目配置 schema v2 | `.harness/config.json`、`scripts/harness/lib/context.mjs` | 控制面与验证器 |
+| Directory Index schema v1 | `scripts/harness/.harness-index.json`、`context-guard.mjs` | Context Guard |
+| 本地控制状态 v1 | `.git/harness/control.json`、`state.mjs` | 当前 worktree 的控制面 |
+| Hook 输入输出 | `scripts/harness/adapters/hook-core.mjs` | OMP、Codex、Claude Code Adapter |
+| Skills 来源与 lock v2 | `.agents/skills.sources.json`、`.agents/skills.lock.json` | Skills 同步器 |
 
-## 验证命令
+## 验证与恢复
 
-机器命令的唯一登记处是 `.harness/config.json`。在此说明各命令的适用条件和预期证据：
-
-| 用途 | 配置项 | 使用时机 | 预期证据 |
-| --- | --- | --- | --- |
-| TODO | TODO | TODO | TODO |
-
-## 风险与恢复
-
-- 敏感资产：TODO
-- 破坏性操作：TODO
-- 回退 / 恢复路径：TODO
-- 测试数据清理：TODO
+- Quick 聚焦 reducer/状态/Context Guard，用于实现中反馈。
+- Full 运行全部保留的 Harness 用例、平台 Adapter 契约、Claude Skills 链接用例和当前 lock 的真实同步检查。
+- 测试全部在临时 Git 仓库运行，不污染项目状态；Full 同时检查候选 HEAD 与工作区前后未漂移。
+- 高风险路径是控制面、配置、共享 Agent 指令和三个平台 Adapter；修改后需要两次用户确认。
+- 首选恢复是对候选提交执行 `git revert`。`abort` 本身不修改工作区。
+- 旧 `refs/heads/harness/state` 保持只读历史；新代码没有读取路径。

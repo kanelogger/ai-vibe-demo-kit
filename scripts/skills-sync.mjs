@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 // skills-sync.mjs — 外部 Skill 可追溯同步 v2 的 CLI adapter（薄壳）。
-// 全部同步逻辑在 skills-sync-core.mjs（协议无关，可被未来 MCP adapter 复用）；
+// 全部同步逻辑在 skills-sync-core.mjs；
 // 本文件只负责参数解析、文本呈现与退出码。
 //
 //   node scripts/skills-sync.mjs [--root <dir>] [--force]           锁定 sync：严格恢复 lock 中的 resolved SHA（默认，安全）
 //   node scripts/skills-sync.mjs --update [--root <dir>] [--force]  显式更新：联网解析 track（如 main 的当前 tip），生成新 lock 并物化
 //
-// 网络行为：READY 状态的普通 sync 零网络零写入；修复 drift 与 --update 才访问 Git。
+// 网络行为：READY 状态的普通 sync 零网络；修复 drift 与 --update 才访问 Git。
+// 平台桥：成功后幂等同步 .claude/skills 逐项链接；该目录不入 Git。
 // lock 行为：普通 sync 绝不改写 source spec / resolved；只有 --update 会替换 .agents/skills.lock.json。
 // 退出码: 0 目标状态已达到；1 运行时/来源/冲突/校验失败；2 usage、manifest、lock 或内部契约错误。
 // 会话要求：Skills 在 Agent 会话启动时加载；--update 成功后请开启新会话，本脚本不会也不应重启会话。
@@ -22,7 +23,7 @@
 
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { runSkillsSync, SyncError } from "./skills-sync-core.mjs";
+import { runSkillsSync, syncClaudeSkillLinks, SyncError } from "./skills-sync-core.mjs";
 
 const HELP = `Usage:
   node scripts/skills-sync.mjs [--root <dir>] [--force]   Locked sync: restore exactly the commits recorded in .agents/skills.lock.json (default; safe).
@@ -65,6 +66,10 @@ function renderEvent(event) {
       return `UNCHANGED ${event.sourceId} @ ${sha12(event.resolved)}`;
     case "WARNING":
       return `WARNING ${event.code}: ${event.message}`;
+    case "LINKED":
+      return `LINKED ${event.name} -> .agents/skills/${event.name}`;
+    case "UNLINKED":
+      return `UNLINKED ${event.name}`;
     case "NOTE":
       return `NOTE ${event.code}: ${event.message}`;
     case "OK":
@@ -111,6 +116,9 @@ async function main(argv) {
       return 0;
     }
     const result = await runSkillsSync({ root: options.root, update: options.update, force: options.force });
+    const links = await syncClaudeSkillLinks({ root: options.root });
+    for (const name of links.unlinked) result.events.push({ type: "UNLINKED", name });
+    for (const name of links.linked) result.events.push({ type: "LINKED", name });
     for (const event of result.events) {
       const line = renderEvent(event);
       if (line !== null) process.stdout.write(`${line}\n`);

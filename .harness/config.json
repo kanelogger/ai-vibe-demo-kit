@@ -1,38 +1,54 @@
 {
-  "version": 1,
+  "version": 2,
   "project": {
-    "name": "TODO: your project name",
-    "summary": "TODO: one-line summary of what this project does",
+    "name": "ai-native-harness-overlay",
+    "summary": "A personal-first repository control plane for aligned, context-aware and verifiable Agent development.",
     "hasUserInterface": false
   },
   "contextIndex": {
-    "codeRoots": []
+    "codeRoots": [
+      "scripts/harness"
+    ]
+  },
+  "risk": {
+    "highRiskPaths": [
+      ".claude/settings.json",
+      ".codex/hooks.json",
+      ".harness/config.json",
+      ".omp/extensions",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "HARNESS.md",
+      "SPECS/architecture.md",
+      "scripts/harness",
+      "scripts/skills-sync-core.mjs",
+      "scripts/skills-sync.mjs"
+    ]
   },
   "commands": {
     "quick": {
       "static": [],
-      "test": []
+      "test": [
+        "node --test scripts/harness/test/control.test.mjs scripts/harness/test/state.test.mjs scripts/harness/test/context-guard.test.mjs"
+      ]
     },
     "full": {
       "static": [],
-      "test": []
+      "test": [
+        "node --test scripts/harness/test/*.test.mjs scripts/skills-sync-links.test.mjs",
+        "node scripts/skills-sync.mjs"
+      ]
     },
     "contracts": []
   },
   "criticalUserPaths": [],
-  "git": {
-    "targetRef": "refs/heads/main",
-    "stateRef": "refs/heads/harness/state"
-  },
   "verification": {
-    "reportPath": ".harness/verification-report.json",
-    "maxAgeHours": 24,
-    "commandTimeoutMs": 600000,
-    "workspaceFingerprint": "git"
+    "commandTimeoutMs": 120000
   },
   "recovery": {
     "testDataCleanup": [],
-    "rollback": []
-  },
-  "notes": "Fill in project.name, project.summary, contextIndex.codeRoots, commands, and criticalUserPaths for your project. See HARNESS.md for details."
+    "rollback": [
+      "git revert <candidate-commit>"
+    ]
+  }
 }

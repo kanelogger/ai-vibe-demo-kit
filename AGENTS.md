@@ -62,4 +62,12 @@ node scripts/harness/cli.mjs abort --reason <text> [--json]
 node scripts/skills-sync.mjs
 ```
 
+从本母仓库向另一个目标 Git 仓库发布固定 Overlay 运行时时，使用：
+
+```sh
+node scripts/install-overlay.mjs --target <git-repo> --platform <codex|claude|omp> [--json]
+```
+
+安装器只复制受管运行时和选定 Adapter；目标仓库必须自行维护真实配置、Agent 指令与架构事实。不同内容一律拒绝覆盖。
+
 退出码固定为：`0` 成功，`1` 门禁或验证拒绝，`2` 用法、配置、状态或依赖错误。

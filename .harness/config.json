@@ -21,6 +21,8 @@
       "HARNESS.md",
       "SPECS/architecture.md",
       "scripts/harness",
+      "scripts/install-overlay-core.mjs",
+      "scripts/install-overlay.mjs",
       "scripts/skills-sync-core.mjs",
       "scripts/skills-sync.mjs"
     ]
@@ -35,7 +37,7 @@
     "full": {
       "static": [],
       "test": [
-        "node --test scripts/harness/test/*.test.mjs scripts/skills-sync-links.test.mjs",
+        "node --test scripts/harness/test/*.test.mjs scripts/skills-sync-links.test.mjs scripts/install-overlay.test.mjs",
         "node scripts/skills-sync.mjs"
       ]
     },

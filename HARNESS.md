@@ -2,6 +2,12 @@
 
 这是一个给单人项目使用的仓库内控制面。核心原则：判断交给模型，确定性约束交给脚本，真实运行定义完成；只有出现独立失败模式、独立回退点和真实需求时才新增实体。
 
+## 分发与接入
+
+母仓库通过 `node scripts/install-overlay.mjs --target <git-repo> --platform <codex|claude|omp>` 把 Overlay 运行时复制进已有 baseline commit 的目标 Git 仓库。安装器只拥有运行时、本文档和选定平台 Adapter；`.harness/config.json`、`AGENTS.md`、`SPECS/architecture.md` 以及业务目录索引始终由目标项目拥有，并且必须在安装前记录真实事实。
+
+安装器不复制母仓库测试、自托管配置或 Skills，不覆盖不同内容，不接受 symlink 目标，也不提交、删除或修改目标项目已有文件。Codex/Claude 配置由人完成结构化合并后，安装器只验证所需 Adapter 已存在并保留该配置。相同版本可以幂等重跑；自动升级暂不属于接口。
+
 ## 控制模型
 
 唯一深模块是 `scripts/harness/lib/control.mjs`，状态路径固定为 Git 私有目录中的 `.git/harness/control.json`：
@@ -52,7 +58,7 @@ Hook 只处理 `apply_patch`、Write/Edit/NotebookEdit 和 OMP 对应的结构�
 
 ## Skills 供应链
 
-`scripts/skills-sync.mjs` 与任务生命周期解耦。默认按 `.agents/skills.lock.json` 恢复固定 SHA；只有 `--update` 解析上游 track 并改 lock。同步成功后，它为 `.agents/skills` 中实际带 `SKILL.md` 的逐项目录创建未跟踪的 `.claude/skills` 相对链接，只删除自己生成且已过期的链接，不覆盖其他条目。
+若项目安装了 Skills 供应链，`scripts/skills-sync.mjs` 与任务生命周期解耦。默认按 `.agents/skills.lock.json` 恢复固定 SHA；只有 `--update` 解析上游 track 并改 lock。同步成功后，它为 `.agents/skills` 中实际带 `SKILL.md` 的逐项目录创建未跟踪的 `.claude/skills` 相对链接，只删除自己生成且已过期的链接，不覆盖其他条目。
 
 平台依据 Skill 名称和描述按需选择，不再维护 `.agents/skills.json` 路由、阶段 matcher 或 resolver。
 

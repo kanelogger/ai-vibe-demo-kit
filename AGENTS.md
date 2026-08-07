@@ -40,7 +40,6 @@ align -> 用户确认 alignment digest -> implementation -> 用户提交候选�
 
 - `align` 必须记录明确意图和至少一个 done-when；高风险任务还要记录风险原因和回退方式。
 - `check` 是可选 Quick，可在脏工作区运行；`finish` 只验证干净、已提交且仍是 baseline 后继的候选提交。
-- Agent 不代替用户提供确认原话，不自动 commit、push、reset、revert 或改写历史。
 - `abort` 只关闭活动状态并报告 baseline、当前候选和恢复建议，不修改工作区。
 
 ## 写入与上下文

@@ -4,7 +4,7 @@
 
 工具只做确定性工作：初始化、契约校验、状态转换、Gate 和证据引用。它不会调度 Skill、运行测试、修改业务代码、提交 Git 或写入外部系统。
 
-## 五分钟开始
+## Runtime 五分钟开始
 
 要求 Node.js 22+ 和一个 Git 仓库，无 npm 依赖。
 
@@ -17,6 +17,20 @@ cd /path/to/project
 ```
 
 相同版本可以幂等重装；安装器会在写入前检查全部目标，遇到不同内容、Symlink 或非 Git 目录时整体拒绝，不覆盖现有文件，也不自动提交。
+
+完成以上步骤表示 **Runtime-ready**：CLI 已安装，默认 Workflow 可校验和运行。它不表示项目治理内容已经就绪。
+
+## 完整项目接入
+
+达到 **Governance-ready** 前，项目负责人需要完成以下清单：
+
+1. 在目标路径不存在时，将 `AGENTS_template.md` 复制为 `AGENTS.md`，将 `project-template.yml` 复制为 `project.yml`；禁止覆盖已有项目文件。
+2. 填写全部 `{填写}`、`<placeholder>`、命令、代码根目录、权限和人工确认边界。
+3. 从 Kit 中按需选择 `knowledge/`、`rules/` 和架构模板，并扩展已安装的 `SPECS/template.md`；Installer 不复制 `knowledge/` 和 `rules/`。
+4. 为已声明的代码根建立 `ARCHITECTURE.md`，只录入能够由代码、配置或负责人确认的项目事实。
+5. 运行 `./harness check --json` 与 `./harness status --json`，确认 Workflow、状态和下一步动作均符合目标项目。
+
+模板中的留白和空知识骨架是待定输入，不是可以直接引用的事实。未完成上述清单时，应明确称为 Runtime-ready，不能宣称 Governance-ready。
 
 ## 公共命令
 

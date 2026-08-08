@@ -10,7 +10,7 @@
 
 ## Invariants
 
-- 所有 Mutation 只增加一次 Revision，并通过短锁和原子 Rename 持久化；Git 私有控制路径禁止 Symlink。
+- 所有 Mutation 只增加一次 Revision，并通过 PID 短锁和原子 Rename 持久化；仅可证明 owner 已死亡的锁可以自动回收，Git 私有控制路径禁止 Symlink。
 - Workflow 在 Start 时绑定内容 Digest；漂移后只允许只读命令和 Abort。
 - 结构错误不可 Override；策略失败只有在用户精确接受全部风险后才能继续。
 - Redirect、Reject 和 Override 保留旧证据，失效结果标记为 `superseded`。

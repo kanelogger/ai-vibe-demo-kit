@@ -62,6 +62,8 @@ Human Control 是所有活动状态的内建能力：
 
 每个 Worktree 同时只有一个活动任务，唯一机器状态位于 `.git/harness/control.json`。状态使用短锁、Revision 和原子 Rename；完成或终止记录归档到 `.git/harness/history/<work-id>.json`。Git 私有控制路径若包含 Symlink，FileStore 会拒绝读写，避免状态逸出仓库的 Git 私有目录。
 
+锁文件记录持有者 PID。Mutation 遇到锁时只会自动回收可以确认 PID 已不存在的锁；PID 仍存活、权限不足、空锁或非法 PID 都返回 `E_STATE_BUSY`，JSON 错误中的 `facts` 和 `repair` 会保留诊断信息。人工恢复前必须确认没有 Harness Mutation 正在运行：读取 `.git/harness/control.lock`，对有效 PID 执行 `kill -0 <pid>`；只有系统确认进程不存在，或锁内容无有效 PID且已排除活动写入时，才能删除该精确锁文件，再运行 `./harness status --json` 检查状态。不要在 Mutation 仍运行时删除锁。
+
 启动任务时会绑定 Workflow 内容 Digest。Workflow 漂移后，工具只允许 `status`、`check` 和 `abort`，避免用新规则解释旧状态。已关闭的历史 v1 本地状态可以只读加载，首次新 Mutation 才按当前格式保存。
 
 ## 项目资产

@@ -36,6 +36,7 @@ cd /path/to/project
 
 ```text
 ./harness check [--workflow <path>] [--json]
+./harness version [--json]
 ./harness start --workflow <path> --intent <text> [--json]
 ./harness status [--json]
 ./harness signal --revision <n> --file <stage-result.json> [--json]
@@ -45,6 +46,8 @@ cd /path/to/project
 ```
 
 `signal` 接收 Agent、命令或人工已经完成的 Stage Result。Harness 只校验结构、证据引用与策略结果，不执行 Stage 内容。
+
+`./harness version --json` 从 `.harness/manifest.json` 返回安装版本和最低 Node.js 主版本；该命令不要求当前目录位于 Git 仓库。Installer 的 JSON 保留兼容字段 `version: 1`，并用 `harnessVersion` 返回发行版本。
 
 退出码稳定为：`0` 成功；`1` 被 Gate 或策略条件阻止；`2` 参数、结构、状态、Revision 或 I/O 错误。`signal` 返回 `1` 时 Stage Result 已经落盘；调用方必须读取 JSON，而不能把非零简单解释为 Mutation 回滚。无错误的 `signal --json` 使用 `applied` 区分本次写入与幂等重试，并用 `requiresHumanAction` 表示是否等待人工处理。JSON 输出始终包含 Revision、状态、当前 Stage、Pending Gate、允许动作和可复制的 Next Actions；错误输出同时保留当前状态上下文与稳定错误码。
 
@@ -96,6 +99,10 @@ Human Control 是所有活动状态的内建能力：
 ```
 
 `workflows/workflow-case.json` 是带 Policy Override、Human Gate、Pause/Resume 和 Redirect 的说明性完成记录，不是真实执行证明。`workflows/skills-list.json` 只负责 Skill ID 路由；Skill 是否实际可用属于 Stage Result 的策略事实。
+
+## 人工升级
+
+Harness 不自动覆盖不同内容。升级前先创建独立 Git 分支，分别运行新 Kit 与已安装副本的 `version --json`，再对 Installer 报告的冲突路径逐项审查 Git Diff。只替换已确认属于 Harness Runtime 的文件，随后运行完整测试、`./harness check --json` 和 `./harness version --json`，将升级形成一个可回退提交。版本差异只提供升级身份，不代表文件已经安全合并。
 
 ## 明确不做
 

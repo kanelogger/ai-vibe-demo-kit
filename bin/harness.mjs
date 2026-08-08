@@ -5,12 +5,14 @@ import { fileURLToPath } from "node:url";
 import { applyControl, digestValue, inspectState } from "../scripts/harness/lib/kernel.mjs";
 import { HarnessError, fail } from "../scripts/harness/lib/errors.mjs";
 import { installHarness } from "../scripts/harness/lib/installer.mjs";
+import { loadHarnessManifest } from "../scripts/harness/lib/manifest.mjs";
 import { loadState, mutateState, readGitActor, statePaths } from "../scripts/harness/lib/store.mjs";
 import { validateStageResult, validateStateAgainstWorkflow, validateWorkflow } from "../scripts/harness/lib/validator.mjs";
 
 const SOURCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const HELP = `Usage:
   harness init --target <git-root> [--json]
+  harness version [--json]
   harness check [--workflow <path>] [--json]
   harness start --workflow <path> --intent <text> [--json]
   harness status [--json]
@@ -25,6 +27,7 @@ const BOOLEAN = new Set(["json", "help"]);
 const REPEATED = new Set(["accept-risk"]);
 const COMMAND_OPTIONS = {
   init: new Set(["target", "json"]),
+  version: new Set(["json"]),
   check: new Set(["workflow", "json"]),
   start: new Set(["workflow", "intent", "json"]),
   status: new Set(["json"]),
@@ -188,6 +191,12 @@ async function execute(options, context) {
     return 0;
   }
   assertCommandOptions(command, options);
+  if (command === "version") {
+    const manifest = await loadHarnessManifest(SOURCE_ROOT);
+    if (options.json) process.stdout.write(`${JSON.stringify(manifest, null, 2)}\n`);
+    else process.stdout.write(`${manifest.name} ${manifest.version} (Node.js ${manifest.minimumNodeVersion}+)\n`);
+    return 0;
+  }
   if (command === "init") {
     if (options._.length !== 1 || !options.target) fail("E_USAGE", "init requires --target", { repair: HELP });
     const installed = await installHarness({ sourceRoot: SOURCE_ROOT, targetRoot: options.target });

@@ -32,6 +32,8 @@ jobs:
         run: node --test scripts/harness/test/*.test.mjs
       - name: Validate the default workflow
         run: ./harness check --json
+      - name: Read release metadata
+        run: ./harness version --json
 
   commit-messages:
     name: Commit messages

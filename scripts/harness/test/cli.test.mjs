@@ -2,11 +2,42 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { makeGitRepo, run, runRaw, stageResult, workflow } from "./helpers.mjs";
 
 const sourceRoot = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 const sourceCli = join(sourceRoot, "bin", "harness.mjs");
+
+test("source and installed CLIs report release metadata outside a Git repository", async () => {
+  const outside = await mkdtemp(join(tmpdir(), "harness-version-cwd-"));
+  let result = await runRaw(process.execPath, [sourceCli, "version", "--json"], outside);
+  assert.equal(result.code, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout), {
+    schemaVersion: 1,
+    name: "project-agent-harness",
+    version: "0.1.0",
+    minimumNodeVersion: "22",
+  });
+
+  const target = await makeGitRepo();
+  result = await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  const installed = JSON.parse(result.stdout);
+  assert.equal(installed.version, 1);
+  assert.equal(installed.harnessVersion, "0.1.0");
+  result = await runRaw(join(target, "harness"), ["version", "--json"], outside);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).version, "0.1.0");
+});
+
+test("version rejects an invalid installed manifest", async () => {
+  const target = await makeGitRepo();
+  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await writeFile(join(target, ".harness", "manifest.json"), "{}\n");
+  const result = await runRaw(join(target, "harness"), ["version", "--json"], target);
+  assert.equal(result.code, 2);
+  assert.equal(JSON.parse(result.stdout).error.code, "E_MANIFEST_INVALID");
+});
 
 test("fresh repository installs, checks, starts and advances through the public CLI", async () => {
   const target = await makeGitRepo();

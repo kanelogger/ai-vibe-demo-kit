@@ -23,8 +23,8 @@
 | ControlKernel | `applyControl`、`inspectState` | 纯状态转换、Gate 和 Human Control |
 | Validator | `validateWorkflow`、`validateStageResult`、`validateControlState`、`validateStateAgainstWorkflow` | 可执行结构契约、引用完整性、状态绑定与策略事实提取 |
 | FileStore | `loadState`、`mutateState` | Git 私有路径、锁、Revision、原子写入和归档 |
-| Installer | `installHarness` | 清单预检、幂等复制和冲突拒绝 |
-| CLI Adapter | `harness <command>` | 参数、JSON/文本输出和稳定退出码 |
+| Installer | `installHarness` | 发行 Manifest、清单预检、幂等复制和冲突拒绝 |
+| CLI Adapter | `harness <command>` | 参数、版本、JSON/文本输出和稳定退出码 |
 
 ## Verification
 

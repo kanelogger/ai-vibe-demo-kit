@@ -2,15 +2,19 @@ import { chmod, lstat, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { statePaths } from "./store.mjs";
 import { fail } from "./errors.mjs";
+import { loadHarnessManifest } from "./manifest.mjs";
 
 const RUNTIME = [
   "harness",
   ".harness/README.md",
   ".harness/LICENSE",
+  ".harness/CHANGELOG.md",
+  ".harness/manifest.json",
   "bin/harness.mjs",
   "scripts/harness/lib/errors.mjs",
   "scripts/harness/lib/installer.mjs",
   "scripts/harness/lib/kernel.mjs",
+  "scripts/harness/lib/manifest.mjs",
   "scripts/harness/lib/store.mjs",
   "scripts/harness/lib/validator.mjs",
   "scripts/harness/ARCHITECTURE.md",
@@ -58,6 +62,7 @@ function assertInside(root, path) {
 
 export async function installHarness({ sourceRoot, targetRoot }) {
   const source = resolve(sourceRoot);
+  const manifest = await loadHarnessManifest(source);
   const requestedTarget = resolve(targetRoot);
   try {
     if ((await lstat(requestedTarget)).isSymbolicLink()) fail("E_PATH_SYMLINK", "installation target must not be a symlink");
@@ -89,7 +94,17 @@ export async function installHarness({ sourceRoot, targetRoot }) {
     } else prepared.push({ relativePath, from, to, content, kind: "create" });
   }
 
-  if (conflicts.length > 0) fail("E_INSTALL_CONFLICT", "installation preflight found conflicting paths", { facts: { conflicts } });
+  if (conflicts.length > 0) {
+    let installedVersion = "unknown";
+    try {
+      installedVersion = (await loadHarnessManifest(target)).version;
+    } catch (error) {
+      if (error.code !== "E_MANIFEST_INVALID") throw error;
+    }
+    fail("E_INSTALL_CONFLICT", "installation preflight found conflicting paths", {
+      facts: { sourceVersion: manifest.version, installedVersion, conflicts },
+    });
+  }
   const created = [];
   const unchanged = [];
   for (const entry of prepared) {
@@ -102,5 +117,5 @@ export async function installHarness({ sourceRoot, targetRoot }) {
     if (entry.relativePath === "harness") await chmod(entry.to, 0o755);
     created.push(entry.relativePath);
   }
-  return { target, created, unchanged, version: 1 };
+  return { target, created, unchanged, version: 1, harnessVersion: manifest.version };
 }

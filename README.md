@@ -6,7 +6,7 @@
 
 ## 五分钟开始
 
-要求 Node.js 20+ 和一个 Git 仓库，无 npm 依赖。
+要求 Node.js 22+ 和一个 Git 仓库，无 npm 依赖。
 
 ```sh
 node /path/to/kit/bin/harness.mjs init --target /path/to/project

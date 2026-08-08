@@ -3,6 +3,7 @@
   "templateId": "risk-adaptive-skill-workflow",
   "description": "A declarative four-state workflow that coordinates Skills, artifacts, evidence, approvals, and recovery.",
   "skillSourcesRef": ".agents/skills.sources.json",
+  "skillsCatalogRef": "workflows/skills-list.json",
   "stateModel": {
     "initialState": "idle",
     "states": ["idle", "alignment", "implementation", "acceptance"],
@@ -40,7 +41,7 @@
   "stages": {
     "alignment": {
       "objective": "Freeze the intent, risk, observable acceptance criteria, solution shape, and implementation tasks.",
-      "instruction": "Use the request and authoritative project context to resolve uncertainty before implementation. Invoke each triggered Skill in dependency order, preserve its instructions, record its outputs, and stop for required approvals. Do not enter implementation until every required acceptance criterion is observable and every triggered required Skill has succeeded.",
+      "instruction": "Use the request and authoritative project context to resolve uncertainty before implementation. Record knowledge and code facts, resolve conflicts in favor of the current authoritative source, and propagate confirmed constraints into the specification and acceptance criteria. Invoke each triggered Skill in dependency order, preserve its instructions, record its outputs, and stop for required approvals. Do not enter implementation until every required acceptance criterion is observable and every triggered required Skill has succeeded.",
       "entryConditions": ["currentState=alignment", "requestCaptured=true", "baselineRecorded=true"],
       "skillCalls": [
         {
@@ -126,11 +127,15 @@
         { "id": "spec", "locationType": "path-or-url", "locationTemplate": "work/requirements/{{workItemId}}/requirement.md", "required": true },
         { "id": "acceptanceCriteria", "locationType": "case-field", "locationTemplate": "workItem.acceptanceCriteria", "required": true },
         { "id": "taskRefs", "locationType": "path-or-url-list", "locationTemplate": "workItem.taskRefs", "requiredWhen": "workItem.requiresMultipleTasks=true" },
+        { "id": "factSources", "locationType": "case-field", "locationTemplate": "factSources", "required": true },
+        { "id": "constraintLedger", "locationType": "case-field", "locationTemplate": "constraintLedger", "required": true },
         { "id": "rollbackPlan", "locationType": "case-field", "locationTemplate": "risk.rollback", "requiredWhen": "risk.level=high" }
       ],
       "exitConditions": [
         "allTriggeredRequiredSkillRuns=succeeded",
         "requiredOutputsRecorded=true",
+        "authoritativeFactsResolved=true",
+        "confirmedConstraintsPropagated=true",
         "acceptanceCriteriaObservable=true",
         "riskClassified=true",
         "highRiskAlignmentConfirmed=true-or-not-required"
@@ -138,7 +143,7 @@
     },
     "implementation": {
       "objective": "Implement the confirmed specification and produce a committed candidate with current quick evidence.",
-      "instruction": "Implement only the confirmed scope. Use TDD when its condition is triggered, keep verification feedback visible, preserve unrelated worktree changes, and record every produced artifact. Stop before any Git commit until its approval is recorded.",
+      "instruction": "Implement only the confirmed scope. Use TDD when its condition is triggered, keep verification feedback visible, preserve unrelated worktree changes, and record every produced artifact. Preserve failed attempt evidence before retrying in the same stage. A retry may clarify how an existing constraint maps to code, but a newly discovered product decision requires aborting and returning through alignment. Stop before any Git commit until its approval is recorded.",
       "entryConditions": ["currentState=implementation", "alignmentExitConditionsMet=true"],
       "skillCalls": [
         {
@@ -177,6 +182,7 @@
       "exitConditions": [
         "allTriggeredRequiredSkillRuns=succeeded",
         "requiredOutputsRecorded=true",
+        "allFailedAttemptsPreserved=true",
         "candidateCommitted=true",
         "quickEvidence.current=true",
         "quickEvidence.passed=true"
@@ -184,7 +190,7 @@
     },
     "acceptance": {
       "objective": "Prove specification compliance and regression safety, restore the environment, and record the delivery decision.",
-      "instruction": "Review the exact candidate against project standards and the confirmed specification. Run the full verification profile and real critical user paths, record skipped checks and residual risks, perform cleanup, and require high-risk acceptance confirmation before closing.",
+      "instruction": "Review the exact candidate against project standards and the confirmed specification. Run the full verification profile and real critical user paths, record skipped checks and residual risks, perform cleanup, and record release, rollback, observability, and candidate knowledge-backfill artifacts. Knowledge remains a candidate until its owner confirms it. Require high-risk acceptance confirmation before closing.",
       "entryConditions": ["currentState=acceptance", "implementationExitConditionsMet=true", "candidateUnchanged=true"],
       "skillCalls": [
         {
@@ -218,6 +224,8 @@
         { "id": "verificationReport", "locationType": "path", "locationTemplate": "work/requirements/{{workItemId}}/implementation-check.md", "required": true },
         { "id": "sessionHandoff", "locationType": "temporary-path", "locationTemplate": "system-temp-directory", "requiredWhen": "workItem.requiresHandoff=true" },
         { "id": "deliveryHandoff", "locationType": "path", "locationTemplate": "work/requirements/{{workItemId}}/handoff.md", "required": true },
+        { "id": "releasePlan", "locationType": "path", "locationTemplate": "work/requirements/{{workItemId}}/release-plan.md", "required": true },
+        { "id": "knowledgeBackfill", "locationType": "path", "locationTemplate": "work/requirements/{{workItemId}}/knowledge-backfill-candidate.md", "required": true },
         { "id": "cleanupEvidence", "locationType": "case-field", "locationTemplate": "verification.cleanup", "required": true },
         { "id": "acceptanceDecision", "locationType": "case-field", "locationTemplate": "confirmations.acceptance", "requiredWhen": "risk.level=high" }
       ],
@@ -228,6 +236,8 @@
         "fullEvidence.passed=true",
         "criticalUserPathsActuallyRun=true-or-not-applicable-with-reason",
         "cleanup.passed=true",
+        "releasePlanRecorded=true",
+        "knowledgeBackfillCandidateRecorded=true",
         "candidateUnchanged=true",
         "highRiskAcceptanceConfirmed=true-or-not-required"
       ]
@@ -235,14 +245,21 @@
   },
   "evidencePolicy": {
     "skillRunStatuses": ["planned", "waiting_approval", "running", "succeeded", "failed", "skipped"],
+    "attemptStatuses": ["running", "failed", "succeeded", "superseded"],
     "stageRunStatuses": ["planned", "running", "succeeded", "failed", "aborted"],
     "requiredSuccessReceiptFields": ["callId", "skill", "status", "startedAt", "finishedAt", "summary", "artifactRefs"],
+    "requiredAttemptFields": ["attempt", "status", "startedAt", "finishedAt", "summary", "artifactRefs"],
     "requiredStageExitEvidence": ["skillRuns", "artifactRefs", "exitConditions"],
+    "artifactReferencePolicy": "Every artifact:<id> reference must resolve to exactly one artifactIndex entry in the case.",
     "rules": [
       "A required Skill whose condition is true must have a succeeded receipt before stage exit.",
       "A Skill whose condition is false may be skipped only with a recorded reason.",
       "A dependency is satisfied by succeeded or condition-skipped; failed and approval-pending dependencies block execution.",
       "A failed Skill keeps the workflow in the current stage and records failure facts.",
+      "A retry preserves each failed attempt and its evidence; a later success does not overwrite or erase earlier failure facts.",
+      "A Skill receipt with attempts may be succeeded only when its final attempt succeeded and every earlier failed attempt records the observed failure and state after failure.",
+      "Implementation may clarify an existing confirmed constraint in the current stage; a newly discovered product decision requires abort and a new alignment pass.",
+      "Knowledge backfill remains a candidate until an owner confirms it and does not become authoritative merely because acceptance succeeded.",
       "Approval must be recorded before the protected side effect named by approvalRequired occurs; a running Skill may pause in waiting_approval before that action."
     ]
   },

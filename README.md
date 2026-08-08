@@ -21,7 +21,7 @@
 ├── project-template.yml             # 项目身份、环境和权威入口
 ├── knowledge/                       # 长期有效的项目与业务知识
 ├── rules/                           # 测试、安全、Git 等主题规则
-├── workflows/                       # 声明式协调模板与执行案例
+├── workflows/                       # Skill 目录、声明式协调模板与执行案例
 └── SPECS/                           # 长期有效的实现规格模板
 ```
 
@@ -34,10 +34,14 @@
 
 ## Workflow 协调模板
 
-`workflows/workflow-template.json` 定义固定的 `idle -> alignment -> implementation -> acceptance -> idle` 生命周期，以及每个阶段的 Skill 调用、输入、输出、人工门禁和退出条件。`abort` 可以从任一活动阶段回到 `idle`。`workflows/workflow-case.json` 用一个已完成的高风险任务展示批准记录、条件跳过、成功回执、产物引用和最终验收。
+`workflows/workflow-template.json` 定义固定的 `idle -> alignment -> implementation -> acceptance -> idle` 生命周期，以及每个阶段的 Skill 调用、输入、输出、人工门禁和退出条件。`abort` 可以从任一活动阶段回到 `idle`，阶段数量固定不变。
 
-Skill 来源以 `.agents/skills.sources.json` 为准。执行 Workflow 前，应先通过项目已有的 Skills 同步流程准备所需 Skill；模板不复制来源，也不检查 Skill 是否安装。涉及 issue tracker 写入、Git commit、发布、生产写入或不可逆操作的 Skill，必须先记录对应的人工批准。
+`workflows/skills-list.json` 是供 Workflow 路由和人工阅读的能力目录，只收录生成时 `.agents/skills/<id>/SKILL.md` 可解析的 Skill，并说明用途、适用阶段、调用方式和来源状态。Skill 的更新意图仍以 `.agents/skills.sources.json` 为准，解析结果以 `.agents/skills.lock.json` 为准；能力目录不复制 Skill 指令，也不能替代执行前的可用性检查。
 
-每个被触发且标记为 `required` 的 Skill 都必须在案例状态中留下 `succeeded` 回执，并引用实际产物；`failed` 会让 Workflow 停留在当前阶段，因条件未触发而 `skipped` 时必须记录原因。阶段 `instruction` 只是交给 Agent 的任务上下文，其优先级低于平台指令、项目规则和 Skill 自身指令，不能替代或覆盖 System Prompt。
+`workflows/workflow-case.json` 保持原路径，用一个异步订单取消缺陷展示完整的高风险执行：`alignment` 记录知识事实、代码事实、冲突裁决和约束传播；`implementation` 保留第一次实现失败、约束映射澄清和同阶段重试；`acceptance` 对固定 candidate 运行双轴审查、真实数据库与 outbox 路径、清理、发布计划和知识回补候选。案例中的 `example://`、示例 commit 和 `caseKind: illustrative-completed-run` 表明它是契约示例，不是一次真实项目执行的证明。
 
-v1 只提供声明和审计约定，没有运行时、JSON Schema 或静态校验器，因此不能强制执行或防止回执被修改。活动状态未来保存在 `.git/harness`；规格、验证摘要和 handoff 等可审计产物进入 `work/requirements/`。Workflow 自有 Subagent 功能目前仅预留 feature 标志，不定义角色、Prompt、调度或合并协议；Skill 内部是否使用 Subagent 仍由该 Skill 自身负责。
+每个被触发且标记为 `required` 的 Skill 都必须留下最终 `succeeded` 回执并引用 `artifactIndex` 中的产物。一次 Skill 调用可以包含多个 `attempts`；失败尝试必须保留观察结果和失败后的阶段，后续成功不能覆盖它。实现阶段只能澄清已确认约束如何映射到代码；发现新的产品决策时必须 `abort` 并重新进入 `alignment`。知识回补在 owner 确认前始终是候选，不因 Workflow 验收成功而自动成为正式知识。
+
+涉及 issue tracker 写入、Git commit、发布、生产写入或不可逆操作的 Skill，必须先记录对应的人工批准。阶段 `instruction` 只是交给 Agent 的任务上下文，其优先级低于平台指令、项目规则和 Skill 自身指令，不能替代或覆盖 System Prompt。
+
+v1 只提供声明和审计约定，没有运行时、JSON Schema 或静态校验器，因此不能强制执行、防止回执被修改或证明示例产物真实存在。活动状态未来保存在 `.git/harness`；规格、验证摘要、发布计划和 handoff 等可审计产物进入 `work/requirements/`。Workflow 自有 Subagent 功能目前仅预留 feature 标志，不定义角色、Prompt、调度或合并协议；Skill 内部是否使用 Subagent 仍由该 Skill 自身负责。

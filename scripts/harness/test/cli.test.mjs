@@ -30,10 +30,16 @@ test("fresh repository installs, checks, starts and advances through the public 
   await writeFile(join(target, "result.json"), `${JSON.stringify(stageResult(), null, 2)}\n`);
   result = await runRaw(join(target, "harness"), ["signal", "--revision", "1", "--file", "result.json", "--json"], target);
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(JSON.parse(result.stdout).stage, "build");
+  let payload = JSON.parse(result.stdout);
+  assert.equal(payload.stage, "build");
+  assert.equal(payload.applied, true);
+  assert.equal(payload.requiresHumanAction, false);
   result = await runRaw(join(target, "harness"), ["signal", "--revision", "1", "--file", "result.json", "--json"], target);
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(JSON.parse(result.stdout).decision, "idempotent");
+  payload = JSON.parse(result.stdout);
+  assert.equal(payload.decision, "idempotent");
+  assert.equal(payload.applied, false);
+  assert.equal(payload.requiresHumanAction, false);
 });
 
 test("CLI returns stable JSON errors and exit codes", async () => {
@@ -127,7 +133,10 @@ test("public CLI supports policy override, pause protection and human acceptance
   const workId = JSON.parse(result.stdout).active.id;
   result = await runRaw(join(target, "harness"), ["signal", "--revision", "1", "--file", "failed.json", "--json"], target);
   assert.equal(result.code, 1);
-  assert.equal(JSON.parse(result.stdout).decision, "policy-blocked");
+  let payload = JSON.parse(result.stdout);
+  assert.equal(payload.decision, "policy-blocked");
+  assert.equal(payload.applied, true);
+  assert.equal(payload.requiresHumanAction, true);
 
   result = await runRaw(join(target, "harness"), ["decide", "--revision", "2", "--action", "override", "--reason", "Prototype risk accepted", "--accept-risk", "intent-clear", "--json"], target);
   assert.equal(result.code, 0, result.stderr);
@@ -142,7 +151,16 @@ test("public CLI supports policy override, pause protection and human acceptance
 
   result = await runRaw(join(target, "harness"), ["signal", "--revision", "5", "--file", "done.json", "--json"], target);
   assert.equal(result.code, 1);
-  assert.equal(JSON.parse(result.stdout).status, "awaiting-human");
+  payload = JSON.parse(result.stdout);
+  assert.equal(payload.status, "awaiting-human");
+  assert.equal(payload.applied, true);
+  assert.equal(payload.requiresHumanAction, true);
+  result = await runRaw(join(target, "harness"), ["signal", "--revision", "5", "--file", "done.json", "--json"], target);
+  assert.equal(result.code, 0, result.stderr);
+  payload = JSON.parse(result.stdout);
+  assert.equal(payload.decision, "idempotent");
+  assert.equal(payload.applied, false);
+  assert.equal(payload.requiresHumanAction, true);
   result = await runRaw(join(target, "harness"), ["decide", "--revision", "6", "--action", "approve", "--reason", "Accept", "--json"], target);
   assert.equal(result.code, 0, result.stderr);
   assert.equal(JSON.parse(result.stdout).last.outcome, "completed-with-override");

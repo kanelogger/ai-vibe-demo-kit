@@ -124,6 +124,14 @@ function publicState(state, extra = {}) {
   return result;
 }
 
+function signalState(state, { applied, ...extra }) {
+  return publicState(state, {
+    ...extra,
+    applied,
+    requiresHumanAction: new Set(["awaiting-human", "policy-blocked"]).has(state.active?.status),
+  });
+}
+
 function nextActionsFor(value) {
   const revisionArg = `--revision ${value.revision}`;
   return (value.allowedActions ?? []).map((action) => {
@@ -146,7 +154,7 @@ function handleSignalRevisionMismatch(options, state, expectedRevision, stageRes
   const records = state.active?.results ?? state.last?.results ?? [];
   const prior = records.find((entry) => entry.baseRevision === expectedRevision);
   if (prior?.digest === signalDigest) {
-    output(options, publicState(state, { decision: "idempotent" }));
+    output(options, signalState(state, { decision: "idempotent", applied: false }));
     return 0;
   }
   if (prior) fail("E_SIGNAL_CONFLICT", "the same revision already accepted different signal content", { facts });
@@ -258,7 +266,7 @@ async function execute(options, context) {
       context.state = latest;
       return handleSignalRevisionMismatch(options, latest, expectedRevision, stageResult);
     }
-    const view = publicState(result.state, { decision: result.decision.kind, unmet: result.decision.unmet ?? [] });
+    const view = signalState(result.state, { decision: result.decision.kind, unmet: result.decision.unmet ?? [], applied: true });
     output(options, view);
     return new Set(["await-human", "policy-blocked"]).has(result.decision.kind) ? 1 : 0;
   }

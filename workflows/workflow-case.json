@@ -1,534 +1,253 @@
 {
-  "caseVersion": 1,
-  "caseKind": "illustrative-completed-run",
-  "caseId": "async-cancellation-precheck-fix",
-  "templateRef": "workflows/workflow-template.json",
-  "skillsCatalogRef": "workflows/skills-list.json",
-  "workItem": {
-    "id": "wi-async-cancellation-precheck",
-    "type": "bugfix",
-    "intent": "Reject ineligible order cancellations before any outbox write while preserving confirmed legacy status and time-field behavior.",
-    "primaryUncertainty": "Whether cancellation eligibility belongs before the outbox seam or in the downstream consumer.",
-    "changesDomainModel": true,
-    "changesModuleInterface": true,
-    "requiresMultipleTasks": true,
-    "testFirst": true,
-    "touchesStableCore": true,
-    "requiresIntegrationTests": true,
-    "requiresHandoff": true,
-    "acceptanceCriteria": [
-      {
-        "id": "AC-1",
-        "statement": "An ineligible cancellation returns the specified rejection and creates no outbox row.",
-        "kind": "spec",
-        "evidenceRef": "artifact:verification-report#ac-1"
-      },
-      {
-        "id": "AC-2",
-        "statement": "An eligible cancellation produces exactly one accepted transition and one outbox row.",
-        "kind": "spec",
-        "evidenceRef": "artifact:verification-report#ac-2"
-      },
-      {
-        "id": "AC-3",
-        "statement": "Baseline fixtures for the legacy carrier-intercept status and historical time field retain their confirmed behavior.",
-        "kind": "regression",
-        "evidenceRef": "artifact:verification-report#ac-3"
-      },
-      {
-        "id": "AC-4",
-        "statement": "The real cancellation path is run against the database and outbox, and all test records are removed afterward.",
-        "kind": "operational",
-        "evidenceRef": "artifact:verification-report#ac-4"
-      }
-    ],
-    "taskRefs": [
-      "artifact:ticket-contract-tests",
-      "artifact:ticket-implementation",
-      "artifact:ticket-acceptance"
-    ]
-  },
+  "caseKind": "illustrative-completed-control-record",
+  "description": "A compact v2 example showing policy override, human gates, pause/resume and redirect without executing work.",
   "state": {
-    "current": "idle",
-    "outcome": "accepted",
-    "baseline": {
-      "branch": "example/main",
-      "commit": "example-baseline-8f31c2a"
-    },
-    "candidate": {
-      "branch": "example/fix/cancellation-precheck",
-      "commit": "example-candidate-4db79e1",
-      "unchangedDuringVerification": true
-    },
-    "transitionHistory": [
-      { "from": "idle", "event": "align", "to": "alignment", "at": "2026-08-08T09:00:00Z" },
-      { "from": "alignment", "event": "complete", "to": "implementation", "at": "2026-08-08T10:00:00Z" },
-      { "from": "implementation", "event": "finish", "to": "acceptance", "at": "2026-08-08T11:10:00Z" },
-      { "from": "acceptance", "event": "accept", "to": "idle", "at": "2026-08-08T12:05:00Z" }
-    ]
-  },
-  "risk": {
-    "level": "high",
-    "signals": ["cross-core-module-change"],
-    "rationale": "The change moves a business-rule decision across the durable outbox side-effect seam.",
-    "rollback": "Disable the precheck path, revert example-candidate-4db79e1, and restore the baseline handler order; no data migration is required."
-  },
-  "factSources": {
-    "knowledge": [
-      {
-        "id": "KF-1",
-        "ref": "knowledge://orders/cancellation-policy",
-        "claim": "Cancellation eligibility must be decided before durable side effects.",
-        "status": "confirmed-intent",
-        "verifiedAtBaseline": "example-baseline-8f31c2a"
+    "schemaVersion": 1,
+    "revision": 14,
+    "active": null,
+    "last": {
+      "id": "wi-example-control",
+      "intent": "Reject an ineligible cancellation before any durable outbox write.",
+      "workflow": {
+        "id": "risk-adaptive-skill-workflow",
+        "version": 1,
+        "ref": "workflows/workflow-template.json",
+        "digest": "example://workflow-digest"
       },
-      {
-        "id": "KF-2",
-        "ref": "knowledge://orders/legacy-compatibility",
-        "claim": "Carrier-intercept status and the historical time field have compatibility behavior that must be preserved.",
-        "status": "confirmed-intent",
-        "verifiedAtBaseline": "example-baseline-8f31c2a"
-      }
-    ],
-    "code": [
-      {
-        "id": "CF-1",
-        "ref": "git:example-baseline-8f31c2a#src/orders/cancel-handler",
-        "observed": "The handler writes the outbox row before the downstream consumer evaluates eligibility.",
-        "status": "verified"
-      },
-      {
-        "id": "CF-2",
-        "ref": "git:example-baseline-8f31c2a#tests/orders/cancellation-compatibility",
-        "observed": "Baseline fixtures encode the accepted legacy status and time-field behavior.",
-        "status": "verified"
-      }
-    ],
-    "conflicts": [
-      {
-        "id": "FC-1",
-        "sourceRefs": ["fact:KF-1", "fact:CF-1"],
-        "conflict": "The knowledge source describes the required ordering, while the current code performs the side effect first.",
-        "resolution": "Treat the knowledge source as confirmed product intent and the baseline code as authoritative evidence of the defect.",
-        "status": "resolved"
-      }
-    ],
-    "resolvedFacts": [
-      {
-        "id": "RF-1",
-        "statement": "Eligibility must return a decision before OutboxWriter is invoked.",
-        "sourceRefs": ["fact:KF-1", "fact:CF-1"]
-      },
-      {
-        "id": "RF-2",
-        "statement": "Legacy compatibility is defined by the confirmed baseline fixtures, not by an unverified prose reconstruction.",
-        "sourceRefs": ["fact:KF-2", "fact:CF-2"]
-      }
-    ]
-  },
-  "constraintLedger": [
-    {
-      "id": "CON-ORDER-01",
-      "kind": "ordering-invariant",
-      "statement": "An ineligible cancellation must produce zero durable outbox writes.",
-      "sourceRefs": ["fact:RF-1"],
-      "introducedAt": "alignment",
-      "acceptanceRefs": ["AC-1"],
-      "propagatedTo": ["artifact:spec", "artifact:tdd-evidence"]
-    },
-    {
-      "id": "CON-COMPAT-01",
-      "kind": "compatibility-invariant",
-      "statement": "Legacy carrier-intercept and historical time-field fixtures must retain baseline behavior.",
-      "sourceRefs": ["fact:RF-2"],
-      "introducedAt": "alignment",
-      "acceptanceRefs": ["AC-3"],
-      "propagatedTo": ["artifact:spec", "artifact:tdd-evidence"]
-    },
-    {
-      "id": "CB-01",
-      "kind": "implementation-context",
-      "statement": "CancellationPolicy.evaluate must return a decision before OutboxWriter.append is reachable.",
-      "sourceRefs": ["constraint:CON-ORDER-01", "fact:CF-1"],
-      "introducedAt": "implementation.attempt-1-recovery",
-      "classification": "clarified-existing-constraint",
-      "newProductDecision": false,
-      "propagatedTo": ["artifact:constraint-backfill", "artifact:implementation-notes", "artifact:attempt-2-checks"]
-    }
-  ],
-  "confirmations": {
-    "alignment": {
-      "status": "confirmed",
-      "by": "user",
-      "at": "2026-08-08T09:58:00Z",
-      "quote": "Confirm the pre-outbox seam, compatibility constraints, and rollback plan."
-    },
-    "acceptance": {
-      "status": "confirmed",
-      "by": "user",
-      "at": "2026-08-08T12:05:00Z",
-      "quote": "Accept the unchanged candidate with the recorded release and rollback conditions."
-    }
-  },
-  "approvals": [
-    {
-      "id": "approval-spec-publish",
-      "action": "issue-tracker-write",
-      "status": "approved",
-      "by": "user",
-      "at": "2026-08-08T09:46:00Z"
-    },
-    {
-      "id": "approval-task-publish",
-      "action": "issue-tracker-write",
-      "status": "approved",
-      "by": "user",
-      "at": "2026-08-08T09:52:00Z"
-    },
-    {
-      "id": "approval-candidate-commit",
-      "action": "git-commit",
-      "status": "approved",
-      "by": "user",
-      "at": "2026-08-08T11:05:00Z"
-    }
-  ],
-  "artifactIndex": [
-    { "id": "diagnosis", "kind": "report", "uri": "work/requirements/wi-async-cancellation-precheck/diagnosis.md", "producedBy": "alignment.diagnose" },
-    { "id": "prototype-evidence", "kind": "experiment", "uri": "work/requirements/wi-async-cancellation-precheck/prototype-evidence.md", "producedBy": "alignment.prototype" },
-    { "id": "domain-decisions", "kind": "decision", "uri": "work/requirements/wi-async-cancellation-precheck/domain-decisions.md", "producedBy": "alignment.domain-model" },
-    { "id": "module-design", "kind": "decision", "uri": "work/requirements/wi-async-cancellation-precheck/module-design.md", "producedBy": "alignment.module-design" },
-    { "id": "spec", "kind": "specification", "uri": "work/requirements/wi-async-cancellation-precheck/requirement.md", "producedBy": "alignment.spec" },
-    { "id": "ticket-contract-tests", "kind": "task", "uri": "example://tracker/ORD-241", "producedBy": "alignment.tasks" },
-    { "id": "ticket-implementation", "kind": "task", "uri": "example://tracker/ORD-242", "producedBy": "alignment.tasks" },
-    { "id": "ticket-acceptance", "kind": "task", "uri": "example://tracker/ORD-243", "producedBy": "alignment.tasks" },
-    { "id": "tdd-evidence", "kind": "test-evidence", "uri": "work/requirements/wi-async-cancellation-precheck/test-evidence.md", "producedBy": "implementation.tdd" },
-    { "id": "attempt-1-checks", "kind": "failed-check", "uri": "work/requirements/wi-async-cancellation-precheck/attempt-1-checks.md", "producedBy": "implementation.build#attempt-1" },
-    { "id": "constraint-backfill", "kind": "constraint-mapping", "uri": "work/requirements/wi-async-cancellation-precheck/constraint-backfill.md", "producedBy": "implementation.build#recovery" },
-    { "id": "attempt-2-checks", "kind": "test-evidence", "uri": "work/requirements/wi-async-cancellation-precheck/attempt-2-checks.md", "producedBy": "implementation.build#attempt-2" },
-    { "id": "candidate-commit", "kind": "git-commit", "uri": "git:example-candidate-4db79e1", "producedBy": "implementation.build#attempt-2" },
-    { "id": "implementation-notes", "kind": "report", "uri": "work/requirements/wi-async-cancellation-precheck/implementation-notes.md", "producedBy": "implementation.build" },
-    { "id": "architecture-impact", "kind": "report", "uri": "work/requirements/wi-async-cancellation-precheck/architecture-impact.yml", "producedBy": "implementation.build" },
-    { "id": "quick-evidence", "kind": "verification", "uri": "work/requirements/wi-async-cancellation-precheck/quick-evidence.md", "producedBy": "implementation.build" },
-    { "id": "review-evidence", "kind": "review", "uri": "work/requirements/wi-async-cancellation-precheck/code-review.md", "producedBy": "acceptance.review" },
-    { "id": "verification-report", "kind": "verification", "uri": "work/requirements/wi-async-cancellation-precheck/implementation-check.md", "producedBy": "acceptance" },
-    { "id": "session-handoff", "kind": "temporary-handoff", "uri": "temp://handoff/wi-async-cancellation-precheck.md", "producedBy": "acceptance.handoff" },
-    { "id": "delivery-handoff", "kind": "handoff", "uri": "work/requirements/wi-async-cancellation-precheck/handoff.md", "producedBy": "acceptance" },
-    { "id": "cleanup-evidence", "kind": "cleanup", "uri": "work/requirements/wi-async-cancellation-precheck/cleanup-evidence.md", "producedBy": "acceptance" },
-    { "id": "release-plan", "kind": "release-plan", "uri": "work/requirements/wi-async-cancellation-precheck/release-plan.md", "producedBy": "acceptance" },
-    { "id": "knowledge-candidate", "kind": "knowledge-candidate", "uri": "work/requirements/wi-async-cancellation-precheck/knowledge-backfill-candidate.md", "producedBy": "acceptance" }
-  ],
-  "stageRuns": [
-    {
-      "stage": "alignment",
-      "status": "succeeded",
-      "startedAt": "2026-08-08T09:00:00Z",
-      "finishedAt": "2026-08-08T10:00:00Z",
-      "skillRuns": [
-        {
-          "callId": "alignment.diagnose",
-          "skill": "diagnosing-bugs",
-          "status": "succeeded",
-          "startedAt": "2026-08-08T09:00:00Z",
-          "finishedAt": "2026-08-08T09:12:00Z",
-          "summary": "Reproduced that an ineligible cancellation writes one outbox row before rejection.",
-          "artifactRefs": ["artifact:diagnosis"]
-        },
-        {
-          "callId": "alignment.prototype",
-          "skill": "prototype",
-          "status": "succeeded",
-          "startedAt": "2026-08-08T09:12:00Z",
-          "finishedAt": "2026-08-08T09:22:00Z",
-          "summary": "Compared pre-outbox and downstream eligibility seams; only the pre-outbox seam preserved the zero-write invariant.",
-          "artifactRefs": ["artifact:prototype-evidence"]
-        },
-        {
-          "callId": "alignment.domain-model",
-          "skill": "domain-modeling",
-          "status": "succeeded",
-          "startedAt": "2026-08-08T09:22:00Z",
-          "finishedAt": "2026-08-08T09:30:00Z",
-          "summary": "Confirmed cancellation decisions and the legacy compatibility terms without redefining baseline behavior.",
-          "artifactRefs": ["artifact:domain-decisions"]
-        },
-        {
-          "callId": "alignment.module-design",
-          "skill": "codebase-design",
-          "status": "succeeded",
-          "startedAt": "2026-08-08T09:30:00Z",
-          "finishedAt": "2026-08-08T09:40:00Z",
-          "summary": "Placed CancellationPolicy.evaluate before the OutboxWriter seam and made the returned decision the interface test surface.",
-          "artifactRefs": ["artifact:module-design"]
-        },
-        {
-          "callId": "alignment.spec",
-          "skill": "to-spec",
-          "status": "succeeded",
-          "statusHistory": [
-            { "status": "planned", "at": "2026-08-08T09:40:00Z" },
-            { "status": "waiting_approval", "at": "2026-08-08T09:44:00Z" },
-            { "status": "running", "at": "2026-08-08T09:46:00Z", "approvalRef": "approval-spec-publish" },
-            { "status": "succeeded", "at": "2026-08-08T09:50:00Z" }
-          ],
-          "startedAt": "2026-08-08T09:40:00Z",
-          "finishedAt": "2026-08-08T09:50:00Z",
-          "summary": "Published the confirmed ordering, compatibility, rollback, and observable acceptance contracts.",
-          "artifactRefs": ["artifact:spec"]
-        },
-        {
-          "callId": "alignment.tasks",
-          "skill": "to-tickets",
-          "status": "succeeded",
-          "statusHistory": [
-            { "status": "waiting_approval", "at": "2026-08-08T09:50:00Z" },
-            { "status": "running", "at": "2026-08-08T09:52:00Z", "approvalRef": "approval-task-publish" },
-            { "status": "succeeded", "at": "2026-08-08T09:56:00Z" }
-          ],
-          "startedAt": "2026-08-08T09:50:00Z",
-          "finishedAt": "2026-08-08T09:56:00Z",
-          "summary": "Created ordered contract-test, implementation, and acceptance tracer bullets.",
-          "artifactRefs": ["artifact:ticket-contract-tests", "artifact:ticket-implementation", "artifact:ticket-acceptance"]
-        }
-      ],
-      "artifactRefs": [
-        "artifact:diagnosis",
-        "artifact:prototype-evidence",
-        "artifact:domain-decisions",
-        "artifact:module-design",
-        "artifact:spec",
-        "artifact:ticket-contract-tests",
-        "artifact:ticket-implementation",
-        "artifact:ticket-acceptance"
-      ],
-      "exitConditions": {
-        "allTriggeredRequiredSkillRuns": "succeeded",
-        "requiredOutputsRecorded": true,
-        "authoritativeFactsResolved": true,
-        "confirmedConstraintsPropagated": true,
-        "acceptanceCriteriaObservable": true,
-        "riskClassified": true,
-        "highRiskAlignmentConfirmed": true
-      }
-    },
-    {
-      "stage": "implementation",
-      "status": "succeeded",
-      "startedAt": "2026-08-08T10:00:00Z",
-      "finishedAt": "2026-08-08T11:10:00Z",
-      "skillRuns": [
-        {
-          "callId": "implementation.tdd",
-          "skill": "tdd",
-          "status": "succeeded",
-          "startedAt": "2026-08-08T10:00:00Z",
-          "finishedAt": "2026-08-08T10:15:00Z",
-          "summary": "Established failing interface and database integration checks for ordering, single-write, and legacy compatibility invariants.",
-          "artifactRefs": ["artifact:tdd-evidence"]
-        },
-        {
-          "callId": "implementation.build",
-          "skill": "implement",
-          "status": "succeeded",
-          "statusHistory": [
-            { "status": "running", "at": "2026-08-08T10:15:00Z" },
-            { "status": "failed", "at": "2026-08-08T10:35:00Z" },
-            { "status": "running", "at": "2026-08-08T10:40:00Z" },
-            { "status": "waiting_approval", "at": "2026-08-08T11:03:00Z" },
-            { "status": "running", "at": "2026-08-08T11:05:00Z", "approvalRef": "approval-candidate-commit" },
-            { "status": "succeeded", "at": "2026-08-08T11:10:00Z" }
-          ],
-          "startedAt": "2026-08-08T10:15:00Z",
-          "finishedAt": "2026-08-08T11:10:00Z",
-          "summary": "The first implementation preserved the wrong side-effect order; the second moved the policy decision before the outbox seam and passed the required checks.",
-          "attempts": [
-            {
-              "attempt": 1,
-              "status": "failed",
-              "startedAt": "2026-08-08T10:15:00Z",
-              "finishedAt": "2026-08-08T10:35:00Z",
-              "summary": "The policy was extracted but still invoked after OutboxWriter.append.",
-              "artifactRefs": ["artifact:attempt-1-checks"],
-              "failure": {
-                "classification": "spec-mismatch",
-                "expected": "Rejected cancellation produces zero outbox rows.",
-                "actual": "The integration check observed one outbox row before rejection.",
-                "failedInvariantRefs": ["CON-ORDER-01", "AC-1"],
-                "stateAfterFailure": "implementation",
-                "retryable": true
-              }
-            },
-            {
-              "attempt": 2,
-              "status": "succeeded",
-              "startedAt": "2026-08-08T10:40:00Z",
-              "finishedAt": "2026-08-08T11:03:00Z",
-              "summary": "Moved CancellationPolicy.evaluate before OutboxWriter.append and passed focused and quick verification.",
-              "artifactRefs": [
-                "artifact:attempt-2-checks",
-                "artifact:candidate-commit",
-                "artifact:implementation-notes",
-                "artifact:architecture-impact",
-                "artifact:quick-evidence"
-              ]
-            }
-          ],
-          "recovery": {
-            "strategy": "stay-in-stage-and-retry",
-            "stateAfterFailure": "implementation",
-            "classification": "clarify-existing-constraint",
-            "newProductDecisionIntroduced": false,
-            "constraintBackfillRefs": ["CB-01"],
-            "artifactRefs": ["artifact:constraint-backfill"],
-            "retryFromAttempt": 1
-          },
-          "artifactRefs": [
-            "artifact:attempt-1-checks",
-            "artifact:constraint-backfill",
-            "artifact:attempt-2-checks",
-            "artifact:candidate-commit",
-            "artifact:implementation-notes",
-            "artifact:architecture-impact",
-            "artifact:quick-evidence"
-          ]
-        }
-      ],
-      "artifactRefs": [
-        "artifact:tdd-evidence",
-        "artifact:attempt-1-checks",
-        "artifact:constraint-backfill",
-        "artifact:attempt-2-checks",
-        "artifact:candidate-commit",
-        "artifact:implementation-notes",
-        "artifact:architecture-impact",
-        "artifact:quick-evidence"
-      ],
-      "exitConditions": {
-        "allTriggeredRequiredSkillRuns": "succeeded",
-        "requiredOutputsRecorded": true,
-        "allFailedAttemptsPreserved": true,
-        "candidateCommitted": true,
-        "quickEvidenceCurrent": true,
-        "quickEvidencePassed": true
-      }
-    },
-    {
+      "status": "completed-with-override",
       "stage": "acceptance",
-      "status": "succeeded",
-      "startedAt": "2026-08-08T11:10:00Z",
-      "finishedAt": "2026-08-08T12:05:00Z",
-      "skillRuns": [
+      "pendingGate": null,
+      "pendingPolicy": null,
+      "paused": null,
+      "acceptedRisks": [
+        "risk-classified"
+      ],
+      "results": [
         {
-          "callId": "acceptance.review",
-          "skill": "code-review",
-          "status": "succeeded",
-          "startedAt": "2026-08-08T11:12:00Z",
-          "finishedAt": "2026-08-08T11:28:00Z",
-          "summary": "Found no blocking Standards or Spec findings against the fixed baseline and confirmed candidate.",
-          "artifactRefs": ["artifact:review-evidence"]
+          "id": "result-1",
+          "stage": "alignment",
+          "status": "current",
+          "digest": "example://alignment-result",
+          "value": {
+            "outcome": "ready",
+            "summary": "Acceptance is observable; rollback owner is temporarily unavailable.",
+            "conditions": [
+              {
+                "id": "acceptance-observable",
+                "status": "passed",
+                "evidenceRefs": [
+                  "example://spec"
+                ]
+              },
+              {
+                "id": "risk-classified",
+                "status": "failed",
+                "reason": "Rollback owner is unavailable.",
+                "evidenceRefs": []
+              }
+            ],
+            "skills": [
+              {
+                "id": "alignment.spec",
+                "status": "succeeded",
+                "artifactRefs": [
+                  "spec"
+                ]
+              },
+              {
+                "id": "alignment.diagnose",
+                "status": "skipped",
+                "reason": "Diagnosis already exists."
+              }
+            ],
+            "artifacts": [
+              {
+                "id": "spec",
+                "uri": "example://spec"
+              }
+            ]
+          },
+          "recordedAt": "2026-08-08T09:10:00.000Z"
         },
         {
-          "callId": "acceptance.handoff",
-          "skill": "handoff",
-          "status": "succeeded",
-          "startedAt": "2026-08-08T11:42:00Z",
-          "finishedAt": "2026-08-08T11:47:00Z",
-          "summary": "Prepared a temporary continuation artifact that points to release, rollback, verification, and knowledge-candidate evidence.",
-          "artifactRefs": ["artifact:session-handoff"]
+          "id": "result-2",
+          "stage": "implementation",
+          "status": "superseded",
+          "digest": "example://implementation-first",
+          "value": {
+            "outcome": "ready-for-acceptance",
+            "summary": "First candidate sent to acceptance."
+          },
+          "recordedAt": "2026-08-08T10:10:00.000Z"
+        },
+        {
+          "id": "result-3",
+          "stage": "implementation",
+          "status": "current",
+          "digest": "example://implementation-second",
+          "value": {
+            "outcome": "ready-for-acceptance",
+            "summary": "Redirected changes completed."
+          },
+          "recordedAt": "2026-08-08T11:10:00.000Z"
+        },
+        {
+          "id": "result-4",
+          "stage": "acceptance",
+          "status": "current",
+          "digest": "example://acceptance-result",
+          "value": {
+            "outcome": "accepted",
+            "summary": "Verification and cleanup passed."
+          },
+          "recordedAt": "2026-08-08T12:00:00.000Z"
         }
       ],
-      "artifactRefs": [
-        "artifact:review-evidence",
-        "artifact:verification-report",
-        "artifact:session-handoff",
-        "artifact:delivery-handoff",
-        "artifact:cleanup-evidence",
-        "artifact:release-plan",
-        "artifact:knowledge-candidate"
+      "decisions": [
+        {
+          "action": "override",
+          "actor": "user",
+          "reason": "Accept temporary rollback-owner risk for the prototype.",
+          "at": "2026-08-08T09:12:00.000Z",
+          "transitionId": "alignment-ready",
+          "acceptedRisks": [
+            "risk-classified"
+          ]
+        },
+        {
+          "action": "approve",
+          "actor": "user",
+          "reason": "Alignment is sufficient to begin implementation.",
+          "at": "2026-08-08T09:15:00.000Z",
+          "transitionId": "alignment-ready"
+        },
+        {
+          "action": "pause",
+          "actor": "user",
+          "reason": "Inspect the candidate before continuing.",
+          "at": "2026-08-08T09:40:00.000Z"
+        },
+        {
+          "action": "resume",
+          "actor": "user",
+          "reason": "Inspection completed.",
+          "at": "2026-08-08T09:45:00.000Z"
+        },
+        {
+          "action": "redirect",
+          "actor": "user",
+          "reason": "Acceptance found a missing compatibility case.",
+          "at": "2026-08-08T10:30:00.000Z",
+          "target": "implementation"
+        },
+        {
+          "action": "approve",
+          "actor": "user",
+          "reason": "Accept the verified candidate and recorded risk.",
+          "at": "2026-08-08T12:05:00.000Z",
+          "transitionId": "acceptance-approved"
+        }
       ],
-      "exitConditions": {
-        "allTriggeredRequiredSkillRuns": "succeeded",
-        "requiredOutputsRecorded": true,
-        "fullEvidenceCurrent": true,
-        "fullEvidencePassed": true,
-        "criticalUserPathsActuallyRun": true,
-        "cleanupPassed": true,
-        "releasePlanRecorded": true,
-        "knowledgeBackfillCandidateRecorded": true,
-        "candidateUnchanged": true,
-        "highRiskAcceptanceConfirmed": true
-      }
+      "events": [
+        {
+          "sequence": 1,
+          "type": "work-started",
+          "at": "2026-08-08T09:00:00.000Z",
+          "stage": "alignment"
+        },
+        {
+          "sequence": 2,
+          "type": "policy-blocked",
+          "at": "2026-08-08T09:10:00.000Z",
+          "transitionId": "alignment-ready",
+          "unmet": [
+            "risk-classified"
+          ]
+        },
+        {
+          "sequence": 3,
+          "type": "human-decision",
+          "at": "2026-08-08T09:12:00.000Z",
+          "action": "override",
+          "actor": "user"
+        },
+        {
+          "sequence": 4,
+          "type": "gate-pending",
+          "at": "2026-08-08T09:12:00.000Z",
+          "transitionId": "alignment-ready"
+        },
+        {
+          "sequence": 5,
+          "type": "human-decision",
+          "at": "2026-08-08T09:15:00.000Z",
+          "action": "approve",
+          "actor": "user"
+        },
+        {
+          "sequence": 6,
+          "type": "stage-entered",
+          "at": "2026-08-08T09:15:00.000Z",
+          "stage": "implementation"
+        },
+        {
+          "sequence": 7,
+          "type": "human-decision",
+          "at": "2026-08-08T09:40:00.000Z",
+          "action": "pause",
+          "actor": "user"
+        },
+        {
+          "sequence": 8,
+          "type": "human-decision",
+          "at": "2026-08-08T09:45:00.000Z",
+          "action": "resume",
+          "actor": "user"
+        },
+        {
+          "sequence": 9,
+          "type": "stage-entered",
+          "at": "2026-08-08T10:10:00.000Z",
+          "stage": "acceptance"
+        },
+        {
+          "sequence": 10,
+          "type": "human-decision",
+          "at": "2026-08-08T10:30:00.000Z",
+          "action": "redirect",
+          "actor": "user",
+          "target": "implementation"
+        },
+        {
+          "sequence": 11,
+          "type": "stage-entered",
+          "at": "2026-08-08T10:30:00.000Z",
+          "stage": "implementation",
+          "redirected": true
+        },
+        {
+          "sequence": 12,
+          "type": "stage-entered",
+          "at": "2026-08-08T11:10:00.000Z",
+          "stage": "acceptance"
+        },
+        {
+          "sequence": 13,
+          "type": "gate-pending",
+          "at": "2026-08-08T12:00:00.000Z",
+          "transitionId": "acceptance-approved"
+        },
+        {
+          "sequence": 14,
+          "type": "work-closed",
+          "at": "2026-08-08T12:05:00.000Z",
+          "outcome": "completed-with-override"
+        }
+      ],
+      "createdAt": "2026-08-08T09:00:00.000Z",
+      "updatedAt": "2026-08-08T12:05:00.000Z",
+      "closedAt": "2026-08-08T12:05:00.000Z",
+      "outcome": "completed-with-override"
     }
-  ],
-  "verification": {
-    "quick": {
-      "status": "passed",
-      "current": true,
-      "candidateRef": "artifact:candidate-commit",
-      "artifactRef": "artifact:quick-evidence"
-    },
-    "full": {
-      "status": "passed",
-      "current": true,
-      "candidateRef": "artifact:candidate-commit",
-      "artifactRef": "artifact:verification-report"
-    },
-    "acceptanceMatrix": [
-      { "acceptanceRef": "AC-1", "status": "passed", "evidenceRef": "artifact:verification-report#ac-1" },
-      { "acceptanceRef": "AC-2", "status": "passed", "evidenceRef": "artifact:verification-report#ac-2" },
-      { "acceptanceRef": "AC-3", "status": "passed", "evidenceRef": "artifact:verification-report#ac-3" },
-      { "acceptanceRef": "AC-4", "status": "passed", "evidenceRef": "artifact:verification-report#ac-4" }
-    ],
-    "criticalUserPaths": [
-      {
-        "id": "reject-before-outbox",
-        "status": "passed",
-        "actuallyRun": true,
-        "steps": [
-          { "step": "Create an ineligible test order in the real test database.", "status": "passed" },
-          { "step": "Submit the cancellation through the application entry point.", "status": "passed" },
-          { "step": "Observe the specified rejection response.", "status": "passed" },
-          { "step": "Query the real outbox and observe zero matching rows.", "status": "passed" }
-        ],
-        "evidenceRef": "artifact:verification-report#reject-before-outbox"
-      },
-      {
-        "id": "legacy-compatibility",
-        "status": "passed",
-        "actuallyRun": true,
-        "steps": [
-          { "step": "Load the confirmed carrier-intercept and historical time-field fixtures.", "status": "passed" },
-          { "step": "Run cancellation decisions through the application entry point.", "status": "passed" },
-          { "step": "Compare outcomes with the frozen baseline expectations.", "status": "passed" }
-        ],
-        "evidenceRef": "artifact:verification-report#legacy-compatibility"
-      }
-    ],
-    "cleanup": {
-      "status": "passed",
-      "removed": ["test orders", "outbox rows", "temporary database fixtures"],
-      "evidenceRef": "artifact:cleanup-evidence"
-    }
-  },
-  "delivery": {
-    "releaseExecution": "out-of-scope",
-    "releasePlanRef": "artifact:release-plan",
-    "rollbackPlan": {
-      "ref": "artifact:release-plan#rollback",
-      "matchesRiskPlan": true
-    },
-    "observability": {
-      "ref": "artifact:release-plan#observability",
-      "signals": ["cancellation rejection rate", "outbox rows per accepted cancellation", "consumer error rate"]
-    },
-    "knowledgeBackfill": {
-      "status": "candidate",
-      "ownerReview": "pending",
-      "candidateRef": "artifact:knowledge-candidate",
-      "sourceEvidenceRefs": ["fact:RF-1", "fact:RF-2", "artifact:verification-report"],
-      "mustReverifyInCode": ["status enum names", "time-field names", "handler and outbox interfaces"]
-    },
-    "handoffRef": "artifact:delivery-handoff"
-  },
-  "closedAt": "2026-08-08T12:05:00Z"
+  }
 }

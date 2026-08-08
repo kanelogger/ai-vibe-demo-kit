@@ -42,12 +42,13 @@
 - 长期知识入口：`knowledge/INDEX.md`
 - 知识渐进加载规则：`knowledge/ROUTING.md`
 - 可复用工作流：`workflows/`
-- 当前需求及机器状态：`work/requirements/<requirement-id>/status.yml`
+- 当前活动任务及 Gate：`./harness status --json`
+- Workflow 契约校验：`./harness check --json`
 - 测试、安全和 Git 规则：`rules/`
 
 ## 开始前
 
-1. 读取 `project.yml`、`ARCHITECTURE.md` 和当前需求的 `status.yml`。
+1. 读取 `project.yml`、`ARCHITECTURE.md`，运行 `./harness check --json` 和 `./harness status --json`。
 2. 根据 `knowledge/ROUTING.md` 读取与任务相关的最小知识集合。
 3. 阅读当前应用的 `requirement.md`、相关规格、代码入口和邻近测试。
 4. 检查已有工作区改动、允许动作和人工门禁。
@@ -64,7 +65,7 @@
 4. 删除或移动文件夹时，同步更新原父模块和新父模块的子模块索引。
 5. 完成实现后，根据最终代码刷新受影响模块的职责、接口、不变量、依赖、入口和验证方式。回填只描述当前事实，不追加需求流水账。
 6. 纯内部实现没有改变架构索引时，在当前需求的 `architecture-impact.yml` 中记录 `impact: none`、原因和代码证据。
-7. 完成前运行 `project.yml#commands.architecture_check`。目录缺少索引、父级没有登记子模块或回填证据缺失时，不得声称完成。
+7. 若项目配置了专用架构检查，完成前运行它。目录缺少索引、父级没有登记子模块或回填证据缺失时，不得声称完成。
 
 ## 高风险边界
 
@@ -78,10 +79,10 @@
 
 {填写：改动后必须运行的命令，以及需要检查的真实界面或返回值。}
 
-验证结果必须写入当前需求的 `implementation-check.md`。跳过的检查、失败输出和环境限制必须明确记录。
+验证结果必须形成 Workflow 声明的 Evidence。跳过的检查、失败输出和环境限制必须明确记录。
 
 ## 完成条件
 
 {填写：允许声称完成的明确状态，以及验证失败时必须报告的信息。}
 
-完成前更新当前需求的 `status.yml`、`architecture-impact.yml` 与 `handoff.md`；稳定经验先进入 `knowledge/candidate/`，经确认后才能进入正式知识区。
+完成前通过 `./harness signal` 提交当前 Stage Result；需要人工 Gate 时停止推进。稳定经验先进入 `knowledge/candidate/`，经确认后才能进入正式知识区。

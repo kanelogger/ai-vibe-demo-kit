@@ -1,47 +1,86 @@
 # Project Agent Harness
 
-面向具体软件项目的 Coding Agent 装甲层。
+面向具体软件项目的轻量 Coding Agent 控制层与工具层。它把项目知识、Skill、Workflow 和人工决策组织成可加载、可校验、可恢复的仓库资产，同时把执行权保留给用户和 Agent。
 
-它将项目知识、可执行技能、工作流与交付契约组织成一套可加载、可组合、可审计的项目资产，使不同 Coding Agent 能在同一工程语境、规则和质量标准下稳定工作。
+工具只做确定性工作：初始化、契约校验、状态转换、Gate 和证据引用。它不会调度 Skill、运行测试、修改业务代码、提交 Git 或写入外部系统。
 
-代码本身同时是产品与项目记忆。目标项目通过 `project.yml#architecture_memory.code_roots` 声明代码范围；该范围内的每个目录都使用 `ARCHITECTURE.md` 保存职责、接口、依赖和变更导航。项目治理目录不自动纳入该范围。
+## 五分钟开始
 
-项目遵循三条核心原则：
+要求 Node.js 20+ 和一个 Git 仓库，无 npm 依赖。
 
-- 知识有事实源，避免项目配置与文档重复失真。
-- 能力有契约，明确输入、输出、权限与运行要求。
-- 流程可恢复、可审计，保留阶段状态、验证证据与人工决策。
+```sh
+node /path/to/kit/bin/harness.mjs init --target /path/to/project
+cd /path/to/project
+./harness check
+./harness start --workflow workflows/workflow-template.json --intent "完成一个可观察目标"
+./harness status
+```
 
-## 项目结构
+相同版本可以幂等重装；安装器会在写入前检查全部目标，遇到不同内容、Symlink 或非 Git 目录时整体拒绝，不覆盖现有文件，也不自动提交。
+
+## 公共命令
+
+```text
+./harness check [--workflow <path>] [--json]
+./harness start --workflow <path> --intent <text> [--json]
+./harness status [--json]
+./harness signal --revision <n> --file <stage-result.json> [--json]
+./harness decide --revision <n> --action <action>
+    [--actor <name>] --reason <text>
+    [--target <stage>] [--accept-risk <condition-id> ...] [--json]
+```
+
+`signal` 接收 Agent、命令或人工已经完成的 Stage Result。Harness 只校验结构、证据引用与策略结果，不执行 Stage 内容。
+
+退出码稳定为：`0` 成功；`1` 被 Gate 或策略条件阻止；`2` 参数、结构、状态、Revision 或 I/O 错误。JSON 输出始终包含 Revision、状态、当前 Stage、Pending Gate、允许动作和可复制的 Next Actions；错误输出同时保留当前状态上下文与稳定错误码。
+
+## 控制模型
+
+Workflow v2 是自定义状态图。Stage 声明 Goal、Outcome、Exit Condition、Skill Call 和必需 Artifact；Transition 负责唯一流转，并选择 `auto` 或 `human` Gate。默认模板提供 `alignment -> implementation -> acceptance`，用户可以定义不同数量和关系的 Stage。
+
+工具不解析任意表达式。Stage Result 必须逐项报告：
+
+- Condition：`passed`、`failed` 或 `not-applicable`；通过时给 Evidence，其他状态给 Reason。
+- Skill Call：`succeeded`、`failed` 或 `skipped`；成功时给 Artifact，其他状态给 Reason。
+- Artifact：仓库内真实文件或格式有效的外部 URI。
+
+本地 Evidence 和 Artifact 引用必须存在、位于仓库内且不经过 Symlink；外部 URI 只校验格式，不访问网络。
+
+## 用户在任意 Gate 介入
+
+Human Control 是所有活动状态的内建能力：
+
+- `approve` / `reject`：处理当前 Human Gate。
+- `pause` / `resume`：冻结或恢复控制状态。
+- `redirect`：跳转到任意已声明 Stage，旧结果保留并标记为 `superseded`。
+- `override`：精确接受全部未满足 Condition 或必需 Skill 风险后继续。
+- `abort`：终止任务，不修改工作区或 Git 历史。
+
+结构错误不能 Override。流程策略可以由用户接管，决定会保存 Actor、Reason、时间、Accepted Risks 和关联 Transition。任何 Mutation 都要求 Expected Revision；用户 Pause 后，持有旧 Revision 的 Agent 提交会被拒绝。
+
+## 状态与恢复
+
+每个 Worktree 同时只有一个活动任务，唯一机器状态位于 `.git/harness/control.json`。状态使用短锁、Revision 和原子 Rename；完成或终止记录归档到 `.git/harness/history/<work-id>.json`。Git 私有控制路径若包含 Symlink，FileStore 会拒绝读写，避免状态逸出仓库的 Git 私有目录。
+
+启动任务时会绑定 Workflow 内容 Digest。Workflow 漂移后，工具只允许 `status`、`check` 和 `abort`，避免用新规则解释旧状态。已关闭的历史 v1 本地状态可以只读加载，首次新 Mutation 才按当前格式保存。
+
+## 项目资产
 
 ```text
 .
-├── AGENTS_template.md               # Agent 冷启动入口模板
-├── CODING_AGENT_RULES_template.md   # 项目编码规则模板
-├── project-template.yml             # 项目身份、环境和权威入口
-├── knowledge/                       # 长期有效的项目与业务知识
-├── rules/                           # 测试、安全、Git 等主题规则
-├── workflows/                       # Skill 目录、声明式协调模板与执行案例
-└── SPECS/                           # 长期有效的实现规格模板
+├── harness                         # 安装后的公共入口
+├── bin/harness.mjs                 # CLI Adapter
+├── scripts/harness/lib/            # ControlKernel、Validator、FileStore、Installer
+├── workflows/                      # Workflow v2、Stage Result 模板、案例与 Skill Catalog
+├── project-template.yml            # 项目身份和权威入口模板
+├── AGENTS_template.md              # Agent 冷启动入口模板
+├── knowledge/                      # 长期项目与业务知识
+├── rules/                          # 测试、安全和 Git 规则
+└── SPECS/                          # 长期实现规格
 ```
 
-## 两类权威信息
+`workflows/workflow-case.json` 是带 Policy Override、Human Gate、Pause/Resume 和 Redirect 的说明性完成记录，不是真实执行证明。`workflows/skills-list.json` 只负责 Skill ID 路由；Skill 是否实际可用属于 Stage Result 的策略事实。
 
-| 信息 | 权威位置 | 说明 |
-| --- | --- | --- |
-| 项目身份与开发环境 | `project.yml` | 由 `project-template.yml` 初始化；已有工具配置文件仍是版本事实源 |
-| 长期知识与架构决策 | `knowledge/`、`SPECS/` | 按索引渐进加载，候选结论不得冒充正式事实 |
+## 明确不做
 
-## Workflow 协调模板
-
-`workflows/workflow-template.json` 定义固定的 `idle -> alignment -> implementation -> acceptance -> idle` 生命周期，以及每个阶段的 Skill 调用、输入、输出、人工门禁和退出条件。`abort` 可以从任一活动阶段回到 `idle`，阶段数量固定不变。
-
-`workflows/skills-list.json` 是供 Workflow 路由和人工阅读的能力目录，只收录生成时 `.agents/skills/<id>/SKILL.md` 可解析的 Skill，并说明用途、适用阶段、调用方式和来源状态。Skill 的更新意图仍以 `.agents/skills.sources.json` 为准，解析结果以 `.agents/skills.lock.json` 为准；能力目录不复制 Skill 指令，也不能替代执行前的可用性检查。
-
-`workflows/workflow-case.json` 保持原路径，用一个异步订单取消缺陷展示完整的高风险执行：`alignment` 记录知识事实、代码事实、冲突裁决和约束传播；`implementation` 保留第一次实现失败、约束映射澄清和同阶段重试；`acceptance` 对固定 candidate 运行双轴审查、真实数据库与 outbox 路径、清理、发布计划和知识回补候选。案例中的 `example://`、示例 commit 和 `caseKind: illustrative-completed-run` 表明它是契约示例，不是一次真实项目执行的证明。
-
-每个被触发且标记为 `required` 的 Skill 都必须留下最终 `succeeded` 回执并引用 `artifactIndex` 中的产物。一次 Skill 调用可以包含多个 `attempts`；失败尝试必须保留观察结果和失败后的阶段，后续成功不能覆盖它。实现阶段只能澄清已确认约束如何映射到代码；发现新的产品决策时必须 `abort` 并重新进入 `alignment`。知识回补在 owner 确认前始终是候选，不因 Workflow 验收成功而自动成为正式知识。
-
-涉及 issue tracker 写入、Git commit、发布、生产写入或不可逆操作的 Skill，必须先记录对应的人工批准。阶段 `instruction` 只是交给 Agent 的任务上下文，其优先级低于平台指令、项目规则和 Skill 自身指令，不能替代或覆盖 System Prompt。
-
-v1 只提供声明和审计约定，没有运行时、JSON Schema 或静态校验器，因此不能强制执行、防止回执被修改或证明示例产物真实存在。活动状态未来保存在 `.git/harness`；规格、验证摘要、发布计划和 handoff 等可审计产物进入 `work/requirements/`。Workflow 自有 Subagent 功能目前仅预留 feature 标志，不定义角色、Prompt、调度或合并协议；Skill 内部是否使用 Subagent 仍由该 Skill 自身负责。
+MVP 不包含 Skill 调度、测试执行、平台 Hooks、多活动任务、跨机器同步、UI、遥测、npm 发布和自动升级。普通命令只读取仓库事实和 `.git/harness`；除 `init` 安装清单外，不写入工作树。

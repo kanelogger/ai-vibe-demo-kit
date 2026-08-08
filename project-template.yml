@@ -39,7 +39,7 @@ commands:
   typecheck: "<command>"
   lint: "<command>"
   build: "<command>"
-  architecture_check: "python3 workflows/hooks/check_architecture.py --config project.yml"
+  harness_check: "./harness check"
 
 authoritative_context:
   agent_entry: "AGENTS.md"
@@ -65,8 +65,9 @@ capabilities:
 
 workflow:
   definitions: "workflows/"
-  work_items: "work/requirements/"
-  artifact_schema: "schemas/artifact.schema.yml"
+  default: "workflows/workflow-template.json"
+  active_state: ".git/harness/control.json"
+  stage_result_template: "workflows/stage-result-template.json"
 
 permissions:
   default: "read-only"

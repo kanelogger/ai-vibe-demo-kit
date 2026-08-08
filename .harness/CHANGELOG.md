@@ -1,5 +1,11 @@
 # Harness Changelog
 
+## 0.1.1 - 2026-08-09
+
+- Consolidate repository path containment and symlink inspection in the PathSafety Module.
+- Package the shared Module with installed Harness runtimes and verify its Interface directly.
+- Remove the unused ControlKernel error re-export and the obsolete workflow visualization.
+
 ## 0.1.0 - 2026-08-09
 
 - Recover PID locks whose owner can be proven dead without reclaiming live or unverifiable locks.

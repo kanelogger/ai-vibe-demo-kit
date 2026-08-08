@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { HarnessError, fail } from "./errors.mjs";
+import { fail } from "./errors.mjs";
 
 const TERMINALS = new Set(["complete", "blocked", "aborted"]);
 
@@ -267,5 +267,3 @@ export function applyControl({ state, workflow, command, now = () => new Date(),
   const kind = next.active?.status === "paused" ? "paused" : next.active?.pendingGate ? "await-human" : next.active ? "ready" : "complete";
   return { state: next, decision: decisionFor(next, kind) };
 }
-
-export { HarnessError };

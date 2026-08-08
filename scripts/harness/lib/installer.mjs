@@ -1,8 +1,9 @@
 import { chmod, lstat, mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import { dirname, resolve } from "node:path";
 import { statePaths } from "./store.mjs";
 import { fail } from "./errors.mjs";
 import { loadHarnessManifest } from "./manifest.mjs";
+import { firstSymlinkInPath, resolveInside } from "./path-safety.mjs";
 
 const RUNTIME = [
   "harness",
@@ -15,6 +16,7 @@ const RUNTIME = [
   "scripts/harness/lib/installer.mjs",
   "scripts/harness/lib/kernel.mjs",
   "scripts/harness/lib/manifest.mjs",
+  "scripts/harness/lib/path-safety.mjs",
   "scripts/harness/lib/store.mjs",
   "scripts/harness/lib/validator.mjs",
   "scripts/harness/ARCHITECTURE.md",
@@ -39,27 +41,6 @@ async function destinationKind(path) {
   }
 }
 
-async function symlinkInPath(root, target) {
-  const rel = relative(root, target);
-  let cursor = root;
-  for (const part of rel.split(sep).filter(Boolean)) {
-    cursor = join(cursor, part);
-    try {
-      if ((await lstat(cursor)).isSymbolicLink()) return cursor;
-    } catch (error) {
-      if (error.code === "ENOENT") return null;
-      throw error;
-    }
-  }
-  return null;
-}
-
-function assertInside(root, path) {
-  const rel = relative(root, path);
-  if (rel === "" || (!rel.startsWith(`..${sep}`) && rel !== ".." && !rel.startsWith(sep))) return;
-  fail("E_PATH_OUTSIDE", `installation path leaves target repository: ${path}`);
-}
-
 export async function installHarness({ sourceRoot, targetRoot }) {
   const source = resolve(sourceRoot);
   const manifest = await loadHarnessManifest(source);
@@ -74,12 +55,12 @@ export async function installHarness({ sourceRoot, targetRoot }) {
   const conflicts = [];
 
   for (const relativePath of RUNTIME) {
-    const from = resolve(source, relativePath);
-    const to = resolve(target, relativePath);
-    assertInside(source, from);
-    assertInside(target, to);
+    const from = resolveInside(source, relativePath);
+    const to = resolveInside(target, relativePath);
+    if (!from) fail("E_PATH_OUTSIDE", `installation path leaves target repository: ${resolve(source, relativePath)}`);
+    if (!to) fail("E_PATH_OUTSIDE", `installation path leaves target repository: ${resolve(target, relativePath)}`);
     const content = await readFile(from);
-    const linked = await symlinkInPath(target, to);
+    const linked = await firstSymlinkInPath(target, to);
     if (linked) {
       conflicts.push({ path: relativePath, reason: "symlink" });
       continue;

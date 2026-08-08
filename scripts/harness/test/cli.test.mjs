@@ -16,7 +16,7 @@ test("source and installed CLIs report release metadata outside a Git repository
   assert.deepEqual(JSON.parse(result.stdout), {
     schemaVersion: 1,
     name: "project-agent-harness",
-    version: "0.1.0",
+    version: "0.1.1",
     minimumNodeVersion: "22",
   });
 
@@ -24,10 +24,10 @@ test("source and installed CLIs report release metadata outside a Git repository
   result = await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
   const installed = JSON.parse(result.stdout);
   assert.equal(installed.version, 1);
-  assert.equal(installed.harnessVersion, "0.1.0");
+  assert.equal(installed.harnessVersion, "0.1.1");
   result = await runRaw(join(target, "harness"), ["version", "--json"], outside);
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(JSON.parse(result.stdout).version, "0.1.0");
+  assert.equal(JSON.parse(result.stdout).version, "0.1.1");
 });
 
 test("version rejects an invalid installed manifest", async () => {

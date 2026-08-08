@@ -1,5 +1,5 @@
 import { lstat, readFile, realpath } from "node:fs/promises";
-import { isAbsolute, relative, resolve, sep } from "node:path";
+import { firstSymlinkInPath, resolveInside } from "./path-safety.mjs";
 
 const TERMINALS = new Set(["complete", "blocked", "aborted"]);
 const CONDITION_STATUSES = new Set(["passed", "failed", "not-applicable"]);
@@ -16,29 +16,6 @@ function object(value) {
 
 function nonEmpty(value) {
   return typeof value === "string" && value.trim() !== "";
-}
-
-function safeRelative(root, value) {
-  if (!nonEmpty(value) || isAbsolute(value)) return null;
-  const target = resolve(root, value);
-  const rel = relative(root, target);
-  if (rel === "" || (!rel.startsWith(`..${sep}`) && rel !== ".." && !isAbsolute(rel))) return target;
-  return null;
-}
-
-async function firstSymlink(root, target) {
-  const rel = relative(root, target);
-  let cursor = root;
-  for (const part of rel.split(sep).filter(Boolean)) {
-    cursor = resolve(cursor, part);
-    try {
-      if ((await lstat(cursor)).isSymbolicLink()) return cursor;
-    } catch (error) {
-      if (error.code === "ENOENT") return null;
-      throw error;
-    }
-  }
-  return null;
 }
 
 function externalUri(value) {
@@ -67,12 +44,12 @@ async function validateFileOrUri(root, value, errors, { path, missingCode, uriCo
     return;
   }
   if (!root) return;
-  const target = safeRelative(root, value);
+  const target = resolveInside(root, value);
   if (!target) {
     errors.push(issue("E_PATH_OUTSIDE", path, "reference path must stay inside the repository"));
     return;
   }
-  if (await firstSymlink(root, target)) {
+  if (await firstSymlinkInPath(root, target)) {
     errors.push(issue("E_PATH_SYMLINK", path, "reference path must not use symlinks"));
     return;
   }
@@ -85,12 +62,12 @@ async function validateFileOrUri(root, value, errors, { path, missingCode, uriCo
 }
 
 async function readJsonPath(root, path, errors, code = "E_REFERENCE_INVALID") {
-  const target = safeRelative(root, path);
+  const target = resolveInside(root, path);
   if (!target) {
     errors.push(issue("E_PATH_OUTSIDE", path, "path must stay inside the repository"));
     return null;
   }
-  if (await firstSymlink(root, target)) {
+  if (await firstSymlinkInPath(root, target)) {
     errors.push(issue("E_PATH_SYMLINK", path, "symlink paths are not accepted"));
     return null;
   }
@@ -171,11 +148,11 @@ export async function validateWorkflow(workflow, { root, workflowPath = null } =
     }
 
     if (nonEmpty(stage?.instructionsRef) && root) {
-      const target = safeRelative(root, stage.instructionsRef);
+      const target = resolveInside(root, stage.instructionsRef);
       if (!target) errors.push(issue("E_PATH_OUTSIDE", `${path}.instructionsRef`, "instructionsRef must stay inside the repository"));
       else {
         try {
-          if (await firstSymlink(root, target)) errors.push(issue("E_PATH_SYMLINK", `${path}.instructionsRef`, "instructionsRef must not use symlinks"));
+          if (await firstSymlinkInPath(root, target)) errors.push(issue("E_PATH_SYMLINK", `${path}.instructionsRef`, "instructionsRef must not use symlinks"));
           else await realpath(target);
         } catch (error) {
           errors.push(issue("E_REFERENCE_INVALID", `${path}.instructionsRef`, error.code === "ENOENT" ? "instructionsRef does not exist" : error.message));
@@ -223,7 +200,7 @@ export async function validateWorkflow(workflow, { root, workflowPath = null } =
     for (const stageId of stageIds) if (!reachable.has(stageId)) errors.push(issue("E_STAGE_UNREACHABLE", `stages.${stageId}`, "stage is unreachable from initialStage"));
   }
 
-  if (workflowPath && root && !safeRelative(root, workflowPath)) errors.push(issue("E_PATH_OUTSIDE", "workflowPath", "workflow path must stay inside the repository"));
+  if (workflowPath && root && !resolveInside(root, workflowPath)) errors.push(issue("E_PATH_OUTSIDE", "workflowPath", "workflow path must stay inside the repository"));
   return { valid: errors.length === 0, errors, warnings };
 }
 

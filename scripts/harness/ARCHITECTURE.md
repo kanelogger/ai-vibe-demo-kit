@@ -24,6 +24,7 @@
 | Validator | `validateWorkflow`、`validateStageResult`、`validateControlState`、`validateStateAgainstWorkflow` | 可执行结构契约、引用完整性、状态绑定与策略事实提取 |
 | FileStore | `loadState`、`mutateState` | Git 私有路径、锁、Revision、原子写入和归档 |
 | Installer | `installHarness` | 发行 Manifest、清单预检、幂等复制和冲突拒绝 |
+| PathSafety | `isInside`、`resolveInside`、`firstSymlinkInPath` | 仓库内路径解析和路径级 Symlink 检测 |
 | CLI Adapter | `harness <command>` | 参数、版本、JSON/文本输出和稳定退出码 |
 
 ## Verification

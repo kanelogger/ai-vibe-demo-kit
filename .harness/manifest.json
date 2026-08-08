@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
   "name": "project-agent-harness",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "minimumNodeVersion": "22"
 }

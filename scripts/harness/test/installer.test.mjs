@@ -14,14 +14,15 @@ test("installer copies the lightweight runtime and is idempotent", async () => {
   let result = await installHarness({ sourceRoot, targetRoot: target });
   assert.ok(result.created.includes("harness"));
   assert.ok(result.created.includes(".harness/manifest.json"));
+  assert.ok(result.created.includes("scripts/harness/lib/path-safety.mjs"));
   assert.equal((await lstat(join(target, "harness"))).mode & 0o111, 0o111);
   assert.match(await readFile(join(target, "bin", "harness.mjs"), "utf8"), /Harness/);
   assert.equal(result.version, 1);
-  assert.equal(result.harnessVersion, "0.1.0");
+  assert.equal(result.harnessVersion, "0.1.1");
   assert.deepEqual(JSON.parse(await readFile(join(target, ".harness", "manifest.json"), "utf8")), {
     schemaVersion: 1,
     name: "project-agent-harness",
-    version: "0.1.0",
+    version: "0.1.1",
     minimumNodeVersion: "22",
   });
 
@@ -37,8 +38,8 @@ test("installer preflight refuses different content without partial writes", asy
   await assert.rejects(
     installHarness({ sourceRoot, targetRoot: target }),
     (error) => error.code === "E_INSTALL_CONFLICT"
-      && error.facts.sourceVersion === "0.1.0"
-      && error.facts.installedVersion === "0.1.0",
+      && error.facts.sourceVersion === "0.1.1"
+      && error.facts.installedVersion === "0.1.1",
   );
   assert.equal(await readFile(join(target, "harness"), "utf8"), "different\n");
 });

@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import { readFile, lstat, realpath } from "node:fs/promises";
-import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import { dirname, isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { applyControl, digestValue, inspectState } from "../scripts/harness/lib/kernel.mjs";
 import { HarnessError, fail } from "../scripts/harness/lib/errors.mjs";
 import { installHarness } from "../scripts/harness/lib/installer.mjs";
 import { loadHarnessManifest } from "../scripts/harness/lib/manifest.mjs";
+import { isInside, resolveInside } from "../scripts/harness/lib/path-safety.mjs";
 import { loadState, mutateState, readGitActor, statePaths } from "../scripts/harness/lib/store.mjs";
 import { validateStageResult, validateStateAgainstWorkflow, validateWorkflow } from "../scripts/harness/lib/validator.mjs";
 
@@ -78,20 +79,15 @@ async function rootFromCwd() {
   return (await statePaths(process.cwd())).root;
 }
 
-function inside(root, target) {
-  const rel = relative(root, target);
-  return rel === "" || (!rel.startsWith(`..${sep}`) && rel !== ".." && !isAbsolute(rel));
-}
-
 async function readRepoJson(root, path, label) {
   if (typeof path !== "string" || path.trim() === "" || isAbsolute(path)) fail("E_PATH_OUTSIDE", `${label} path must be repository-relative`);
-  const target = resolve(root, path);
-  if (!inside(root, target)) fail("E_PATH_OUTSIDE", `${label} path leaves the repository`);
+  const target = resolveInside(root, path);
+  if (!target) fail("E_PATH_OUTSIDE", `${label} path leaves the repository`);
   try {
     const stat = await lstat(target);
     if (stat.isSymbolicLink()) fail("E_PATH_SYMLINK", `${label} path must not be a symlink`);
     const actual = await realpath(target);
-    if (!inside(root, actual)) fail("E_PATH_OUTSIDE", `${label} resolves outside the repository`);
+    if (!isInside(root, actual)) fail("E_PATH_OUTSIDE", `${label} resolves outside the repository`);
     return JSON.parse(await readFile(target, "utf8"));
   } catch (error) {
     if (error instanceof HarnessError) throw error;

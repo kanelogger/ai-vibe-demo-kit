@@ -1,0 +1,22 @@
+schema_version: 1
+id: "<role-id>"
+purpose: "<why a built-in agent is insufficient>"
+use_when:
+  - "<observable condition>"
+context:
+  include:
+    - "<required path or artifact>"
+  exclude:
+    - "<context that would compromise isolation>"
+capabilities:
+  - "<capability-id>"
+permissions:
+  filesystem: "read-only"
+  commands: []
+  network: false
+  external_writes: false
+output:
+  type: "<artifact-type>"
+  schema_ref: "schemas/artifact.schema.yml"
+success:
+  - "<observable condition>"

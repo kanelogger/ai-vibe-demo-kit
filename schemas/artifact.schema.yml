@@ -1,0 +1,73 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+$id: "https://example.invalid/schemas/artifact.schema.yml"
+title: Workflow Artifact
+type: object
+additionalProperties: false
+required:
+  - schema_version
+  - id
+  - type
+  - status
+  - produced_by
+  - summary
+  - evidence
+properties:
+  schema_version:
+    const: 1
+  id:
+    type: string
+    minLength: 1
+  type:
+    type: string
+    minLength: 1
+  status:
+    enum:
+      - complete
+      - partial
+      - blocked
+      - failed
+  produced_by:
+    type: object
+    additionalProperties: false
+    required:
+      - workflow
+      - stage
+    properties:
+      workflow:
+        type: string
+      stage:
+        type: string
+      executor:
+        type: string
+  summary:
+    type: string
+    minLength: 1
+  evidence:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required:
+        - kind
+        - ref
+      properties:
+        kind:
+          enum:
+            - file
+            - command
+            - test
+            - diff
+            - source
+            - human-decision
+        ref:
+          type: string
+        result:
+          type: string
+  risks:
+    type: array
+    items:
+      type: string
+  next_actions:
+    type: array
+    items:
+      type: string

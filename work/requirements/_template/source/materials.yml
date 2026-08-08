@@ -1,0 +1,10 @@
+schema_version: 1
+requirement_id: "<requirement-id>"
+materials:
+  - id: "<material-id>"
+    type: "<prd|issue|design|code|log|test|human>"
+    ref: "<path-or-url>"
+    captured_at: "<YYYY-MM-DDTHH:MM:SSZ>"
+    authoritative_for:
+      - "<fact-or-scope>"
+    notes: "<limitations or missing context>"

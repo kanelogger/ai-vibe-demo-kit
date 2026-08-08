@@ -1,0 +1,14 @@
+schema_version: 1
+requirement_id: "<requirement-id>"
+workflow:
+  id: "<workflow-id>"
+  version: 1
+status: active
+current_stage: intake
+allowed_actions:
+  - read
+blocked_by: []
+completed_stages: []
+artifacts: []
+human_decisions: []
+updated_at: "<YYYY-MM-DDTHH:MM:SSZ>"

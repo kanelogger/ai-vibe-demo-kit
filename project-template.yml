@@ -1,0 +1,67 @@
+schema_version: 1
+
+project:
+  id: "<project-id>"
+  name: "<project-name>"
+  summary: "<one-sentence project description>"
+  in_scope:
+    - "<primary deliverable>"
+  out_of_scope:
+    - "<explicit non-goal>"
+
+repositories:
+  primary: "."
+  related: []
+
+environment:
+  os: "macos"
+  architecture: "<arm64-or-x86_64>"
+  toolchains:
+    node:
+      manager: "volta"
+      version_source: "package.json"
+    package_manager:
+      name: "pnpm"
+      version_source: "package.json#packageManager"
+    python:
+      manager: "<pyenv-or-miniconda-or-none>"
+      version_source: "<.python-version-or-environment.yml>"
+    java:
+      manager: "<jenv-or-none>"
+      version_source: "<.java-version-or-pom.xml>"
+    containers:
+      runtime: "<orbstack-or-docker-or-none>"
+
+commands:
+  install: "<command>"
+  develop: "<command>"
+  test: "<command>"
+  typecheck: "<command>"
+  lint: "<command>"
+  build: "<command>"
+
+authoritative_context:
+  agent_entry: "AGENTS.md"
+  architecture: "ARCHITECTURE.md"
+  knowledge_index: "knowledge/INDEX.md"
+  knowledge_routing: "knowledge/ROUTING.md"
+  rules: "rules/"
+  specs: "SPECS/"
+
+capabilities:
+  project_skills: "skills/"
+  installed_skills: ".agents/skills/"
+
+workflow:
+  definitions: "workflows/"
+  work_items: "work/requirements/"
+  artifact_schema: "schemas/artifact.schema.yml"
+
+permissions:
+  default: "read-only"
+  write_roots:
+    - "."
+  require_human_approval:
+    - "publish"
+    - "production-write"
+    - "destructive-operation"

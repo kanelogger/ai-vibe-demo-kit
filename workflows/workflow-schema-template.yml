@@ -1,0 +1,216 @@
+schema_version: 1
+id: "<workflow-id>"
+version: 1
+description: "<when this workflow applies>"
+
+inputs:
+  - id: requirement_id
+    type: string
+    required: true
+  - id: source
+    type: file
+    required: true
+
+context:
+  required:
+    - project.yml
+    - AGENTS.md
+    - ARCHITECTURE.md
+    - knowledge/INDEX.md
+    - knowledge/ROUTING.md
+
+stages:
+  - id: intake
+    goal: "保存原始输入并暴露阻塞信息"
+    depends_on: []
+    executor:
+      kind: primary_agent
+    capabilities:
+      required:
+        - requirement.intake
+      preferred_skills: []
+    instructions_ref: null
+    inputs:
+      - source
+    outputs:
+      - id: source_record
+        type: requirement-source
+        path: "work/requirements/<requirement-id>/source/input.md"
+        required: true
+    gates:
+      entry: []
+      exit:
+        - "source_record exists"
+      human: null
+
+  - id: clarify
+    goal: "确认会影响范围、架构路径和验收的未知项"
+    depends_on:
+      - intake
+    executor:
+      kind: primary_agent
+    capabilities:
+      required:
+        - requirement.clarify
+      preferred_skills: []
+    instructions_ref: null
+    inputs:
+      - source_record
+    outputs:
+      - id: clarification
+        type: decision-record
+        path: "work/requirements/<requirement-id>/clarification.md"
+        required: true
+    gates:
+      entry: []
+      exit:
+        - "blocking questions are resolved or explicitly blocked"
+      human:
+        required: true
+        reason: "确认关键事实、非目标和高成本判断"
+        evidence_path: "work/requirements/<requirement-id>/clarification.md"
+
+  - id: analyze
+    goal: "按知识路由和当前代码识别影响范围与架构路径"
+    depends_on:
+      - clarify
+    executor:
+      kind: primary_agent
+    capabilities:
+      required:
+        - requirement.analyze
+      preferred_skills: []
+    instructions_ref: null
+    inputs:
+      - source_record
+      - clarification
+    outputs:
+      - id: analysis
+        type: analysis
+        path: "work/requirements/<requirement-id>/analysis.md"
+        required: true
+    gates:
+      entry:
+        - "blocking clarification is resolved"
+      exit:
+        - "affected applications and architecture path have evidence"
+      human: null
+
+  - id: define_requirement
+    goal: "形成应用级开发契约"
+    depends_on:
+      - analyze
+    executor:
+      kind: primary_agent
+    capabilities:
+      required:
+        - requirement.define
+      preferred_skills: []
+    instructions_ref: null
+    inputs:
+      - source_record
+      - clarification
+      - analysis
+    outputs:
+      - id: application_requirement
+        type: application-requirement
+        path: "work/requirements/<requirement-id>/applications/<application-id>/requirement.md"
+        required: true
+    gates:
+      entry: []
+      exit:
+        - "goal, non-goals, constraints, code anchors, and acceptance are explicit"
+      human:
+        required: true
+        reason: "编码前确认范围、扩展点和验收契约"
+        evidence_path: "work/requirements/<requirement-id>/applications/<application-id>/requirement.md"
+
+  - id: implement
+    goal: "按照已确认的应用级 requirement 完成最小变更"
+    depends_on:
+      - define_requirement
+    executor:
+      kind: primary_agent
+    capabilities:
+      required:
+        - code.change
+      preferred_skills: []
+    instructions_ref: null
+    inputs:
+      - application_requirement
+    outputs:
+      - id: change
+        type: patch
+        path: null
+        required: true
+    gates:
+      entry:
+        - "application requirement is approved"
+      exit:
+        - "requested change exists"
+      human: null
+
+  - id: validate
+    goal: "对账 requirement、代码差异和验证证据"
+    depends_on:
+      - implement
+    executor:
+      kind: subagent
+      role_ref: null
+      isolation_reason: "独立复核实现与契约的一致性"
+    capabilities:
+      required:
+        - implementation.validate
+      preferred_skills: []
+    instructions_ref: null
+    inputs:
+      - application_requirement
+      - change
+    outputs:
+      - id: implementation_check
+        type: verification-report
+        path: "work/requirements/<requirement-id>/applications/<application-id>/implementation-check.md"
+        required: true
+    gates:
+      entry: []
+      exit:
+        - "every requirement item is done, partial, todo, changed, or blocked"
+      human: null
+
+  - id: handoff
+    goal: "形成可接续、可审计的交接"
+    depends_on:
+      - validate
+    executor:
+      kind: primary_agent
+    capabilities:
+      required:
+        - work.handoff
+      preferred_skills: []
+    instructions_ref: null
+    inputs:
+      - implementation_check
+    outputs:
+      - id: handoff
+        type: handoff
+        path: "work/requirements/<requirement-id>/applications/<application-id>/handoff.md"
+        required: true
+    gates:
+      entry: []
+      exit:
+        - "status and handoff are current"
+      human:
+        required: true
+        reason: "最终验收和后续动作放行"
+        evidence_path: "work/requirements/<requirement-id>/applications/<application-id>/handoff.md"
+
+hooks:
+  before_stage: []
+  after_stage:
+    - kind: record-state
+      ref: "work/requirements/<requirement-id>/status.yml"
+      on_failure: block
+  before_external_write:
+    - kind: human-approval
+      ref: "<approval-policy>"
+      on_failure: block

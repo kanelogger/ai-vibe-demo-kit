@@ -34,9 +34,22 @@
 
 {填写：这个项目最终交付什么，以及明确不做什么。}
 
+## 项目地图
+
+- 项目身份、环境和命令：`project.yml`
+- 架构模块及依赖方向：`ARCHITECTURE.md`
+- 长期知识入口：`knowledge/INDEX.md`
+- 知识渐进加载规则：`knowledge/ROUTING.md`
+- 可复用工作流：`workflows/`
+- 当前需求及机器状态：`work/requirements/<requirement-id>/status.yml`
+- 测试、安全和 Git 规则：`rules/`
+
 ## 开始前
 
-{填写：开始工作前必须读取的文件、检查的状态和前置条件。}
+1. 读取 `project.yml`、`ARCHITECTURE.md` 和当前需求的 `status.yml`。
+2. 根据 `knowledge/ROUTING.md` 读取与任务相关的最小知识集合。
+3. 阅读当前应用的 `requirement.md`、相关规格、代码入口和邻近测试。
+4. 检查已有工作区改动、允许动作和人工门禁。
 
 ## 高风险边界
 
@@ -50,6 +63,10 @@
 
 {填写：改动后必须运行的命令，以及需要检查的真实界面或返回值。}
 
+验证结果必须写入当前需求的 `implementation-check.md`。跳过的检查、失败输出和环境限制必须明确记录。
+
 ## 完成条件
 
 {填写：允许声称完成的明确状态，以及验证失败时必须报告的信息。}
+
+完成前更新当前需求的 `status.yml` 与 `handoff.md`；稳定经验先进入 `knowledge/candidate/`，经确认后才能进入正式知识区。

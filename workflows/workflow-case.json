@@ -1,0 +1,134 @@
+{
+  "caseVersion": 1,
+  "caseId": "completed-high-risk-workflow-example",
+  "templateRef": "workflows/workflow-template.json",
+  "workItem": {
+    "id": "wi-example-workflow-coordination",
+    "type": "feature",
+    "intent": "Add a declarative workflow coordination template with auditable Skill receipts.",
+    "primaryUncertainty": "Whether a four-state model can keep Skill routing and evidence understandable without a runtime.",
+    "changesDomainModel": false,
+    "changesModuleInterface": true,
+    "requiresMultipleTasks": true,
+    "testFirst": true,
+    "touchesStableCore": true,
+    "requiresIntegrationTests": false,
+    "requiresHandoff": true,
+    "acceptanceCriteria": [
+      { "id": "AC-1", "statement": "The template declares the fixed four-state lifecycle and abort transitions.", "kind": "spec", "evidenceRef": "artifact:verification-report#state-model" },
+      { "id": "AC-2", "statement": "Every triggered required Skill has a successful receipt with artifact references.", "kind": "spec", "evidenceRef": "artifact:verification-report#skill-receipts" },
+      { "id": "AC-3", "statement": "Both JSON files parse without errors and existing documentation remains readable.", "kind": "regression", "evidenceRef": "artifact:verification-report#json-parse" }
+    ],
+    "taskRefs": ["example://ticket/workflow-template", "example://ticket/workflow-case"]
+  },
+  "state": {
+    "current": "idle",
+    "outcome": "accepted",
+    "baseline": { "branch": "example/main", "commit": "example-baseline-commit" },
+    "candidate": { "branch": "example/workflow-coordination", "commit": "example-candidate-commit", "unchangedDuringVerification": true }
+  },
+  "risk": {
+    "level": "high",
+    "signals": ["control-plane-change"],
+    "rollback": "Revert example-candidate-commit and remove generated work-item artifacts."
+  },
+  "confirmations": {
+    "alignment": { "status": "confirmed", "by": "user", "at": "2026-08-08T09:20:00Z", "quote": "Confirm the high-risk alignment." },
+    "acceptance": { "status": "confirmed", "by": "user", "at": "2026-08-08T10:45:00Z", "quote": "Accept the verified candidate." }
+  },
+  "approvals": [
+    { "id": "approval-spec-publish", "action": "issue-tracker-write", "status": "approved", "by": "user", "at": "2026-08-08T09:12:00Z" },
+    { "id": "approval-task-publish", "action": "issue-tracker-write", "status": "approved", "by": "user", "at": "2026-08-08T09:16:00Z" },
+    { "id": "approval-candidate-commit", "action": "git-commit", "status": "approved", "by": "user", "at": "2026-08-08T10:10:00Z" }
+  ],
+  "stageRuns": [
+    {
+      "stage": "alignment",
+      "status": "succeeded",
+      "startedAt": "2026-08-08T09:00:00Z",
+      "finishedAt": "2026-08-08T09:20:00Z",
+      "skillRuns": [
+        { "callId": "alignment.diagnose", "skill": "diagnosing-bugs", "status": "skipped", "reason": "The work item is a feature, not a bugfix or performance regression.", "artifactRefs": [] },
+        { "callId": "alignment.prototype", "skill": "prototype", "status": "succeeded", "startedAt": "2026-08-08T09:00:00Z", "finishedAt": "2026-08-08T09:06:00Z", "summary": "Confirmed that the four-state walkthrough covers normal completion and abort recovery.", "artifactRefs": ["artifact:prototype-evidence"] },
+        { "callId": "alignment.domain-model", "skill": "domain-modeling", "status": "skipped", "reason": "The work item does not change domain terminology or business rules.", "artifactRefs": [] },
+        { "callId": "alignment.module-design", "skill": "codebase-design", "status": "succeeded", "startedAt": "2026-08-08T09:06:00Z", "finishedAt": "2026-08-08T09:10:00Z", "summary": "Kept the workflow definition as a small declarative interface and left execution behind a future runtime seam.", "artifactRefs": ["artifact:design-decision"] },
+        {
+          "callId": "alignment.spec",
+          "skill": "to-spec",
+          "status": "succeeded",
+          "statusHistory": [
+            { "status": "planned", "at": "2026-08-08T09:10:00Z" },
+            { "status": "waiting_approval", "at": "2026-08-08T09:10:01Z" },
+            { "status": "running", "at": "2026-08-08T09:12:01Z", "approvalRef": "approval-spec-publish" },
+            { "status": "succeeded", "at": "2026-08-08T09:15:00Z" }
+          ],
+          "startedAt": "2026-08-08T09:12:01Z",
+          "finishedAt": "2026-08-08T09:15:00Z",
+          "summary": "Published the confirmed specification and observable acceptance criteria.",
+          "artifactRefs": ["work/requirements/wi-example-workflow-coordination/requirement.md"]
+        },
+        {
+          "callId": "alignment.tasks",
+          "skill": "to-tickets",
+          "status": "succeeded",
+          "statusHistory": [
+            { "status": "waiting_approval", "at": "2026-08-08T09:15:01Z" },
+            { "status": "running", "at": "2026-08-08T09:16:01Z", "approvalRef": "approval-task-publish" },
+            { "status": "succeeded", "at": "2026-08-08T09:18:00Z" }
+          ],
+          "startedAt": "2026-08-08T09:16:01Z",
+          "finishedAt": "2026-08-08T09:18:00Z",
+          "summary": "Created two ordered tracer-bullet tasks.",
+          "artifactRefs": ["example://ticket/workflow-template", "example://ticket/workflow-case"]
+        }
+      ],
+      "artifactRefs": ["artifact:prototype-evidence", "artifact:design-decision", "work/requirements/wi-example-workflow-coordination/requirement.md"],
+      "exitConditions": { "allTriggeredRequiredSkillRuns": "succeeded", "requiredOutputsRecorded": true, "acceptanceCriteriaObservable": true, "riskClassified": true, "highRiskAlignmentConfirmed": true }
+    },
+    {
+      "stage": "implementation",
+      "status": "succeeded",
+      "startedAt": "2026-08-08T09:21:00Z",
+      "finishedAt": "2026-08-08T10:15:00Z",
+      "skillRuns": [
+        { "callId": "implementation.tdd", "skill": "tdd", "status": "succeeded", "startedAt": "2026-08-08T09:21:00Z", "finishedAt": "2026-08-08T09:40:00Z", "summary": "Established failing then passing checks for lifecycle and receipt behavior.", "artifactRefs": ["artifact:test-evidence"] },
+        {
+          "callId": "implementation.build",
+          "skill": "implement",
+          "status": "succeeded",
+          "statusHistory": [
+            { "status": "running", "at": "2026-08-08T09:40:01Z" },
+            { "status": "waiting_approval", "at": "2026-08-08T10:09:59Z" },
+            { "status": "running", "at": "2026-08-08T10:10:01Z", "approvalRef": "approval-candidate-commit" },
+            { "status": "succeeded", "at": "2026-08-08T10:15:00Z" }
+          ],
+          "startedAt": "2026-08-08T09:40:01Z",
+          "finishedAt": "2026-08-08T10:15:00Z",
+          "summary": "Implemented the declared scope, ran quick checks, and recorded the approved candidate commit.",
+          "artifactRefs": ["git:example-candidate-commit", "work/requirements/wi-example-workflow-coordination/implementation-notes.md", "work/requirements/wi-example-workflow-coordination/architecture-impact.yml", "artifact:quick-evidence"]
+        }
+      ],
+      "artifactRefs": ["git:example-candidate-commit", "work/requirements/wi-example-workflow-coordination/implementation-notes.md", "work/requirements/wi-example-workflow-coordination/architecture-impact.yml", "artifact:quick-evidence"],
+      "exitConditions": { "allTriggeredRequiredSkillRuns": "succeeded", "requiredOutputsRecorded": true, "candidateCommitted": true, "quickEvidenceCurrent": true, "quickEvidencePassed": true }
+    },
+    {
+      "stage": "acceptance",
+      "status": "succeeded",
+      "startedAt": "2026-08-08T10:16:00Z",
+      "finishedAt": "2026-08-08T10:45:00Z",
+      "skillRuns": [
+        { "callId": "acceptance.review", "skill": "code-review", "status": "succeeded", "startedAt": "2026-08-08T10:16:00Z", "finishedAt": "2026-08-08T10:30:00Z", "summary": "Found no blocking Standards or Spec findings against the fixed baseline.", "artifactRefs": ["artifact:review-evidence"] },
+        { "callId": "acceptance.handoff", "skill": "handoff", "status": "succeeded", "startedAt": "2026-08-08T10:30:01Z", "finishedAt": "2026-08-08T10:34:00Z", "summary": "Prepared a compact temporary continuation artifact referencing existing evidence.", "artifactRefs": ["temp://handoff/wi-example-workflow-coordination.md"] }
+      ],
+      "artifactRefs": ["artifact:review-evidence", "temp://handoff/wi-example-workflow-coordination.md", "work/requirements/wi-example-workflow-coordination/implementation-check.md", "work/requirements/wi-example-workflow-coordination/handoff.md", "artifact:cleanup-evidence"],
+      "exitConditions": { "allTriggeredRequiredSkillRuns": "succeeded", "requiredOutputsRecorded": true, "fullEvidenceCurrent": true, "fullEvidencePassed": true, "criticalUserPathsActuallyRun": true, "cleanupPassed": true, "candidateUnchanged": true, "highRiskAcceptanceConfirmed": true }
+    }
+  ],
+  "verification": {
+    "quick": { "status": "passed", "current": true, "artifactRef": "artifact:quick-evidence" },
+    "full": { "status": "passed", "current": true, "artifactRef": "work/requirements/wi-example-workflow-coordination/implementation-check.md" },
+    "criticalUserPaths": [{ "id": "workflow-walkthrough", "status": "passed", "evidenceRef": "artifact:verification-report#workflow-walkthrough" }],
+    "cleanup": { "status": "passed", "evidenceRef": "artifact:cleanup-evidence" }
+  },
+  "closedAt": "2026-08-08T10:45:00Z"
+}

@@ -1,0 +1,255 @@
+{
+  "schemaVersion": 1,
+  "templateId": "risk-adaptive-skill-workflow",
+  "description": "A declarative four-state workflow that coordinates Skills, artifacts, evidence, approvals, and recovery.",
+  "skillSourcesRef": ".agents/skills.sources.json",
+  "stateModel": {
+    "initialState": "idle",
+    "states": ["idle", "alignment", "implementation", "acceptance"],
+    "transitions": [
+      { "from": "idle", "event": "align", "to": "alignment" },
+      { "from": "alignment", "event": "complete", "to": "implementation" },
+      { "from": "implementation", "event": "finish", "to": "acceptance" },
+      { "from": "acceptance", "event": "accept", "to": "idle" },
+      { "from": "alignment", "event": "abort", "to": "idle" },
+      { "from": "implementation", "event": "abort", "to": "idle" },
+      { "from": "acceptance", "event": "abort", "to": "idle" }
+    ],
+    "failurePolicy": {
+      "skillCallFailure": "stay-in-stage",
+      "exitConditionFailure": "stay-in-stage"
+    }
+  },
+  "riskPolicy": {
+    "levels": ["normal", "high"],
+    "defaultLevel": "normal",
+    "highRiskSignals": [
+      "public-contract-change",
+      "irreversible-data-change",
+      "security-semantics-change",
+      "production-write",
+      "control-plane-change",
+      "cross-core-module-change"
+    ],
+    "humanConfirmation": {
+      "normal": [],
+      "high": ["alignment", "acceptance"]
+    },
+    "rollbackRequiredFor": ["high"]
+  },
+  "stages": {
+    "alignment": {
+      "objective": "Freeze the intent, risk, observable acceptance criteria, solution shape, and implementation tasks.",
+      "instruction": "Use the request and authoritative project context to resolve uncertainty before implementation. Invoke each triggered Skill in dependency order, preserve its instructions, record its outputs, and stop for required approvals. Do not enter implementation until every required acceptance criterion is observable and every triggered required Skill has succeeded.",
+      "entryConditions": ["currentState=alignment", "requestCaptured=true", "baselineRecorded=true"],
+      "skillCalls": [
+        {
+          "id": "alignment.diagnose",
+          "skill": "diagnosing-bugs",
+          "purpose": "Establish a reproducible diagnosis and failure evidence.",
+          "when": "workItem.type in [bugfix, performance-regression]",
+          "dependsOn": [],
+          "inputs": ["request", "baseline", "projectContext"],
+          "outputs": ["diagnosis"],
+          "required": true,
+          "approvalRequired": [],
+          "successReceiptRequired": true,
+          "onFailure": "stay-in-stage"
+        },
+        {
+          "id": "alignment.prototype",
+          "skill": "prototype",
+          "purpose": "Answer a material design or state-model uncertainty with throwaway evidence.",
+          "when": "workItem.primaryUncertainty!=null",
+          "dependsOn": [],
+          "inputs": ["request", "primaryUncertainty", "projectContext"],
+          "outputs": ["prototypeEvidence"],
+          "required": true,
+          "approvalRequired": [],
+          "successReceiptRequired": true,
+          "onFailure": "stay-in-stage"
+        },
+        {
+          "id": "alignment.domain-model",
+          "skill": "domain-modeling",
+          "purpose": "Clarify domain terms, rules, states, and decisions changed by the work.",
+          "when": "workItem.changesDomainModel=true",
+          "dependsOn": [],
+          "inputs": ["request", "projectContext"],
+          "outputs": ["domainDecisionRefs"],
+          "required": true,
+          "approvalRequired": [],
+          "successReceiptRequired": true,
+          "onFailure": "stay-in-stage"
+        },
+        {
+          "id": "alignment.module-design",
+          "skill": "codebase-design",
+          "purpose": "Choose module interfaces, seams, adapters, and test surfaces.",
+          "when": "workItem.changesModuleInterface=true",
+          "dependsOn": [],
+          "inputs": ["request", "projectContext"],
+          "outputs": ["designDecisionRefs"],
+          "required": true,
+          "approvalRequired": [],
+          "successReceiptRequired": true,
+          "onFailure": "stay-in-stage"
+        },
+        {
+          "id": "alignment.spec",
+          "skill": "to-spec",
+          "purpose": "Turn confirmed context and decisions into an implementation specification.",
+          "when": "always",
+          "dependsOn": ["alignment.diagnose", "alignment.prototype", "alignment.domain-model", "alignment.module-design"],
+          "inputs": ["request", "diagnosis", "prototypeEvidence", "domainDecisionRefs", "designDecisionRefs"],
+          "outputs": ["spec", "acceptanceCriteria"],
+          "required": true,
+          "approvalRequired": ["issue-tracker-write"],
+          "successReceiptRequired": true,
+          "onFailure": "stay-in-stage"
+        },
+        {
+          "id": "alignment.tasks",
+          "skill": "to-tickets",
+          "purpose": "Split the confirmed specification into ordered tracer-bullet tasks.",
+          "when": "workItem.requiresMultipleTasks=true",
+          "dependsOn": ["alignment.spec"],
+          "inputs": ["spec", "acceptanceCriteria"],
+          "outputs": ["taskRefs"],
+          "required": true,
+          "approvalRequired": ["issue-tracker-write"],
+          "successReceiptRequired": true,
+          "onFailure": "stay-in-stage"
+        }
+      ],
+      "outputs": [
+        { "id": "spec", "locationType": "path-or-url", "locationTemplate": "work/requirements/{{workItemId}}/requirement.md", "required": true },
+        { "id": "acceptanceCriteria", "locationType": "case-field", "locationTemplate": "workItem.acceptanceCriteria", "required": true },
+        { "id": "taskRefs", "locationType": "path-or-url-list", "locationTemplate": "workItem.taskRefs", "requiredWhen": "workItem.requiresMultipleTasks=true" },
+        { "id": "rollbackPlan", "locationType": "case-field", "locationTemplate": "risk.rollback", "requiredWhen": "risk.level=high" }
+      ],
+      "exitConditions": [
+        "allTriggeredRequiredSkillRuns=succeeded",
+        "requiredOutputsRecorded=true",
+        "acceptanceCriteriaObservable=true",
+        "riskClassified=true",
+        "highRiskAlignmentConfirmed=true-or-not-required"
+      ]
+    },
+    "implementation": {
+      "objective": "Implement the confirmed specification and produce a committed candidate with current quick evidence.",
+      "instruction": "Implement only the confirmed scope. Use TDD when its condition is triggered, keep verification feedback visible, preserve unrelated worktree changes, and record every produced artifact. Stop before any Git commit until its approval is recorded.",
+      "entryConditions": ["currentState=implementation", "alignmentExitConditionsMet=true"],
+      "skillCalls": [
+        {
+          "id": "implementation.tdd",
+          "skill": "tdd",
+          "purpose": "Protect stable core behavior, integration seams, and regressions through a red-green-refactor loop.",
+          "when": "workItem.testFirst=true or workItem.touchesStableCore=true or workItem.requiresIntegrationTests=true",
+          "dependsOn": [],
+          "inputs": ["spec", "acceptanceCriteria", "taskRefs", "projectContext"],
+          "outputs": ["testEvidence"],
+          "required": true,
+          "approvalRequired": [],
+          "successReceiptRequired": true,
+          "onFailure": "stay-in-stage"
+        },
+        {
+          "id": "implementation.build",
+          "skill": "implement",
+          "purpose": "Implement the confirmed specification and run the required project checks.",
+          "when": "always",
+          "dependsOn": ["implementation.tdd"],
+          "inputs": ["spec", "acceptanceCriteria", "taskRefs", "testEvidence", "projectContext"],
+          "outputs": ["candidateCommit", "implementationNotes", "architectureImpact", "quickEvidence"],
+          "required": true,
+          "approvalRequired": ["git-commit"],
+          "successReceiptRequired": true,
+          "onFailure": "stay-in-stage"
+        }
+      ],
+      "outputs": [
+        { "id": "candidateCommit", "locationType": "git-commit", "locationTemplate": "candidate.commit", "required": true },
+        { "id": "implementationNotes", "locationType": "path", "locationTemplate": "work/requirements/{{workItemId}}/implementation-notes.md", "required": true },
+        { "id": "architectureImpact", "locationType": "path", "locationTemplate": "work/requirements/{{workItemId}}/architecture-impact.yml", "required": true },
+        { "id": "quickEvidence", "locationType": "case-field", "locationTemplate": "verification.quick", "required": true }
+      ],
+      "exitConditions": [
+        "allTriggeredRequiredSkillRuns=succeeded",
+        "requiredOutputsRecorded=true",
+        "candidateCommitted=true",
+        "quickEvidence.current=true",
+        "quickEvidence.passed=true"
+      ]
+    },
+    "acceptance": {
+      "objective": "Prove specification compliance and regression safety, restore the environment, and record the delivery decision.",
+      "instruction": "Review the exact candidate against project standards and the confirmed specification. Run the full verification profile and real critical user paths, record skipped checks and residual risks, perform cleanup, and require high-risk acceptance confirmation before closing.",
+      "entryConditions": ["currentState=acceptance", "implementationExitConditionsMet=true", "candidateUnchanged=true"],
+      "skillCalls": [
+        {
+          "id": "acceptance.review",
+          "skill": "code-review",
+          "purpose": "Review the candidate against both repository standards and the confirmed specification.",
+          "when": "always",
+          "dependsOn": [],
+          "inputs": ["baseline", "candidate", "spec", "projectContext"],
+          "outputs": ["reviewEvidence"],
+          "required": true,
+          "approvalRequired": [],
+          "successReceiptRequired": true,
+          "onFailure": "stay-in-stage"
+        },
+        {
+          "id": "acceptance.handoff",
+          "skill": "handoff",
+          "purpose": "Prepare a compact continuation artifact when another session or Agent must continue the work.",
+          "when": "workItem.requiresHandoff=true",
+          "dependsOn": ["acceptance.review"],
+          "inputs": ["spec", "candidate", "reviewEvidence", "verification"],
+          "outputs": ["sessionHandoff"],
+          "required": true,
+          "approvalRequired": [],
+          "successReceiptRequired": true,
+          "onFailure": "stay-in-stage"
+        }
+      ],
+      "outputs": [
+        { "id": "verificationReport", "locationType": "path", "locationTemplate": "work/requirements/{{workItemId}}/implementation-check.md", "required": true },
+        { "id": "sessionHandoff", "locationType": "temporary-path", "locationTemplate": "system-temp-directory", "requiredWhen": "workItem.requiresHandoff=true" },
+        { "id": "deliveryHandoff", "locationType": "path", "locationTemplate": "work/requirements/{{workItemId}}/handoff.md", "required": true },
+        { "id": "cleanupEvidence", "locationType": "case-field", "locationTemplate": "verification.cleanup", "required": true },
+        { "id": "acceptanceDecision", "locationType": "case-field", "locationTemplate": "confirmations.acceptance", "requiredWhen": "risk.level=high" }
+      ],
+      "exitConditions": [
+        "allTriggeredRequiredSkillRuns=succeeded",
+        "requiredOutputsRecorded=true",
+        "fullEvidence.current=true",
+        "fullEvidence.passed=true",
+        "criticalUserPathsActuallyRun=true-or-not-applicable-with-reason",
+        "cleanup.passed=true",
+        "candidateUnchanged=true",
+        "highRiskAcceptanceConfirmed=true-or-not-required"
+      ]
+    }
+  },
+  "evidencePolicy": {
+    "skillRunStatuses": ["planned", "waiting_approval", "running", "succeeded", "failed", "skipped"],
+    "stageRunStatuses": ["planned", "running", "succeeded", "failed", "aborted"],
+    "requiredSuccessReceiptFields": ["callId", "skill", "status", "startedAt", "finishedAt", "summary", "artifactRefs"],
+    "requiredStageExitEvidence": ["skillRuns", "artifactRefs", "exitConditions"],
+    "rules": [
+      "A required Skill whose condition is true must have a succeeded receipt before stage exit.",
+      "A Skill whose condition is false may be skipped only with a recorded reason.",
+      "A dependency is satisfied by succeeded or condition-skipped; failed and approval-pending dependencies block execution.",
+      "A failed Skill keeps the workflow in the current stage and records failure facts.",
+      "Approval must be recorded before the protected side effect named by approvalRequired occurs; a running Skill may pause in waiting_approval before that action."
+    ]
+  },
+  "features": {
+    "subagents": {
+      "status": "reserved",
+      "enabled": false
+    }
+  }
+}

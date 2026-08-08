@@ -24,4 +24,4 @@
 
 ## Resume Context
 
-新会话必须先读取：当前 `status.yml`、本应用 `requirement.md`、`implementation-check.md`，以及这里列出的未决证据。
+新会话必须先读取：当前 `status.yml`、本应用 `requirement.md`、`architecture-impact.yml`、`implementation-check.md`，以及这里列出的未决证据。

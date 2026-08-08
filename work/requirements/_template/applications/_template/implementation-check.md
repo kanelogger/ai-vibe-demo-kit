@@ -12,6 +12,13 @@
 | --- | --- | --- |
 | `<command or user path>` | `<passed|failed|skipped>` | `<output or reason>` |
 
+## Architecture Memory
+
+- Impact record: `architecture-impact.yml`
+- Architecture check: `<command>`
+- Result: `<passed|failed|skipped>`
+- Evidence: `<output or reason>`
+
 ## Risks and Regressions
 
 - `<remaining risk or none>`

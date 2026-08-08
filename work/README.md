@@ -17,6 +17,7 @@ work/requirements/<requirement-id>/
 └── applications/
     └── <application-id>/
         ├── requirement.md
+        ├── architecture-impact.yml
         ├── implementation-check.md
         └── handoff.md
 ```
@@ -27,4 +28,5 @@ work/requirements/<requirement-id>/
 - Markdown 解释为什么推进，YAML 表达现在允许什么。
 - 人工批准记录原始确认文本、确认人和时间。
 - 多应用需求为每个应用建立独立 `requirement.md`。
+- 每个应用的 `architecture-impact.yml` 记录受影响代码模块的回填结果与检查证据。
 - 实现可以中断，`implementation-check.md` 与 `handoff.md` 必须让新会话能够继续。

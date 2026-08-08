@@ -33,6 +33,8 @@ Workflow 可以引用 Knowledge、Skill 和 Schema。Knowledge 不引用某次�
 ## 关键不变量
 
 - `AGENTS.md` 只做高频规则和导航，不承载全部知识。
+- 只有 `project.yml#architecture_memory.code_roots` 下的目录属于代码模块；项目治理目录不因存在文件夹而自动成为代码模块。
+- 每个未排除的代码目录都必须包含 `ARCHITECTURE.md`，直接父模块必须登记其子模块。
 - 正式知识必须有来源、状态和负责人；推断先进入 `knowledge/candidate/`。
 - 每个需求的当前阶段只由其 `status.yml` 表达。
 - 人工批准必须保存证据文本、确认人和时间，不能只保存布尔值。
@@ -45,4 +47,5 @@ Workflow 可以引用 Knowledge、Skill 和 Schema。Knowledge 不引用某次�
 - 新增项目能力：从 `skills/_template/` 创建 Skill。
 - 新增执行流程：复制 `workflows/workflow-schema-template.yml` 并删除不用的字段。
 - 开始新需求：复制 `work/requirements/_template/`，填写唯一需求 ID。
-- 新增业务模块：在对应模块根目录放置 `ARCHITECTURE.md`，记录职责、接口、不变量、依赖、入口和验证方式。
+- 新增代码目录：在同一次变更中创建 `ARCHITECTURE.md`，并更新直接父模块的子模块索引。
+- 完成代码需求：更新当前需求的 `architecture-impact.yml`，运行 `commands.architecture_check`，再形成交接。

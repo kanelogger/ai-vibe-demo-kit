@@ -38,6 +38,7 @@
 
 - 项目身份、环境和命令：`project.yml`
 - 架构模块及依赖方向：`ARCHITECTURE.md`
+- 代码根目录与架构索引范围：`project.yml#architecture_memory`
 - 长期知识入口：`knowledge/INDEX.md`
 - 知识渐进加载规则：`knowledge/ROUTING.md`
 - 可复用工作流：`workflows/`
@@ -50,6 +51,20 @@
 2. 根据 `knowledge/ROUTING.md` 读取与任务相关的最小知识集合。
 3. 阅读当前应用的 `requirement.md`、相关规格、代码入口和邻近测试。
 4. 检查已有工作区改动、允许动作和人工门禁。
+
+## 代码架构记忆
+
+`project.yml#architecture_memory.code_roots` 是代码目录范围的唯一来源。`.agents/`、`SPECS/`、`rules/`、`knowledge/`、`work/`、`workflows/` 等项目治理目录不属于代码模块，除非它们被显式配置为代码根目录。
+
+在代码根目录内：
+
+1. 每个未被 `exclude` 排除的文件夹都是一个模块，并且必须包含 `ARCHITECTURE.md`。
+2. 开始修改前，读取相关模块及其父级模块的 `ARCHITECTURE.md`。
+3. 新建文件夹时，从 `knowledge/templates/architecture-template.md` 创建其 `ARCHITECTURE.md`，并在同一次变更中更新直接父模块的子模块索引。
+4. 删除或移动文件夹时，同步更新原父模块和新父模块的子模块索引。
+5. 完成实现后，根据最终代码刷新受影响模块的职责、接口、不变量、依赖、入口和验证方式。回填只描述当前事实，不追加需求流水账。
+6. 纯内部实现没有改变架构索引时，在当前需求的 `architecture-impact.yml` 中记录 `impact: none`、原因和代码证据。
+7. 完成前运行 `project.yml#commands.architecture_check`。目录缺少索引、父级没有登记子模块或回填证据缺失时，不得声称完成。
 
 ## 高风险边界
 
@@ -69,4 +84,4 @@
 
 {填写：允许声称完成的明确状态，以及验证失败时必须报告的信息。}
 
-完成前更新当前需求的 `status.yml` 与 `handoff.md`；稳定经验先进入 `knowledge/candidate/`，经确认后才能进入正式知识区。
+完成前更新当前需求的 `status.yml`、`architecture-impact.yml` 与 `handoff.md`；稳定经验先进入 `knowledge/candidate/`，经确认后才能进入正式知识区。

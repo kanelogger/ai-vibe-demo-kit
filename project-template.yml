@@ -39,6 +39,7 @@ commands:
   typecheck: "<command>"
   lint: "<command>"
   build: "<command>"
+  architecture_check: "python3 workflows/hooks/check_architecture.py --config project.yml"
 
 authoritative_context:
   agent_entry: "AGENTS.md"
@@ -47,6 +48,16 @@ authoritative_context:
   knowledge_routing: "knowledge/ROUTING.md"
   rules: "rules/"
   specs: "SPECS/"
+
+architecture_memory:
+  filename: "ARCHITECTURE.md"
+  code_roots:
+    - "<code-root>"
+  exclude:
+    - "**/__tests__"
+    - "**/fixtures"
+    - "**/generated"
+    - "**/vendor"
 
 capabilities:
   project_skills: "skills/"

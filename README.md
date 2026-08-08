@@ -4,6 +4,8 @@
 
 它将项目知识、可执行技能、工作流与交付契约组织成一套可加载、可组合、可审计的项目资产，使不同 Coding Agent 能在同一工程语境、规则和质量标准下稳定工作。
 
+代码本身同时是产品与项目记忆。目标项目通过 `project.yml#architecture_memory.code_roots` 声明代码范围；该范围内的每个目录都使用 `ARCHITECTURE.md` 保存职责、接口、依赖和变更导航。项目治理目录不自动纳入该范围。
+
 项目遵循三条核心原则：
 
 - 知识有事实源，避免项目配置与文档重复失真。
@@ -41,6 +43,7 @@
 2. 从 `AGENTS_template.md` 生成项目根目录的 `AGENTS.md`。
 3. 填写 `knowledge/INDEX.md` 和 `knowledge/ROUTING.md`，只登记已有证据的知识。
 4. 从 `work/requirements/_template/` 创建一个真实需求目录。
-5. 人工跑通一条 Workflow 后，再实现自动调度、重试和复杂 Hooks。
+5. 配置代码根目录，运行 `commands.architecture_check` 并为现有代码目录补齐索引。
+6. 人工跑通一条 Workflow 后，再实现自动调度、重试和复杂 Hooks。
 
 目录本身不代表系统有效。一个无历史上下文的新 Agent 应能只读仓库回答：项目是什么、当前需求在哪个阶段、允许做什么、按什么流程做、如何验证、经验写到哪里。

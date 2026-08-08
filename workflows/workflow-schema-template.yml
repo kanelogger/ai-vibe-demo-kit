@@ -171,10 +171,16 @@ stages:
         type: verification-report
         path: "work/requirements/<requirement-id>/applications/<application-id>/implementation-check.md"
         required: true
+      - id: architecture_impact
+        type: architecture-impact
+        path: "work/requirements/<requirement-id>/applications/<application-id>/architecture-impact.yml"
+        required: true
     gates:
       entry: []
       exit:
         - "every requirement item is done, partial, todo, changed, or blocked"
+        - "every affected code module has an architecture impact decision with evidence"
+        - "project.yml#commands.architecture_check passed or the limitation is explicit"
       human: null
 
   - id: handoff
@@ -190,6 +196,7 @@ stages:
     instructions_ref: null
     inputs:
       - implementation_check
+      - architecture_impact
     outputs:
       - id: handoff
         type: handoff

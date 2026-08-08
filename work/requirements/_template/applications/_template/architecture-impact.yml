@@ -1,0 +1,14 @@
+schema_version: 1
+application_id: "<application-id>"
+
+modules:
+  - path: "<code-root/module>"
+    impact: "<updated-or-none>"
+    reason: "<current architecture fact changed, or why the existing index remains accurate>"
+    evidence:
+      - "<code, test, diff, or architecture path>"
+
+architecture_check:
+  command: "<project.yml#commands.architecture_check>"
+  result: "<passed-or-failed-or-skipped>"
+  evidence: "<output or explicit reason>"

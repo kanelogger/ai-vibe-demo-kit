@@ -18,6 +18,14 @@
 | --- | --- | --- |
 | `<module>` | `<reason>` | `<path/test/doc>` |
 
+## Modules
+
+只登记直接子目录；目录名必须使用反引号和结尾斜杠，以便自动检查。
+
+| Directory | Responsibility |
+| --- | --- |
+| `<child-module>/` | `<responsibility>` |
+
 ## Entry Points
 
 | Purpose | Path or symbol |
@@ -31,3 +39,5 @@
 ## Change Guide
 
 {常见变更应该从哪里开始阅读，以及哪些位置需要同步更新。}
+
+实现完成后直接刷新上述当前事实，不在本文件追加需求历史。需求级变更证据写入对应的 `architecture-impact.yml`。

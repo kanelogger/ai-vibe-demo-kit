@@ -1,13 +1,17 @@
 schema_version: 1
 
 project:
-  id: "<project-id>"
-  name: "<project-name>"
-  summary: "<one-sentence project description>"
+  id: "project-agent-harness"
+  name: "Project Agent Harness"
+  summary: "Zero-dependency repository control layer for Agent workflows, evidence and human gates."
   in_scope:
-    - "<primary deliverable>"
+    - "Workflow and Stage Result validation"
+    - "Deterministic state transitions and human control"
+    - "Safe installation into Git repositories"
   out_of_scope:
-    - "<explicit non-goal>"
+    - "Executing tests, Skills or business code"
+    - "Platform Hooks and remote orchestration"
+    - "Publishing or production writes"
 
 repositories:
   primary: "."
@@ -15,24 +19,27 @@ repositories:
 
 environment:
   supported_os:
-    - "<macos-or-linux>"
+    - "macos"
+    - "linux"
   supported_architectures:
-    - "<arm64-or-x86_64>"
+    - "arm64"
+    - "x86_64"
   toolchains:
     node:
-      manager: "volta"
-      version_source: "package.json"
+      manager: "none"
+      minimum_version: "22"
+      tested_versions:
+        - "22"
+        - "24"
+      version_source: ".harness/manifest.json#minimumNodeVersion"
+    git:
+      required: true
+      version_source: "system"
     package_manager:
-      name: "pnpm"
-      version_source: "package.json#packageManager"
-    python:
-      manager: "<pyenv-or-miniconda-or-none>"
-      version_source: "<.python-version-or-environment.yml>"
-    java:
-      manager: "<jenv-or-none>"
-      version_source: "<.java-version-or-pom.xml>"
+      name: "none"
+      reason: "The Runtime has no npm dependencies."
     containers:
-      runtime: "<orbstack-or-docker-or-none>"
+      runtime: "none-required"
   probes:
     - tool: "operating-system"
       command: "uname -s"
@@ -44,30 +51,32 @@ environment:
       required: true
     - tool: "node"
       command: "node --version"
-      expected_source: "<package.json-or-runtime-manifest>"
+      expected_source: ".harness/manifest.json#minimumNodeVersion"
       required: true
     - tool: "git"
       command: "git --version"
-      expected_source: "<project-policy>"
+      expected_source: "project.yml#environment.toolchains.git"
       required: true
     - tool: "package-manager"
-      command: "<package-manager> --version"
-      expected_source: "<package-manager-version-source>"
+      command: "npm --version"
+      expected_source: "project.yml#environment.toolchains.package_manager"
       required: false
     - tool: "container-runtime"
-      command: "<container-runtime> --version"
+      command: "docker --version"
       expected_source: "project.yml#environment.toolchains.containers"
       required: false
 
 commands:
-  install: "<command>"
-  develop: "<command>"
-  test: "<command>"
-  typecheck: "<command>"
-  lint: "<command>"
-  build: "<command>"
-  harness_check: "./harness check"
-  completion_check: "./harness check-result --workflow <workflow.json> --stage <stage> --file <stage-result.json> --require-complete --json"
+  install_runtime: "node bin/harness.mjs init --target <git-root>"
+  develop: "./harness help"
+  test: "node --test scripts/harness/test/*.test.mjs"
+  typecheck: null
+  lint: null
+  build: null
+  harness_check: "./harness check --json"
+  version: "./harness version --json"
+  commit_check: "node scripts/check-commit-messages.mjs <base-ref> HEAD"
+  completion_check: "node scripts/check-completion-evidence.mjs <base-ref> HEAD"
 
 authoritative_context:
   agent_entry: "AGENTS.md"
@@ -80,15 +89,14 @@ authoritative_context:
 architecture_memory:
   filename: "ARCHITECTURE.md"
   code_roots:
-    - "<code-root>"
+    - "bin"
+    - "scripts"
   exclude:
-    - "**/__tests__"
+    - "scripts/harness/test"
     - "**/fixtures"
     - "**/generated"
-    - "**/vendor"
 
 capabilities:
-  project_skills: "skills/"
   installed_skills: ".agents/skills/"
 
 workflow:

@@ -4,6 +4,10 @@ import { firstSymlinkInPath, resolveInside } from "./path-safety.mjs";
 const TERMINALS = new Set(["complete", "blocked", "aborted"]);
 const CONDITION_STATUSES = new Set(["passed", "failed", "not-applicable"]);
 const SKILL_STATUSES = new Set(["succeeded", "failed", "skipped"]);
+const CHECK_STATUSES = new Set(["passed", "failed", "skipped"]);
+const CHECK_KINDS = new Set(["automated", "critical-path", "manual"]);
+const CLEANUP_STATUSES = new Set(["removed", "not-created", "retained"]);
+const ARTIFACT_CONTRACTS = new Set(["verification-report/v1"]);
 const ID = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
 
 function issue(code, path, message) {
@@ -79,6 +83,100 @@ async function readJsonPath(root, path, errors, code = "E_REFERENCE_INVALID") {
   }
 }
 
+async function validateVerificationReport(root, path, stageConditions, errors) {
+  const report = await readJsonPath(root, path, errors, "E_VERIFICATION_REPORT");
+  if (!report) return null;
+  if (report.schemaVersion !== 1 || !nonEmpty(report.summary) || !Array.isArray(report.conditions) || !Array.isArray(report.checks) || !Array.isArray(report.cleanup) || report.cleanup.length === 0) {
+    errors.push(issue("E_VERIFICATION_REPORT", path, "verification-report/v1 requires schemaVersion 1, summary, conditions, checks and non-empty cleanup"));
+    return null;
+  }
+  const reportConditions = new Map();
+  for (const duplicate of duplicates(report.conditions.map((entry) => entry?.id))) errors.push(issue("E_VERIFICATION_CONDITION", path, `duplicate verification condition: ${duplicate}`));
+  for (const [index, condition] of report.conditions.entries()) {
+    const conditionPath = `${path}.conditions.${index}`;
+    if (!object(condition) || !nonEmpty(condition.id) || !ID.test(condition.id) || !CONDITION_STATUSES.has(condition.status) || !Array.isArray(condition.checkRefs) || !Array.isArray(condition.cleanupRefs) || !Array.isArray(condition.evidenceRefs)) {
+      errors.push(issue("E_VERIFICATION_CONDITION", conditionPath, "verification condition requires id, status, checkRefs, cleanupRefs and evidenceRefs"));
+      continue;
+    }
+    if (condition.status === "passed" && condition.checkRefs.length + condition.cleanupRefs.length + condition.evidenceRefs.length === 0) errors.push(issue("E_VERIFICATION_CONDITION", conditionPath, "passed verification condition requires referenced checks, cleanup or evidence"));
+    if (condition.status !== "passed" && !nonEmpty(condition.reason)) errors.push(issue("E_VERIFICATION_CONDITION", conditionPath, "failed or not-applicable verification condition requires a reason"));
+    for (const [evidenceIndex, ref] of condition.evidenceRefs.entries()) {
+      await validateFileOrUri(root, ref, errors, {
+        path: `${conditionPath}.evidenceRefs.${evidenceIndex}`,
+        missingCode: "E_EVIDENCE_MISSING",
+        uriCode: "E_EVIDENCE_URI",
+      });
+    }
+    reportConditions.set(condition.id, condition);
+  }
+  const stageConditionMap = new Map(stageConditions.map((entry) => [entry?.id, entry]));
+  for (const [id, condition] of stageConditionMap) {
+    const reported = reportConditions.get(id);
+    if (!reported || reported.status !== condition.status) errors.push(issue("E_VERIFICATION_CONDITION", path, `verification condition must match stage result: ${id}`));
+  }
+  for (const id of reportConditions.keys()) if (!stageConditionMap.has(id)) errors.push(issue("E_VERIFICATION_CONDITION", path, `verification report contains an unknown stage condition: ${id}`));
+
+  const checks = new Map();
+  for (const duplicate of duplicates(report.checks.map((entry) => entry?.id))) errors.push(issue("E_VERIFICATION_CHECK", path, `duplicate verification check: ${duplicate}`));
+  for (const [index, check] of report.checks.entries()) {
+    const checkPath = `${path}.checks.${index}`;
+    if (!object(check) || !nonEmpty(check.id) || !ID.test(check.id) || !CHECK_KINDS.has(check.kind) || !CHECK_STATUSES.has(check.status) || !Array.isArray(check.evidenceRefs)) {
+      errors.push(issue("E_VERIFICATION_CHECK", checkPath, "verification check requires id, kind, status and evidenceRefs"));
+      continue;
+    }
+    if (check.kind === "automated" && !nonEmpty(check.command)) errors.push(issue("E_VERIFICATION_CHECK", checkPath, "automated verification check requires a command"));
+    if (check.status !== "skipped" && !Number.isInteger(check.exitCode)) errors.push(issue("E_VERIFICATION_CHECK", checkPath, "executed verification check requires an integer exitCode"));
+    if (check.status === "passed" && check.exitCode !== 0) errors.push(issue("E_VERIFICATION_CHECK", checkPath, "passed verification check requires exitCode 0"));
+    if (check.status === "passed" && check.evidenceRefs.length === 0) errors.push(issue("E_VERIFICATION_CHECK", checkPath, "passed verification check requires evidenceRefs"));
+    if (check.status !== "passed" && !nonEmpty(check.reason)) errors.push(issue("E_VERIFICATION_CHECK", checkPath, "failed or skipped verification check requires a reason"));
+    for (const [evidenceIndex, ref] of check.evidenceRefs.entries()) {
+      await validateFileOrUri(root, ref, errors, {
+        path: `${checkPath}.evidenceRefs.${evidenceIndex}`,
+        missingCode: "E_EVIDENCE_MISSING",
+        uriCode: "E_EVIDENCE_URI",
+      });
+    }
+    checks.set(check.id, check);
+  }
+  for (const condition of reportConditions.values()) {
+    for (const ref of condition.checkRefs ?? []) {
+      const check = checks.get(ref);
+      if (!check) errors.push(issue("E_VERIFICATION_CHECK_REF", path, `verification condition references an unknown check: ${ref}`));
+      else if (condition.status === "passed" && check.status !== "passed") errors.push(issue("E_VERIFICATION_CONDITION", path, `passed verification condition references a non-passing check: ${ref}`));
+    }
+  }
+
+  const cleanup = new Map();
+  for (const duplicate of duplicates(report.cleanup.map((entry) => entry?.id))) errors.push(issue("E_VERIFICATION_CLEANUP", path, `duplicate cleanup item: ${duplicate}`));
+  for (const [index, item] of report.cleanup.entries()) {
+    const cleanupPath = `${path}.cleanup.${index}`;
+    const evidenceRefs = Array.isArray(item?.evidenceRefs) ? item.evidenceRefs : [];
+    if (!object(item) || !nonEmpty(item.id) || !ID.test(item.id) || !nonEmpty(item.resource) || !nonEmpty(item.action) || !CLEANUP_STATUSES.has(item.status)) {
+      errors.push(issue("E_VERIFICATION_CLEANUP", cleanupPath, "cleanup item requires id, resource, action and status"));
+      continue;
+    }
+    if (item.status === "removed" && evidenceRefs.length === 0) errors.push(issue("E_VERIFICATION_CLEANUP", cleanupPath, "removed cleanup item requires evidenceRefs"));
+    if (item.status === "retained" && !nonEmpty(item.reason)) errors.push(issue("E_VERIFICATION_CLEANUP", cleanupPath, "retained cleanup item requires a reason"));
+    if (item.status === "not-created" && evidenceRefs.length === 0 && !nonEmpty(item.reason)) errors.push(issue("E_VERIFICATION_CLEANUP", cleanupPath, "not-created cleanup item requires evidenceRefs or a reason"));
+    for (const [evidenceIndex, ref] of evidenceRefs.entries()) {
+      await validateFileOrUri(root, ref, errors, {
+        path: `${cleanupPath}.evidenceRefs.${evidenceIndex}`,
+        missingCode: "E_EVIDENCE_MISSING",
+        uriCode: "E_EVIDENCE_URI",
+      });
+    }
+    cleanup.set(item.id, item);
+  }
+  for (const condition of reportConditions.values()) {
+    for (const ref of condition.cleanupRefs ?? []) {
+      const item = cleanup.get(ref);
+      if (!item) errors.push(issue("E_VERIFICATION_CLEANUP_REF", path, `verification condition references an unknown cleanup item: ${ref}`));
+      else if (condition.status === "passed" && !new Set(["removed", "not-created"]).has(item.status)) errors.push(issue("E_VERIFICATION_CONDITION", path, `passed verification condition references incomplete cleanup: ${ref}`));
+    }
+  }
+  return report;
+}
+
 function duplicates(values) {
   const seen = new Set();
   const result = new Set();
@@ -145,6 +243,7 @@ export async function validateWorkflow(workflow, { root, workflowPath = null } =
     for (const duplicate of duplicates(Array.isArray(artifacts) ? artifacts.map((entry) => entry?.id) : [])) errors.push(issue("E_ARTIFACT_DUPLICATE", `${path}.requiredArtifacts`, `duplicate artifact: ${duplicate}`));
     for (const [index, artifact] of (Array.isArray(artifacts) ? artifacts : []).entries()) {
       if (!object(artifact) || !nonEmpty(artifact.id) || !ID.test(artifact.id) || typeof artifact.required !== "boolean") errors.push(issue("E_ARTIFACT_INVALID", `${path}.requiredArtifacts.${index}`, "artifact requires id and boolean required"));
+      else if (artifact.contract !== undefined && !ARTIFACT_CONTRACTS.has(artifact.contract)) errors.push(issue("E_ARTIFACT_CONTRACT", `${path}.requiredArtifacts.${index}.contract`, `unsupported artifact contract: ${artifact.contract}`));
     }
 
     if (nonEmpty(stage?.instructionsRef) && root) {
@@ -262,9 +361,18 @@ export async function validateStageResult(workflow, stageId, result, { root } = 
     for (const ref of skill?.artifactRefs ?? []) if (!artifactMap.has(ref)) errors.push(issue("E_ARTIFACT_REF", `skills.${skill?.id}.artifactRefs`, `artifact reference does not resolve: ${ref}`));
   }
   for (const artifact of artifactEntries) {
-    if (!declaredArtifacts.has(artifact?.id)) errors.push(issue("E_RESULT_ARTIFACT_UNKNOWN", "artifacts", `unknown artifact: ${artifact?.id}`));
+    const declaration = declaredArtifacts.get(artifact?.id);
+    if (!declaration) errors.push(issue("E_RESULT_ARTIFACT_UNKNOWN", "artifacts", `unknown artifact: ${artifact?.id}`));
     if (!nonEmpty(artifact?.uri)) {
       errors.push(issue("E_ARTIFACT_URI", `artifacts.${artifact?.id}`, "artifact uri is required"));
+      continue;
+    }
+    if (declaration?.contract && externalUri(artifact.uri) === true) {
+      errors.push(issue("E_ARTIFACT_CONTRACT_URI", `artifacts.${artifact.id}`, "contracted artifacts must use a repository-relative path"));
+      continue;
+    }
+    if (declaration?.contract === "verification-report/v1") {
+      await validateVerificationReport(root, artifact.uri, conditionEntries, errors);
       continue;
     }
     await validateFileOrUri(root, artifact.uri, errors, {

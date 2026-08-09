@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "id": "risk-adaptive-skill-workflow",
-  "version": 1,
+  "version": 2,
   "description": "A lightweight control workflow for alignment, implementation and acceptance.",
   "skillsCatalogRef": "workflows/skills-list.json",
   "initialStage": "alignment",
@@ -21,6 +21,11 @@
         {
           "id": "risk-classified",
           "description": "Risk signals and rollback expectations have been recorded.",
+          "required": true
+        },
+        {
+          "id": "environment-confirmed",
+          "description": "Required environment probes match project.yml or every deviation is reported with evidence.",
           "required": true
         }
       ],
@@ -118,7 +123,8 @@
       "requiredArtifacts": [
         {
           "id": "verification-report",
-          "required": true
+          "required": true,
+          "contract": "verification-report/v1"
         },
         {
           "id": "handoff",

@@ -1,5 +1,11 @@
 # Harness Changelog
 
+## 0.2.0 - 2026-08-09
+
+- Add the `verification-report/v1` Artifact contract with check, condition and cleanup consistency validation.
+- Add stateless `check-result` validation for Agent and CI completion evidence.
+- Add environment probes, completion-evidence onboarding and repository self-governance templates.
+
 ## 0.1.1 - 2026-08-09
 
 - Consolidate repository path containment and symlink inspection in the PathSafety Module.

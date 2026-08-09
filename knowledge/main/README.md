@@ -1,13 +1,16 @@
 ---
 id: KB-MAIN-OVERVIEW
 type: domain-overview
-status: DRAFT
-owner: "<owner>"
-updated_at: "<YYYY-MM-DD>"
+status: OFFICIAL
+owner: "Project maintainers"
+updated_at: "2026-08-09"
 source_type: official
-confidence: low
-stability: evolving
-evidence: []
+confidence: high
+stability: stable
+evidence:
+  - "README.md"
+  - "ARCHITECTURE.md"
+  - "scripts/harness/ARCHITECTURE.md"
 ---
 
 # Global Knowledge
@@ -22,12 +25,18 @@ evidence: []
 
 | Term | Definition | Scope | Evidence |
 | --- | --- | --- | --- |
-| `<term>` | `<definition>` | `<scope>` | `<source>` |
+| Runtime-ready | Harness Runtime 已安装，默认 Workflow 可校验和运行。 | Installer | `README.md` |
+| Governance-ready | 项目已填写 Agent、环境、架构、知识与规则入口。 | Repository governance | `README.md`、`AGENTS.md` |
+| Completion-evidence-ready | Agent 和 CI 可以对 acceptance Stage Result 与验证报告执行同一无状态检查。 | Delivery workflow | `workflows/workflow-template.json` |
+| Gate | Transition 上的自动或人工推进许可。 | ControlKernel | `scripts/harness/lib/kernel.mjs` |
+| Policy Failure | 必需 Condition 或 Skill 未满足形成的可人工精确接管状态。 | Workflow policy | `scripts/harness/lib/kernel.mjs` |
 
 ## 跨应用流程
 
-{填写：只描述稳定的全局关系和职责，不复制应用内部实现。}
+Agent 或 CI 执行 Stage 内容并产生 Evidence；Validator 校验结构、引用和 policy facts；ControlKernel 根据结果进入下一 Stage、Policy Block 或 Human Gate；人工决定最终批准、拒绝、暂停、重定向、接管或终止。
 
 ## 全局约束
 
-{填写：多个应用共同遵守的业务或技术约束。}
+- Runtime 保持零 npm 依赖并支持 Node.js 22+。
+- Git 私有状态不进入工作树或远程 CI；可携带的 Stage Result 和 Artifact 承担无状态校验职责。
+- Harness 不执行测试或清理外部资源，只校验证据声明及其内部一致性。

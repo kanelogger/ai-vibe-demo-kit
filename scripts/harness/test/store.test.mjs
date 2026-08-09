@@ -1,13 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { once } from "node:events";
-import { access, mkdir, mkdtemp, readdir, readFile, symlink, unlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { access, mkdir, readdir, readFile, symlink, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { applyControl } from "../lib/kernel.mjs";
 import { loadState, mutateState, probeLockOwner, readGitActor, statePaths } from "../lib/store.mjs";
-import { makeGitRepo, workflow } from "./helpers.mjs";
+import { makeGitRepo, makeTemporaryDirectory, workflow } from "./helpers.mjs";
 
 const storeUrl = new URL("../lib/store.mjs", import.meta.url).href;
 
@@ -208,7 +207,7 @@ test("nested state corruption fails loudly", async () => {
 
 test("file store refuses a symlinked Git-private control directory", async () => {
   const root = await makeGitRepo();
-  const outside = await mkdtemp(join(tmpdir(), "harness-state-outside-"));
+  const outside = await makeTemporaryDirectory("harness-state-outside-");
   const paths = await statePaths(root);
   await symlink(outside, paths.controlDir, "dir");
   await assert.rejects(

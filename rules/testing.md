@@ -16,3 +16,5 @@
 - `skipped` 必须说明原因和风险。
 - 测试产生的数据、账户、文件和进程必须清理。
 - 测试存在不等于功能可用；关键路径必须真实运行。
+- Acceptance 报告使用 `verification-report/v1`；Stage Result 条件状态必须与报告一致。
+- `passed` 检查记录实际命令、退出码和 Evidence；`skipped`、`failed` 与残留资源记录原因并形成 Policy Failure。

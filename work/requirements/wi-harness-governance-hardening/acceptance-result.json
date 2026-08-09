@@ -1,0 +1,46 @@
+{
+  "outcome": "accepted",
+  "summary": "The v0.2.0 candidate is structurally and operationally ready for the final Human Gate.",
+  "conditions": [
+    {
+      "id": "spec-compliant",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/wi-harness-governance-hardening/verification-report.json"
+      ]
+    },
+    {
+      "id": "regression-safe",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/wi-harness-governance-hardening/verification-report.json"
+      ]
+    },
+    {
+      "id": "cleanup-complete",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/wi-harness-governance-hardening/verification-report.json"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "id": "acceptance.review",
+      "status": "succeeded",
+      "artifactRefs": [
+        "verification-report"
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "verification-report",
+      "uri": "work/requirements/wi-harness-governance-hardening/verification-report.json"
+    },
+    {
+      "id": "handoff",
+      "uri": "work/requirements/wi-harness-governance-hardening/handoff.md"
+    }
+  ]
+}

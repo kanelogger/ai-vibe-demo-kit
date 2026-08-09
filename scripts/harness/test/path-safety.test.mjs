@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, symlink, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { mkdir, symlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { firstSymlinkInPath, isInside, resolveInside } from "../lib/path-safety.mjs";
+import { makeTemporaryDirectory } from "./helpers.mjs";
 
 test("repository paths stay within their declared root", async () => {
-  const root = await mkdtemp(join(tmpdir(), "harness-path-safety-"));
+  const root = await makeTemporaryDirectory("harness-path-safety-");
   assert.equal(isInside(root, root), true);
   assert.equal(isInside(root, join(root, "work", "result.json")), true);
   assert.equal(isInside(root, `${root}-sibling`), false);
@@ -18,7 +18,7 @@ test("repository paths stay within their declared root", async () => {
 });
 
 test("symlink inspection reports leaf and intermediate links", async () => {
-  const root = await mkdtemp(join(tmpdir(), "harness-path-symlink-"));
+  const root = await makeTemporaryDirectory("harness-path-symlink-");
   const realDirectory = join(root, "real");
   const realFile = join(realDirectory, "result.json");
   await mkdir(realDirectory);

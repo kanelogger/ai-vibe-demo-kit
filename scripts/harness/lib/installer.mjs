@@ -23,6 +23,7 @@ const RUNTIME = [
   "workflows/workflow-template.json",
   "workflows/skills-list.json",
   "workflows/stage-result-template.json",
+  "workflows/verification-report-template.json",
   "AGENTS_template.md",
   "CODING_AGENT_RULES_template.md",
   "project-template.yml",

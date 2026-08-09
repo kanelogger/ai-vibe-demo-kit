@@ -18,7 +18,7 @@ cd /path/to/project
 
 相同版本可以幂等重装；安装器会在写入前检查全部目标，遇到不同内容、Symlink 或非 Git 目录时整体拒绝，不覆盖现有文件，也不自动提交。
 
-完成以上步骤表示 **Runtime-ready**：CLI 已安装，默认 Workflow 可校验和运行。它不表示项目治理内容已经就绪。
+完成以上步骤表示 **Runtime-ready**：CLI 已安装，默认 Workflow 可校验和运行。它不表示项目治理内容已经就绪，也不表示已经具备可由 CI 校验的完成证据。
 
 ## 完整项目接入
 
@@ -32,6 +32,8 @@ cd /path/to/project
 
 模板中的留白和空知识骨架是待定输入，不是可以直接引用的事实。未完成上述清单时，应明确称为 Runtime-ready，不能宣称 Governance-ready。
 
+达到 **Completion-evidence-ready** 还需要：为 acceptance Stage 使用 `verification-report/v1`，把 Stage Result 与报告保存到仓库 Evidence 路径，并在本地或 CI 中运行 `check-result --require-complete`。该检查证明 Evidence 具备进入完成 Transition 的资格；Human Gate 仍由本地控制状态或代码托管平台处理。
+
 ## 公共命令
 
 ```text
@@ -39,6 +41,8 @@ cd /path/to/project
 ./harness version [--json]
 ./harness start --workflow <path> --intent <text> [--json]
 ./harness status [--json]
+./harness check-result --workflow <path> --stage <stage> --file <stage-result.json>
+    [--require-complete] [--json]
 ./harness signal --revision <n> --file <stage-result.json> [--json]
 ./harness decide --revision <n> --action <action>
     [--actor <name>] --reason <text>
@@ -47,9 +51,11 @@ cd /path/to/project
 
 `signal` 接收 Agent、命令或人工已经完成的 Stage Result。Harness 只校验结构、证据引用与策略结果，不执行 Stage 内容。
 
+`check-result` 对显式 Workflow、Stage 和 Stage Result 执行相同校验，但不读取或修改 `.git/harness/control.json`。`--require-complete` 要求结果对应的 Transition 指向 `complete`。JSON 会区分结构有效、策略满足、完成资格和后续是否仍需人工批准。
+
 `./harness version --json` 从 `.harness/manifest.json` 返回安装版本和最低 Node.js 主版本；该命令不要求当前目录位于 Git 仓库。Installer 的 JSON 保留兼容字段 `version: 1`，并用 `harnessVersion` 返回发行版本。
 
-退出码稳定为：`0` 成功；`1` 被 Gate 或策略条件阻止；`2` 参数、结构、状态、Revision 或 I/O 错误。`signal` 返回 `1` 时 Stage Result 已经落盘；调用方必须读取 JSON，而不能把非零简单解释为 Mutation 回滚。无错误的 `signal --json` 使用 `applied` 区分本次写入与幂等重试，并用 `requiresHumanAction` 表示是否等待人工处理。JSON 输出始终包含 Revision、状态、当前 Stage、Pending Gate、允许动作和可复制的 Next Actions；错误输出同时保留当前状态上下文与稳定错误码。
+退出码稳定为：`0` 成功；`1` 被 Gate、策略条件或 completion route 要求阻止；`2` 参数、结构、状态、Revision 或 I/O 错误。`signal` 返回 `1` 时 Stage Result 已经落盘；调用方必须读取 JSON，而不能把非零简单解释为 Mutation 回滚。无错误的 `signal --json` 使用 `applied` 区分本次写入与幂等重试，并用 `requiresHumanAction` 表示是否等待人工处理。JSON 输出始终包含 Revision、状态、当前 Stage、Pending Gate、允许动作和可复制的 Next Actions；错误输出同时保留当前状态上下文与稳定错误码。
 
 ## 控制模型
 
@@ -62,6 +68,8 @@ Workflow v2 是自定义状态图。Stage 声明 Goal、Outcome、Exit Condition
 - Artifact：仓库内真实文件或格式有效的外部 URI。
 
 本地 Evidence 和 Artifact 引用必须存在、位于仓库内且不经过 Symlink；外部 URI 只校验格式，不访问网络。
+
+`requiredArtifacts[].contract` 可以为 Artifact 声明机器契约。Runtime 0.2.0 支持 `verification-report/v1`：报告必须记录与 Stage Result 一致的 Condition、实际检查命令与退出码，以及测试数据、文件、账户和进程的清理状态。带 contract 的 Artifact 必须是仓库内 JSON 文件，不接受外部 URI。
 
 ## 用户在任意 Gate 介入
 
@@ -91,6 +99,7 @@ Human Control 是所有活动状态的内建能力：
 ├── bin/harness.mjs                 # CLI Adapter
 ├── scripts/harness/lib/            # ControlKernel、Validator、FileStore、Installer
 ├── workflows/                      # Workflow v2、Stage Result 模板、案例与 Skill Catalog
+│   └── verification-report-template.json
 ├── project-template.yml            # 项目身份和权威入口模板
 ├── AGENTS_template.md              # Agent 冷启动入口模板
 ├── knowledge/                      # 长期项目与业务知识
@@ -106,4 +115,4 @@ Harness 不自动覆盖不同内容。升级前先创建独立 Git 分支，分�
 
 ## 明确不做
 
-MVP 不包含 Skill 调度、测试执行、平台 Hooks、多活动任务、跨机器同步、UI、遥测、npm 发布和自动升级。普通命令只读取仓库事实和 `.git/harness`；除 `init` 安装清单外，不写入工作树。
+MVP 不包含 Skill 调度、测试执行、自动资源删除、平台 Hooks、多活动任务、跨机器同步、UI、遥测、npm 发布和自动升级。普通命令只读取仓库事实和 `.git/harness`；除 `init` 安装清单外，不写入工作树。

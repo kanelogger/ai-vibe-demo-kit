@@ -36,7 +36,7 @@
 
 ## 项目地图
 
-- 项目身份、环境和命令：`project.yml`
+- 项目身份、环境探测和命令：`project.yml`
 - 架构模块及依赖方向：`ARCHITECTURE.md`
 - 代码根目录与架构索引范围：`project.yml#architecture_memory`
 - 长期知识入口：`knowledge/INDEX.md`
@@ -48,10 +48,12 @@
 
 ## 开始前
 
-1. 读取 `project.yml`、`ARCHITECTURE.md`，运行 `./harness check --json` 和 `./harness status --json`。
-2. 根据 `knowledge/ROUTING.md` 读取与任务相关的最小知识集合。
-3. 阅读当前应用的 `requirement.md`、相关规格、代码入口和邻近测试。
-4. 检查已有工作区改动、允许动作和人工门禁。
+1. 读取 `project.yml`、`ARCHITECTURE.md`，运行 `project.yml#environment.probes` 中的必需探测。
+2. 将实际环境和偏差写入 alignment Evidence；不满足声明时将 `environment-confirmed` 报告为 `failed`，不得自行假定兼容。
+3. 运行 `./harness check --json` 和 `./harness status --json`。
+4. 根据 `knowledge/ROUTING.md` 读取与任务相关的最小知识集合。
+5. 阅读当前应用的 `requirement.md`、相关规格、代码入口和邻近测试。
+6. 检查已有工作区改动、允许动作和人工门禁。
 
 ## 代码架构记忆
 
@@ -80,6 +82,8 @@
 {填写：改动后必须运行的命令，以及需要检查的真实界面或返回值。}
 
 验证结果必须形成 Workflow 声明的 Evidence。跳过的检查、失败输出和环境限制必须明确记录。
+
+Acceptance 使用 `verification-report/v1` 记录实际命令、退出码、关键路径、跳过项、清理动作和残留资源。完成前运行 `./harness check-result --workflow <workflow.json> --stage <stage> --file <stage-result.json> --require-complete --json`。
 
 ## 完成条件
 

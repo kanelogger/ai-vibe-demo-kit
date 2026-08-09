@@ -15,6 +15,8 @@ const HELP = `Usage:
   harness init --target <git-root> [--json]
   harness version [--json]
   harness check [--workflow <path>] [--json]
+  harness check-result --workflow <path> --stage <stage> --file <stage-result.json>
+      [--require-complete] [--json]
   harness start --workflow <path> --intent <text> [--json]
   harness status [--json]
   harness signal --revision <n> --file <stage-result.json> [--json]
@@ -24,12 +26,13 @@ const HELP = `Usage:
 
 Exit codes: 0 success, 1 gate/policy refusal, 2 usage/structure/state/I/O error.`;
 
-const BOOLEAN = new Set(["json", "help"]);
+const BOOLEAN = new Set(["json", "help", "require-complete"]);
 const REPEATED = new Set(["accept-risk"]);
 const COMMAND_OPTIONS = {
   init: new Set(["target", "json"]),
   version: new Set(["json"]),
   check: new Set(["workflow", "json"]),
+  "check-result": new Set(["workflow", "stage", "file", "require-complete", "json"]),
   start: new Set(["workflow", "intent", "json"]),
   status: new Set(["json"]),
   signal: new Set(["revision", "file", "json"]),
@@ -201,6 +204,36 @@ async function execute(options, context) {
   }
 
   const root = await rootFromCwd();
+  if (command === "check-result") {
+    if (!options.workflow || !options.stage || !options.file) fail("E_USAGE", "check-result requires --workflow, --stage and --file", { repair: HELP });
+    const loaded = await loadWorkflow(root, options.workflow);
+    const stageResult = await readRepoJson(root, options.file, "stage result");
+    const validation = loaded.report.valid
+      ? await validateStageResult(loaded.workflow, options.stage, stageResult, { root })
+      : { valid: false, errors: [], warnings: [], policyFailures: [] };
+    const transition = loaded.workflow.transitions?.find((entry) => entry.from === options.stage && entry.on === stageResult.outcome) ?? null;
+    const errors = [...loaded.report.errors, ...validation.errors];
+    const valid = errors.length === 0 && transition !== null;
+    if (transition === null && errors.length === 0) errors.push({ code: "E_TRANSITION_MISSING", path: "outcome", message: `no transition for ${options.stage}/${stageResult.outcome}` });
+    const policySatisfied = valid && validation.policyFailures.length === 0;
+    const completionEligible = policySatisfied && transition?.to === "complete";
+    const report = {
+      valid: errors.length === 0,
+      policySatisfied,
+      completionEligible,
+      requiresHumanApproval: transition?.gate?.mode === "human",
+      stage: options.stage,
+      outcome: stageResult.outcome ?? null,
+      transition: transition ? { id: transition.id, to: transition.to, gate: transition.gate.mode } : null,
+      policyFailures: validation.policyFailures,
+      errors,
+      warnings: [...loaded.report.warnings, ...validation.warnings],
+    };
+    output(options, report);
+    if (!report.valid) return 2;
+    if (!policySatisfied || (options["require-complete"] && !completionEligible)) return 1;
+    return 0;
+  }
   if (command === "check") {
     const state = await loadState(root);
     context.state = state;

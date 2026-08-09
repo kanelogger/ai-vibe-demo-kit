@@ -2,21 +2,20 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { makeGitRepo, run, runRaw, stageResult, workflow } from "./helpers.mjs";
+import { readFile, writeFile } from "node:fs/promises";
+import { makeGitRepo, makeTemporaryDirectory, run, runRaw, stageResult, workflow } from "./helpers.mjs";
 
 const sourceRoot = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 const sourceCli = join(sourceRoot, "bin", "harness.mjs");
 
 test("source and installed CLIs report release metadata outside a Git repository", async () => {
-  const outside = await mkdtemp(join(tmpdir(), "harness-version-cwd-"));
+  const outside = await makeTemporaryDirectory("harness-version-cwd-");
   let result = await runRaw(process.execPath, [sourceCli, "version", "--json"], outside);
   assert.equal(result.code, 0, result.stderr);
   assert.deepEqual(JSON.parse(result.stdout), {
     schemaVersion: 1,
     name: "project-agent-harness",
-    version: "0.1.1",
+    version: "0.2.0",
     minimumNodeVersion: "22",
   });
 
@@ -24,10 +23,10 @@ test("source and installed CLIs report release metadata outside a Git repository
   result = await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
   const installed = JSON.parse(result.stdout);
   assert.equal(installed.version, 1);
-  assert.equal(installed.harnessVersion, "0.1.1");
+  assert.equal(installed.harnessVersion, "0.2.0");
   result = await runRaw(join(target, "harness"), ["version", "--json"], outside);
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(JSON.parse(result.stdout).version, "0.1.1");
+  assert.equal(JSON.parse(result.stdout).version, "0.2.0");
 });
 
 test("version rejects an invalid installed manifest", async () => {
@@ -71,6 +70,87 @@ test("fresh repository installs, checks, starts and advances through the public 
   assert.equal(payload.decision, "idempotent");
   assert.equal(payload.applied, false);
   assert.equal(payload.requiresHumanAction, false);
+});
+
+test("check-result validates completion evidence without an active work item", async () => {
+  const target = await makeGitRepo();
+  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  const terminal = workflow();
+  delete terminal.stages.build;
+  terminal.transitions = [{ id: "align-ready", from: "align", on: "ready", to: "complete", gate: { mode: "human", prompt: "Accept", onReject: "align" } }];
+  await writeFile(join(target, "workflows", "terminal.json"), `${JSON.stringify(terminal, null, 2)}\n`);
+  await writeFile(join(target, "result.json"), `${JSON.stringify(stageResult(), null, 2)}\n`);
+
+  const result = await runRaw(join(target, "harness"), [
+    "check-result",
+    "--workflow", "workflows/terminal.json",
+    "--stage", "align",
+    "--file", "result.json",
+    "--require-complete",
+    "--json",
+  ], target);
+
+  assert.equal(result.code, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout), {
+    valid: true,
+    policySatisfied: true,
+    completionEligible: true,
+    requiresHumanApproval: true,
+    stage: "align",
+    outcome: "ready",
+    transition: { id: "align-ready", to: "complete", gate: "human" },
+    policyFailures: [],
+    errors: [],
+    warnings: [],
+  });
+});
+
+test("check-result returns gate refusal for structurally valid policy failures", async () => {
+  const target = await makeGitRepo();
+  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  const terminal = workflow();
+  delete terminal.stages.build;
+  terminal.transitions = [{ id: "align-ready", from: "align", on: "ready", to: "complete", gate: { mode: "human", prompt: "Accept", onReject: "align" } }];
+  await writeFile(join(target, "workflows", "terminal.json"), `${JSON.stringify(terminal, null, 2)}\n`);
+  await writeFile(join(target, "result.json"), `${JSON.stringify(stageResult({
+    conditions: [{ id: "intent-clear", status: "failed", reason: "Owner unavailable", evidenceRefs: [] }],
+  }), null, 2)}\n`);
+
+  const result = await runRaw(join(target, "harness"), [
+    "check-result", "--workflow", "workflows/terminal.json", "--stage", "align", "--file", "result.json", "--require-complete", "--json",
+  ], target);
+  const payload = JSON.parse(result.stdout);
+
+  assert.equal(result.code, 1);
+  assert.equal(payload.valid, true);
+  assert.equal(payload.policySatisfied, false);
+  assert.equal(payload.completionEligible, false);
+  assert.deepEqual(payload.policyFailures, [{ id: "intent-clear", kind: "condition", status: "failed" }]);
+});
+
+test("check-result distinguishes non-terminal evidence from structural errors", async () => {
+  const target = await makeGitRepo();
+  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await writeFile(join(target, "workflows", "custom.json"), `${JSON.stringify(workflow(), null, 2)}\n`);
+  await writeFile(join(target, "result.json"), `${JSON.stringify(stageResult(), null, 2)}\n`);
+
+  let result = await runRaw(join(target, "harness"), [
+    "check-result", "--workflow", "workflows/custom.json", "--stage", "align", "--file", "result.json", "--require-complete", "--json",
+  ], target);
+  let payload = JSON.parse(result.stdout);
+  assert.equal(result.code, 1);
+  assert.equal(payload.valid, true);
+  assert.equal(payload.policySatisfied, true);
+  assert.equal(payload.completionEligible, false);
+
+  await writeFile(join(target, "invalid-result.json"), `${JSON.stringify(stageResult({ conditions: [] }), null, 2)}\n`);
+  result = await runRaw(join(target, "harness"), [
+    "check-result", "--workflow", "workflows/custom.json", "--stage", "align", "--file", "invalid-result.json", "--json",
+  ], target);
+  payload = JSON.parse(result.stdout);
+  assert.equal(result.code, 2);
+  assert.equal(payload.valid, false);
+  assert.ok(payload.errors.some((entry) => entry.code === "E_RESULT_CONDITION_MISSING"));
 });
 
 test("CLI returns stable JSON errors and exit codes", async () => {
@@ -200,6 +280,41 @@ test("public CLI supports policy override, pause protection and human acceptance
   const archived = JSON.parse(await readFile(join(historyRoot, `${workId}.json`), "utf8"));
   assert.equal(archived.outcome, "completed-with-override");
   assert.equal(await run("git", ["status", "--porcelain"], target), worktreeBefore);
+});
+
+test("signal validates contracted reports before mutating gate state", async () => {
+  const target = await makeGitRepo();
+  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  const terminal = workflow();
+  delete terminal.stages.build;
+  terminal.stages.align.requiredArtifacts = [{ id: "report", required: true, contract: "verification-report/v1" }];
+  terminal.transitions = [{ id: "align-ready", from: "align", on: "ready", to: "complete", gate: { mode: "human", prompt: "Accept", onReject: "align" } }];
+  await writeFile(join(target, "workflows", "terminal.json"), `${JSON.stringify(terminal, null, 2)}\n`);
+  await writeFile(join(target, "report.json"), "{}\n");
+  await writeFile(join(target, "result.json"), `${JSON.stringify(stageResult({ artifacts: [{ id: "report", uri: "report.json" }] }), null, 2)}\n`);
+  await runRaw(join(target, "harness"), ["start", "--workflow", "workflows/terminal.json", "--intent", "Contract gate", "--json"], target);
+
+  let result = await runRaw(join(target, "harness"), ["signal", "--revision", "1", "--file", "result.json", "--json"], target);
+  let payload = JSON.parse(result.stdout);
+  assert.equal(result.code, 2);
+  assert.equal(payload.revision, 1);
+  assert.equal(payload.status, "active");
+  assert.equal(payload.error.code, "E_RESULT_INVALID");
+
+  await writeFile(join(target, "evidence.txt"), "passed\n");
+  await writeFile(join(target, "report.json"), `${JSON.stringify({
+    schemaVersion: 1,
+    summary: "Contract checks passed",
+    conditions: [{ id: "intent-clear", status: "passed", checkRefs: ["contract-check"], cleanupRefs: ["none"], evidenceRefs: [] }],
+    checks: [{ id: "contract-check", kind: "automated", command: "node --test", status: "passed", exitCode: 0, evidenceRefs: ["evidence.txt"] }],
+    cleanup: [{ id: "none", resource: "temporary resources", action: "none created", status: "not-created", reason: "No resources created" }],
+  }, null, 2)}\n`);
+  result = await runRaw(join(target, "harness"), ["signal", "--revision", "1", "--file", "result.json", "--json"], target);
+  payload = JSON.parse(result.stdout);
+  assert.equal(result.code, 1);
+  assert.equal(payload.revision, 2);
+  assert.equal(payload.status, "awaiting-human");
+  assert.equal(payload.requiresHumanAction, true);
 });
 
 test("workflow drift blocks signals but still allows abort", async () => {

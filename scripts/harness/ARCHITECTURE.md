@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-提供零依赖的仓库内控制层：校验 Workflow 和 Stage Result，维护单个活动任务，执行确定性 Gate 转换并保存人工决策。它不执行 Stage、Skill、测试、业务写入或 Git 操作。
+提供零依赖的仓库内控制层：校验 Workflow、Stage Result 和 Artifact contract，维护单个活动任务，执行确定性 Gate 转换并保存人工决策。它不执行 Stage、Skill、测试、业务写入或 Git 操作。
 
 ## Interface
 
@@ -25,7 +25,9 @@
 | FileStore | `loadState`、`mutateState` | Git 私有路径、锁、Revision、原子写入和归档 |
 | Installer | `installHarness` | 发行 Manifest、清单预检、幂等复制和冲突拒绝 |
 | PathSafety | `isInside`、`resolveInside`、`firstSymlinkInPath` | 仓库内路径解析和路径级 Symlink 检测 |
-| CLI Adapter | `harness <command>` | 参数、版本、JSON/文本输出和稳定退出码 |
+| CLI Adapter | `harness <command>` | 参数、版本、无状态结果检查、JSON/文本输出和稳定退出码 |
+
+Library 的逐文件 Module 索引见 `lib/ARCHITECTURE.md`；`test/` 是 `project.yml` 明确排除的验证目录。
 
 ## Verification
 

@@ -6,14 +6,16 @@
 
 | Topic | Entry | Status | Owner | Evidence |
 | --- | --- | --- | --- | --- |
-| 项目公共语境 | `main/README.md` | draft | `<owner>` | `<source>` |
-| 架构决策 | `main/adr/README.md` | draft | `<owner>` | `<source>` |
+| 项目公共语境 | `main/README.md` | official | Project maintainers | `README.md`、`ARCHITECTURE.md` |
+| 架构与 Module 索引 | `../ARCHITECTURE.md` | official | Project maintainers | `bin/`、`scripts/`、`workflows/` |
+| Harness Library | `../scripts/harness/ARCHITECTURE.md` | official | Project maintainers | `scripts/harness/lib/` |
+| 架构决策 | `main/adr/README.md` | draft | Project maintainers | Accepted ADRs |
 
 ## 应用知识
 
 | Application | Responsibility | Index | Architecture | Owner |
 | --- | --- | --- | --- | --- |
-| `<application-id>` | `<one sentence>` | `applications/<application-id>/INDEX.md` | `applications/<application-id>/ARCHITECTURE.md` | `<owner>` |
+当前仓库是单一 CLI Runtime，没有已登记的业务 Application。`applications/_template/` 仅供下游项目初始化使用。
 
 ## 非正式知识
 

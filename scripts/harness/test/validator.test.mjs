@@ -55,6 +55,13 @@ test("workflow nested identifiers use the safe id alphabet", async () => {
   assert.ok(report.errors.some((issue) => issue.code === "E_TRANSITION_ID"));
 });
 
+test("workflow validation rejects unknown artifact contracts", async () => {
+  const value = workflow();
+  value.stages.align.requiredArtifacts = [{ id: "report", required: true, contract: "unknown/v1" }];
+  const report = await validateWorkflow(value, { root: await makeGitRepo() });
+  assert.ok(report.errors.some((issue) => issue.code === "E_ARTIFACT_CONTRACT"));
+});
+
 test("stage result rejects missing local artifacts and accepts external references", async () => {
   const root = await makeGitRepo();
   const value = workflow();
@@ -68,6 +75,136 @@ test("stage result rejects missing local artifacts and accepts external referenc
     artifacts: [{ id: "spec", uri: "issue://tracker/123" }],
   }), { root });
   assert.deepEqual(report.errors, []);
+});
+
+test("contracted artifacts must be repository-local files", async () => {
+  const root = await makeGitRepo();
+  const value = workflow();
+  value.stages.align.requiredArtifacts = [{ id: "report", required: true, contract: "verification-report/v1" }];
+  const report = await validateStageResult(value, "align", stageResult({
+    artifacts: [{ id: "report", uri: "https://example.test/report.json" }],
+  }), { root });
+  assert.ok(report.errors.some((issue) => issue.code === "E_ARTIFACT_CONTRACT_URI"));
+});
+
+test("verification report contract rejects malformed report content", async () => {
+  const root = await makeGitRepo();
+  const value = workflow();
+  value.stages.align.requiredArtifacts = [{ id: "report", required: true, contract: "verification-report/v1" }];
+  await writeFile(join(root, "report.json"), "{}\n");
+  const report = await validateStageResult(value, "align", stageResult({
+    artifacts: [{ id: "report", uri: "report.json" }],
+  }), { root });
+  assert.ok(report.errors.some((issue) => issue.code === "E_VERIFICATION_REPORT"));
+});
+
+test("verification report conditions must match the stage result", async () => {
+  const root = await makeGitRepo();
+  const value = workflow();
+  value.stages.align.requiredArtifacts = [{ id: "report", required: true, contract: "verification-report/v1" }];
+  await writeFile(join(root, "evidence.txt"), "observed\n");
+  await writeFile(join(root, "report.json"), JSON.stringify({
+    schemaVersion: 1,
+    summary: "Checked",
+    conditions: [{ id: "other", status: "passed", checkRefs: [], cleanupRefs: [], evidenceRefs: ["evidence.txt"] }],
+    checks: [],
+    cleanup: [{ id: "none", resource: "temporary resources", action: "none created", status: "not-created", reason: "The check created no resources" }],
+  }));
+  const report = await validateStageResult(value, "align", stageResult({
+    artifacts: [{ id: "report", uri: "report.json" }],
+  }), { root });
+  assert.ok(report.errors.some((issue) => issue.code === "E_VERIFICATION_CONDITION"));
+});
+
+test("verification report validates automated check execution evidence", async () => {
+  const root = await makeGitRepo();
+  const value = workflow();
+  value.stages.align.requiredArtifacts = [{ id: "report", required: true, contract: "verification-report/v1" }];
+  await writeFile(join(root, "evidence.txt"), "passed\n");
+  await writeFile(join(root, "report.json"), JSON.stringify({
+    schemaVersion: 1,
+    summary: "Checked",
+    conditions: [{ id: "intent-clear", status: "passed", checkRefs: ["automated"], cleanupRefs: [], evidenceRefs: [] }],
+    checks: [{ id: "automated", kind: "automated", status: "passed", exitCode: 0, evidenceRefs: ["evidence.txt"] }],
+    cleanup: [{ id: "none", resource: "temporary resources", action: "none created", status: "not-created", reason: "The check created no resources" }],
+  }));
+  const report = await validateStageResult(value, "align", stageResult({
+    artifacts: [{ id: "report", uri: "report.json" }],
+  }), { root });
+  assert.ok(report.errors.some((issue) => issue.code === "E_VERIFICATION_CHECK"));
+});
+
+test("passed verification checks require a zero exit code", async () => {
+  const root = await makeGitRepo();
+  const value = workflow();
+  value.stages.align.requiredArtifacts = [{ id: "report", required: true, contract: "verification-report/v1" }];
+  await writeFile(join(root, "evidence.txt"), "unexpected nonzero\n");
+  await writeFile(join(root, "report.json"), JSON.stringify({
+    schemaVersion: 1,
+    summary: "Contradictory check",
+    conditions: [{ id: "intent-clear", status: "passed", checkRefs: ["automated"], cleanupRefs: [], evidenceRefs: [] }],
+    checks: [{ id: "automated", kind: "automated", command: "node --test", status: "passed", exitCode: 1, evidenceRefs: ["evidence.txt"] }],
+    cleanup: [{ id: "none", resource: "temporary resources", action: "none created", status: "not-created", reason: "The check created no resources" }],
+  }));
+  const report = await validateStageResult(value, "align", stageResult({
+    artifacts: [{ id: "report", uri: "report.json" }],
+  }), { root });
+  assert.ok(report.errors.some((issue) => issue.code === "E_VERIFICATION_CHECK"));
+});
+
+test("passed verification conditions cannot hide retained cleanup resources", async () => {
+  const root = await makeGitRepo();
+  const value = workflow();
+  value.stages.align.requiredArtifacts = [{ id: "report", required: true, contract: "verification-report/v1" }];
+  await writeFile(join(root, "report.json"), JSON.stringify({
+    schemaVersion: 1,
+    summary: "Cleanup failed",
+    conditions: [{ id: "intent-clear", status: "passed", checkRefs: [], cleanupRefs: ["database"], evidenceRefs: [] }],
+    checks: [],
+    cleanup: [{ id: "database", resource: "test database", action: "delete rows", status: "retained", reason: "Database unavailable" }],
+  }));
+  const report = await validateStageResult(value, "align", stageResult({
+    artifacts: [{ id: "report", uri: "report.json" }],
+  }), { root });
+  assert.ok(report.errors.some((issue) => issue.code === "E_VERIFICATION_CONDITION"));
+});
+
+test("verification report contract accepts consistent checks and cleanup", async () => {
+  const root = await makeGitRepo();
+  const value = workflow();
+  value.stages.align.requiredArtifacts = [{ id: "report", required: true, contract: "verification-report/v1" }];
+  await writeFile(join(root, "evidence.txt"), "passed\n");
+  await writeFile(join(root, "report.json"), JSON.stringify({
+    schemaVersion: 1,
+    summary: "All checks passed",
+    conditions: [{ id: "intent-clear", status: "passed", checkRefs: ["automated"], cleanupRefs: ["none"], evidenceRefs: [] }],
+    checks: [{ id: "automated", kind: "automated", command: "node --test", status: "passed", exitCode: 0, evidenceRefs: ["evidence.txt"] }],
+    cleanup: [{ id: "none", resource: "temporary resources", action: "none created", status: "not-created", reason: "The check created no resources" }],
+  }));
+  const report = await validateStageResult(value, "align", stageResult({
+    artifacts: [{ id: "report", uri: "report.json" }],
+  }), { root });
+  assert.deepEqual(report.errors, []);
+  assert.deepEqual(report.policyFailures, []);
+});
+
+test("consistent failed reports remain policy failures that humans can override", async () => {
+  const root = await makeGitRepo();
+  const value = workflow();
+  value.stages.align.requiredArtifacts = [{ id: "report", required: true, contract: "verification-report/v1" }];
+  await writeFile(join(root, "report.json"), JSON.stringify({
+    schemaVersion: 1,
+    summary: "Cleanup remains",
+    conditions: [{ id: "intent-clear", status: "failed", checkRefs: ["automated"], cleanupRefs: ["database"], evidenceRefs: [], reason: "Verification and cleanup failed" }],
+    checks: [{ id: "automated", kind: "automated", command: "node --test", status: "failed", exitCode: 1, evidenceRefs: [], reason: "Tests failed" }],
+    cleanup: [{ id: "database", resource: "test database", action: "delete rows", status: "retained", reason: "Database unavailable" }],
+  }));
+  const report = await validateStageResult(value, "align", stageResult({
+    conditions: [{ id: "intent-clear", status: "failed", reason: "Verification and cleanup failed", evidenceRefs: [] }],
+    artifacts: [{ id: "report", uri: "report.json" }],
+  }), { root });
+  assert.deepEqual(report.errors, []);
+  assert.deepEqual(report.policyFailures, [{ id: "intent-clear", kind: "condition", status: "failed" }]);
 });
 
 test("stage result rejects symlink artifacts", async () => {

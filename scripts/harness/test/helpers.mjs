@@ -1,8 +1,21 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { after } from "node:test";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { mkdtemp } from "node:fs/promises";
 import { spawn } from "node:child_process";
+
+const temporaryDirectories = new Set();
+
+after(async () => {
+  await Promise.all([...temporaryDirectories].map((root) => rm(root, { recursive: true, force: true })));
+  temporaryDirectories.clear();
+});
+
+export async function makeTemporaryDirectory(prefix) {
+  const root = await mkdtemp(join(tmpdir(), prefix));
+  temporaryDirectories.add(root);
+  return root;
+}
 
 export function workflow(overrides = {}) {
   return {
@@ -71,7 +84,7 @@ export function decision(action, overrides = {}) {
 }
 
 export async function makeGitRepo() {
-  const root = await mkdtemp(join(tmpdir(), "harness-test-"));
+  const root = await makeTemporaryDirectory("harness-test-");
   await mkdir(join(root, "workflows"), { recursive: true });
   await run("git", ["init", "-q"], root);
   await run("git", ["config", "user.name", "Harness Test"], root);

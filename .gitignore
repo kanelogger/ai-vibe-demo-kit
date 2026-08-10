@@ -33,3 +33,4 @@ desktop.ini
 .agents/skills/
 .claude/skills/
 private-*/
+private-*.md

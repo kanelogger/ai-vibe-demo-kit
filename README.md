@@ -24,11 +24,11 @@ cd /path/to/project
 
 达到 **Governance-ready** 前，项目负责人需要完成以下清单：
 
-1. 在目标路径不存在时，将 `AGENTS_template.md` 复制为 `AGENTS.md`，将 `project-template.yml` 复制为 `project.yml`；禁止覆盖已有项目文件。
-2. 填写全部 `{填写}`、`<placeholder>`、命令、代码根目录、权限和人工确认边界。
+1. 在目标路径不存在时，将 `AGENTS_template.md`、`project-template.yml`、`AI_ENVIRONMENT_template.md` 分别复制为 `AGENTS.md`、`project.yml`、`AI_ENVIRONMENT.md`；禁止覆盖已有项目文件。
+2. 先填写 `AI_ENVIRONMENT.md` 中全部 `{填写：...}`，实际探测机器状态和 Agent 能力；再填写其余模板中的 `{填写}`、`<placeholder>`、代码根目录、权限和人工确认边界。
 3. 从 Kit 中按需选择 `knowledge/`、`rules/` 和架构模板，并扩展已安装的 `SPECS/template.md`；Installer 不复制 `knowledge/` 和 `rules/`。
 4. 为已声明的代码根建立 `ARCHITECTURE.md`，只录入能够由代码、配置或负责人确认的项目事实。
-5. 运行 `./harness check --json` 与 `./harness status --json`，确认 Workflow、状态和下一步动作均符合目标项目。
+5. 运行 `./harness check-environment --file AI_ENVIRONMENT.md --json`、`./harness check --json` 与 `./harness status --json`，确认环境模板、Workflow、状态和下一步动作均符合目标项目。
 
 模板中的留白和空知识骨架是待定输入，不是可以直接引用的事实。未完成上述清单时，应明确称为 Runtime-ready，不能宣称 Governance-ready。
 
@@ -38,6 +38,7 @@ cd /path/to/project
 
 ```text
 ./harness check [--workflow <path>] [--json]
+./harness check-environment --file <AI_ENVIRONMENT.md> [--json]
 ./harness version [--json]
 ./harness start --workflow <path> --intent <text> [--json]
 ./harness status [--json]
@@ -51,11 +52,13 @@ cd /path/to/project
 
 `signal` 接收 Agent、命令或人工已经完成的 Stage Result。Harness 只校验结构、证据引用与策略结果，不执行 Stage 内容。
 
+`check-environment` 是只读结构检查：它要求 Manifest 保留完整章节、移除全部填写占位符、使用声明的 capability 状态词汇并确认 alignment 清单；它不判断自然语言事实是否真实，实际版本和能力仍必须由探测 Evidence 证明。
+
 `check-result` 对显式 Workflow、Stage 和 Stage Result 执行相同校验，但不读取或修改 `.git/harness/control.json`。`--require-complete` 要求结果对应的 Transition 指向 `complete`。JSON 会区分结构有效、策略满足、完成资格和后续是否仍需人工批准。
 
 `./harness version --json` 从 `.harness/manifest.json` 返回安装版本和最低 Node.js 主版本；该命令不要求当前目录位于 Git 仓库。Installer 的 JSON 保留兼容字段 `version: 1`，并用 `harnessVersion` 返回发行版本。
 
-退出码稳定为：`0` 成功；`1` 被 Gate、策略条件或 completion route 要求阻止；`2` 参数、结构、状态、Revision 或 I/O 错误。`signal` 返回 `1` 时 Stage Result 已经落盘；调用方必须读取 JSON，而不能把非零简单解释为 Mutation 回滚。无错误的 `signal --json` 使用 `applied` 区分本次写入与幂等重试，并用 `requiresHumanAction` 表示是否等待人工处理。JSON 输出始终包含 Revision、状态、当前 Stage、Pending Gate、允许动作和可复制的 Next Actions；错误输出同时保留当前状态上下文与稳定错误码。
+退出码稳定为：`0` 成功；`1` 被环境就绪检查、Gate、策略条件或 completion route 要求阻止；`2` 参数、结构、状态、Revision 或 I/O 错误。`signal` 返回 `1` 时 Stage Result 已经落盘；调用方必须读取 JSON，而不能把非零简单解释为 Mutation 回滚。无错误的 `signal --json` 使用 `applied` 区分本次写入与幂等重试，并用 `requiresHumanAction` 表示是否等待人工处理。JSON 输出始终包含 Revision、状态、当前 Stage、Pending Gate、允许动作和可复制的 Next Actions；错误输出同时保留当前状态上下文与稳定错误码。
 
 ## 控制模型
 
@@ -102,6 +105,7 @@ Human Control 是所有活动状态的内建能力：
 │   └── verification-report-template.json
 ├── project-template.yml            # 项目身份和权威入口模板
 ├── AGENTS_template.md              # Agent 冷启动入口模板
+├── AI_ENVIRONMENT_template.md       # 机器、Agent 能力和项目操作契约模板
 ├── knowledge/                      # 长期项目与业务知识
 ├── rules/                          # 测试、安全和 Git 规则
 └── SPECS/                          # 长期实现规格

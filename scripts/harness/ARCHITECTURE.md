@@ -21,7 +21,7 @@
 | Module | Interface | Responsibility |
 | --- | --- | --- |
 | ControlKernel | `applyControl`、`inspectState` | 纯状态转换、Gate 和 Human Control |
-| Validator | `validateWorkflow`、`validateStageResult`、`validateControlState`、`validateStateAgainstWorkflow` | 可执行结构契约、引用完整性、状态绑定与策略事实提取 |
+| Validator | `validateEnvironmentManifest`、`validateWorkflow`、`validateStageResult`、`validateControlState`、`validateStateAgainstWorkflow` | 环境模板、Workflow、Evidence、状态绑定与策略事实的确定性校验 |
 | FileStore | `loadState`、`mutateState` | Git 私有路径、锁、Revision、原子写入和归档 |
 | Installer | `installHarness` | 发行 Manifest、清单预检、幂等复制和冲突拒绝 |
 | PathSafety | `isInside`、`resolveInside`、`firstSymlinkInPath` | 仓库内路径解析和路径级 Symlink 检测 |

@@ -9,7 +9,7 @@
 | Module | Interface | Responsibility |
 | --- | --- | --- |
 | ControlKernel | `applyControl`、`inspectState` | 纯状态转换、Gate 和人工控制 |
-| Validator | `validateWorkflow`、`validateStageResult`、`validateStateAgainstWorkflow` | Workflow、Stage Result、Evidence contract 和状态绑定校验 |
+| Validator | `validateEnvironmentManifest`、`validateWorkflow`、`validateStageResult`、`validateStateAgainstWorkflow` | 环境 Manifest、Workflow、Stage Result、Evidence contract 和状态绑定校验 |
 | FileStore | `loadState`、`mutateState` | Revision、锁、原子持久化和历史归档 |
 | Installer | `installHarness` | Runtime 清单预检和幂等复制 |
 | PathSafety | `isInside`、`resolveInside`、`firstSymlinkInPath` | 仓库路径约束和 Symlink 检测 |

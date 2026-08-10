@@ -74,6 +74,21 @@ export function stageResult(overrides = {}) {
   };
 }
 
+export function completeEnvironmentTemplate(template) {
+  const completed = template
+    .replace(/\{填写[^}]*\}/g, "confirmed")
+    .replace(/- \[ \]/g, "- [x]");
+  const lines = completed.split("\n");
+  const start = lines.indexOf("## 03. Agent Tool Capabilities");
+  const end = lines.indexOf("## 04. Project Stack");
+  for (let index = start + 1; index < end; index += 1) {
+    if (lines[index].startsWith("|") && !lines[index].startsWith("| Capability") && !lines[index].startsWith("| ---")) {
+      lines[index] = lines[index].replace(/\| confirmed \|$/, "| healthy |");
+    }
+  }
+  return lines.join("\n");
+}
+
 export function decision(action, overrides = {}) {
   return {
     action,

@@ -1,20 +1,21 @@
 #!/usr/bin/env node
-import { readFile, lstat, realpath } from "node:fs/promises";
+import { readFile, realpath } from "node:fs/promises";
 import { dirname, isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { applyControl, digestValue, inspectState } from "../scripts/harness/lib/kernel.mjs";
 import { HarnessError, fail } from "../scripts/harness/lib/errors.mjs";
 import { installHarness } from "../scripts/harness/lib/installer.mjs";
 import { loadHarnessManifest } from "../scripts/harness/lib/manifest.mjs";
-import { isInside, resolveInside } from "../scripts/harness/lib/path-safety.mjs";
+import { firstSymlinkInPath, isInside, resolveInside } from "../scripts/harness/lib/path-safety.mjs";
 import { loadState, mutateState, readGitActor, statePaths } from "../scripts/harness/lib/store.mjs";
-import { validateStageResult, validateStateAgainstWorkflow, validateWorkflow } from "../scripts/harness/lib/validator.mjs";
+import { validateEnvironmentManifest, validateStageResult, validateStateAgainstWorkflow, validateWorkflow } from "../scripts/harness/lib/validator.mjs";
 
 const SOURCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const HELP = `Usage:
   harness init --target <git-root> [--json]
   harness version [--json]
   harness check [--workflow <path>] [--json]
+  harness check-environment --file <AI_ENVIRONMENT.md> [--json]
   harness check-result --workflow <path> --stage <stage> --file <stage-result.json>
       [--require-complete] [--json]
   harness start --workflow <path> --intent <text> [--json]
@@ -24,7 +25,7 @@ const HELP = `Usage:
       [--actor <name>] --reason <text> [--target <stage>]
       [--accept-risk <condition-id> ...] [--json]
 
-Exit codes: 0 success, 1 gate/policy refusal, 2 usage/structure/state/I/O error.`;
+Exit codes: 0 success, 1 environment/gate/policy refusal, 2 usage/structure/state/I/O error.`;
 
 const BOOLEAN = new Set(["json", "help", "require-complete"]);
 const REPEATED = new Set(["accept-risk"]);
@@ -32,6 +33,7 @@ const COMMAND_OPTIONS = {
   init: new Set(["target", "json"]),
   version: new Set(["json"]),
   check: new Set(["workflow", "json"]),
+  "check-environment": new Set(["file", "json"]),
   "check-result": new Set(["workflow", "stage", "file", "require-complete", "json"]),
   start: new Set(["workflow", "intent", "json"]),
   status: new Set(["json"]),
@@ -82,19 +84,27 @@ async function rootFromCwd() {
   return (await statePaths(process.cwd())).root;
 }
 
-async function readRepoJson(root, path, label) {
+async function readRepoText(root, path, label) {
   if (typeof path !== "string" || path.trim() === "" || isAbsolute(path)) fail("E_PATH_OUTSIDE", `${label} path must be repository-relative`);
   const target = resolveInside(root, path);
   if (!target) fail("E_PATH_OUTSIDE", `${label} path leaves the repository`);
   try {
-    const stat = await lstat(target);
-    if (stat.isSymbolicLink()) fail("E_PATH_SYMLINK", `${label} path must not be a symlink`);
+    if (await firstSymlinkInPath(root, target)) fail("E_PATH_SYMLINK", `${label} path must not use symlinks`);
     const actual = await realpath(target);
     if (!isInside(root, actual)) fail("E_PATH_OUTSIDE", `${label} resolves outside the repository`);
-    return JSON.parse(await readFile(target, "utf8"));
+    return await readFile(target, "utf8");
   } catch (error) {
     if (error instanceof HarnessError) throw error;
     if (error.code === "ENOENT") fail("E_REFERENCE_INVALID", `${label} file does not exist: ${path}`);
+    fail("E_REFERENCE_INVALID", `${label} cannot be read: ${error.message}`);
+  }
+}
+
+async function readRepoJson(root, path, label) {
+  const content = await readRepoText(root, path, label);
+  try {
+    return JSON.parse(content);
+  } catch (error) {
     fail("E_REFERENCE_INVALID", `${label} is not valid JSON: ${error.message}`);
   }
 }
@@ -204,6 +214,12 @@ async function execute(options, context) {
   }
 
   const root = await rootFromCwd();
+  if (command === "check-environment") {
+    if (!options.file) fail("E_USAGE", "check-environment requires --file", { repair: HELP });
+    const report = validateEnvironmentManifest(await readRepoText(root, options.file, "AI environment manifest"));
+    output(options, report);
+    return report.valid ? 0 : 1;
+  }
   if (command === "check-result") {
     if (!options.workflow || !options.stage || !options.file) fail("E_USAGE", "check-result requires --workflow, --stage and --file", { repair: HELP });
     const loaded = await loadWorkflow(root, options.workflow);

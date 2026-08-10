@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readFile, writeFile } from "node:fs/promises";
-import { makeGitRepo, makeTemporaryDirectory, run, runRaw, stageResult, workflow } from "./helpers.mjs";
+import { mkdir, readFile, symlink, writeFile } from "node:fs/promises";
+import { completeEnvironmentTemplate, makeGitRepo, makeTemporaryDirectory, run, runRaw, stageResult, workflow } from "./helpers.mjs";
 
 const sourceRoot = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 const sourceCli = join(sourceRoot, "bin", "harness.mjs");
@@ -15,7 +15,7 @@ test("source and installed CLIs report release metadata outside a Git repository
   assert.deepEqual(JSON.parse(result.stdout), {
     schemaVersion: 1,
     name: "project-agent-harness",
-    version: "0.2.0",
+    version: "0.3.0",
     minimumNodeVersion: "22",
   });
 
@@ -23,10 +23,10 @@ test("source and installed CLIs report release metadata outside a Git repository
   result = await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
   const installed = JSON.parse(result.stdout);
   assert.equal(installed.version, 1);
-  assert.equal(installed.harnessVersion, "0.2.0");
+  assert.equal(installed.harnessVersion, "0.3.0");
   result = await runRaw(join(target, "harness"), ["version", "--json"], outside);
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(JSON.parse(result.stdout).version, "0.2.0");
+  assert.equal(JSON.parse(result.stdout).version, "0.3.0");
 });
 
 test("version rejects an invalid installed manifest", async () => {
@@ -36,6 +36,37 @@ test("version rejects an invalid installed manifest", async () => {
   const result = await runRaw(join(target, "harness"), ["version", "--json"], target);
   assert.equal(result.code, 2);
   assert.equal(JSON.parse(result.stdout).error.code, "E_MANIFEST_INVALID");
+});
+
+test("check-environment rejects the template and accepts a completed project copy", async () => {
+  const target = await makeGitRepo();
+  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+
+  let result = await runRaw(join(target, "harness"), ["check-environment", "--file", "AI_ENVIRONMENT_template.md", "--json"], target);
+  assert.equal(result.code, 1);
+  assert.ok(JSON.parse(result.stdout).errors.some((issue) => issue.code === "E_ENVIRONMENT_PLACEHOLDER"));
+
+  const template = await readFile(join(target, "AI_ENVIRONMENT_template.md"), "utf8");
+  const completed = completeEnvironmentTemplate(template);
+  await writeFile(join(target, "AI_ENVIRONMENT.md"), completed);
+  result = await runRaw(join(target, "harness"), ["check-environment", "--file", "AI_ENVIRONMENT.md", "--json"], target);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).valid, true);
+});
+
+test("check-environment rejects an intermediate symlink path", async () => {
+  const target = await makeGitRepo();
+  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  const template = await readFile(join(target, "AI_ENVIRONMENT_template.md"), "utf8");
+  const completed = completeEnvironmentTemplate(template);
+  await mkdir(join(target, "environment"));
+  await writeFile(join(target, "environment", "AI_ENVIRONMENT.md"), completed);
+  await symlink(join(target, "environment"), join(target, "environment-link"));
+
+  const result = await runRaw(join(target, "harness"), ["check-environment", "--file", "environment-link/AI_ENVIRONMENT.md", "--json"], target);
+
+  assert.equal(result.code, 2);
+  assert.equal(JSON.parse(result.stdout).error.code, "E_PATH_SYMLINK");
 });
 
 test("fresh repository installs, checks, starts and advances through the public CLI", async () => {

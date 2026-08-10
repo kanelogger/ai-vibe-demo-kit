@@ -4,6 +4,7 @@
 
 ```sh
 ./harness check
+./harness check-environment --file AI_ENVIRONMENT.md --json
 ./harness version --json
 ./harness start --workflow workflows/workflow-template.json --intent "<goal>"
 ./harness status --json
@@ -14,7 +15,7 @@
 
 运行 `./harness help` 查看完整参数。Harness 只控制和校验 Workflow，不执行 Skill、测试、Shell、Git 提交或外部写入。
 
-Installer 完成且 `./harness check --json` 通过只表示 **Runtime-ready**。达到 **Governance-ready** 还需要：在不覆盖现有文件的前提下将 `AGENTS_template.md`、`project-template.yml` 提升为项目文件，填写全部占位符，按需从 Kit 选择 `knowledge/`、`rules/` 和架构模板，扩展已安装的 `SPECS/template.md`，并用代码、配置或负责人确认每条项目事实。空模板不能作为正式知识引用。达到 **Completion-evidence-ready** 还需要提交 acceptance Stage Result 与 `verification-report/v1`，并由 Agent 或 CI 调用 `check-result --require-complete`。
+Installer 完成且 `./harness check --json` 通过只表示 **Runtime-ready**。达到 **Governance-ready** 还需要：在不覆盖现有文件的前提下将 `AGENTS_template.md`、`project-template.yml`、`AI_ENVIRONMENT_template.md` 分别提升为 `AGENTS.md`、`project.yml`、`AI_ENVIRONMENT.md`，填写全部占位符，通过 `check-environment`，按需从 Kit 选择 `knowledge/`、`rules/` 和架构模板，扩展已安装的 `SPECS/template.md`，并用代码、配置、实际探测或负责人确认每条项目事实。空模板不能作为正式知识引用。达到 **Completion-evidence-ready** 还需要提交 acceptance Stage Result 与 `verification-report/v1`，并由 Agent 或 CI 调用 `check-result --require-complete`。
 
 `signal --json` 的无错误响应包含 `applied` 和 `requiresHumanAction`。进入 Human Gate 或 Policy Block 时 Stage Result 已持久化，但命令仍返回退出码 `1`；同内容、同 Revision 重试返回 `applied: false` 和退出码 `0`。
 

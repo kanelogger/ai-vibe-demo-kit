@@ -1,0 +1,47 @@
+{
+  "outcome": "ready",
+  "summary": "Defined the installed AI environment template interface, observable acceptance criteria, ownership boundary, environment alignment and rollback path.",
+  "conditions": [
+    {
+      "id": "acceptance-observable",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/wi-msmjpwvi-142a2d6c/spec.md"
+      ]
+    },
+    {
+      "id": "risk-classified",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/wi-msmjpwvi-142a2d6c/spec.md"
+      ]
+    },
+    {
+      "id": "environment-confirmed",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/wi-msmjpwvi-142a2d6c/environment-evidence.md"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "id": "alignment.spec",
+      "status": "succeeded",
+      "artifactRefs": [
+        "spec"
+      ]
+    },
+    {
+      "id": "alignment.diagnose",
+      "status": "skipped",
+      "reason": "The request is an additive governance template and no broken behavior required diagnosis."
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "spec",
+      "uri": "work/requirements/wi-msmjpwvi-142a2d6c/spec.md"
+    }
+  ]
+}

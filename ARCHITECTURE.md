@@ -6,7 +6,7 @@
 
 ## Interface
 
-调用者通过根目录 `harness` 命令使用 Runtime。仓库治理入口是 `AGENTS.md` 和 `project.yml`；长期知识从 `knowledge/INDEX.md` 渐进加载。
+调用者通过根目录 `harness` 命令使用 Runtime。仓库治理入口是 `AGENTS.md` 和 `project.yml`；安装后的 `AI_ENVIRONMENT_template.md` 提升为 `AI_ENVIRONMENT.md` 后提供环境与能力操作契约；长期知识从 `knowledge/INDEX.md` 渐进加载。
 
 ## Invariants
 
@@ -23,7 +23,7 @@
 | CLI Adapter | `bin/harness.mjs` | 参数、输出、稳定退出码和 Runtime 编排 | Harness Library |
 | Repository Scripts | `scripts/ARCHITECTURE.md` | Harness Library、测试和仓库检查脚本 | Node.js、Git |
 | Workflow Assets | `workflows/` | 默认状态图、Stage Result 和 Evidence 模板 | Validator contracts |
-| Governance | `AGENTS.md`、`project.yml`、`rules/` | Agent 冷启动、环境、权限和验证规则 | Repository facts |
+| Governance | `AGENTS.md`、`project.yml`、`AI_ENVIRONMENT_template.md`、`rules/` | Agent 冷启动、环境、能力、权限和验证规则 | Repository facts |
 | Knowledge | `knowledge/INDEX.md` | 稳定项目知识和渐进路由 | Code evidence |
 
 ## Dependency Direction

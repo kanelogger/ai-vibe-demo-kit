@@ -1,10 +1,42 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { makeGitRepo, stageResult, workflow } from "./helpers.mjs";
-import { validateStageResult, validateStateAgainstWorkflow, validateWorkflow } from "../lib/validator.mjs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { completeEnvironmentTemplate, makeGitRepo, stageResult, workflow } from "./helpers.mjs";
+import { validateEnvironmentManifest, validateStageResult, validateStateAgainstWorkflow, validateWorkflow } from "../lib/validator.mjs";
 import { applyControl, createIdleState } from "../lib/kernel.mjs";
+
+const sourceRoot = join(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+test("AI environment manifest validation rejects placeholders and incomplete checklists", async () => {
+  const template = await readFile(join(sourceRoot, "AI_ENVIRONMENT_template.md"), "utf8");
+  const report = validateEnvironmentManifest(template);
+  assert.equal(report.valid, false);
+  assert.ok(report.errors.some((issue) => issue.code === "E_ENVIRONMENT_PLACEHOLDER"));
+  assert.ok(report.errors.some((issue) => issue.code === "E_ENVIRONMENT_CHECKLIST"));
+});
+
+test("AI environment manifest validation accepts a structurally complete copy", async () => {
+  const template = await readFile(join(sourceRoot, "AI_ENVIRONMENT_template.md"), "utf8");
+  const completed = completeEnvironmentTemplate(template);
+  assert.deepEqual(validateEnvironmentManifest(completed), { valid: true, errors: [], warnings: [] });
+});
+
+test("AI environment manifest validation rejects a missing required section", async () => {
+  const template = await readFile(join(sourceRoot, "AI_ENVIRONMENT_template.md"), "utf8");
+  const incomplete = completeEnvironmentTemplate(template)
+    .replace("## 10. Verification and Acceptance", "## Verification removed");
+  const report = validateEnvironmentManifest(incomplete);
+  assert.ok(report.errors.some((issue) => issue.code === "E_ENVIRONMENT_SECTION"));
+});
+
+test("AI environment manifest validation rejects unknown capability statuses", async () => {
+  const template = await readFile(join(sourceRoot, "AI_ENVIRONMENT_template.md"), "utf8");
+  const invalid = completeEnvironmentTemplate(template).replace("| healthy |", "| confirmed | ");
+  const report = validateEnvironmentManifest(invalid);
+  assert.ok(report.errors.some((issue) => issue.code === "E_ENVIRONMENT_CAPABILITY_STATUS"));
+});
 
 test("a custom workflow with auto and human gates is valid", async () => {
   const root = await makeGitRepo();

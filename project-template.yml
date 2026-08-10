@@ -67,10 +67,12 @@ commands:
   lint: "<command>"
   build: "<command>"
   harness_check: "./harness check"
+  environment_check: "./harness check-environment --file AI_ENVIRONMENT.md --json"
   completion_check: "./harness check-result --workflow <workflow.json> --stage <stage> --file <stage-result.json> --require-complete --json"
 
 authoritative_context:
   agent_entry: "AGENTS.md"
+  ai_environment: "AI_ENVIRONMENT.md"
   architecture: "ARCHITECTURE.md"
   knowledge_index: "knowledge/INDEX.md"
   knowledge_routing: "knowledge/ROUTING.md"

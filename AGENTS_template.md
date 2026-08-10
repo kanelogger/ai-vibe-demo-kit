@@ -37,6 +37,7 @@
 ## 项目地图
 
 - 项目身份、环境探测和命令：`project.yml`
+- 机器实况、Agent 能力和命令执行契约：`AI_ENVIRONMENT.md`
 - 架构模块及依赖方向：`ARCHITECTURE.md`
 - 代码根目录与架构索引范围：`project.yml#architecture_memory`
 - 长期知识入口：`knowledge/INDEX.md`
@@ -48,12 +49,14 @@
 
 ## 开始前
 
-1. 读取 `project.yml`、`ARCHITECTURE.md`，运行 `project.yml#environment.probes` 中的必需探测。
-2. 将实际环境和偏差写入 alignment Evidence；不满足声明时将 `environment-confirmed` 报告为 `failed`，不得自行假定兼容。
-3. 运行 `./harness check --json` 和 `./harness status --json`。
-4. 根据 `knowledge/ROUTING.md` 读取与任务相关的最小知识集合。
-5. 阅读当前应用的 `requirement.md`、相关规格、代码入口和邻近测试。
-6. 检查已有工作区改动、允许动作和人工门禁。
+1. 读取 `project.yml`、`AI_ENVIRONMENT.md` 和 `ARCHITECTURE.md`。`AI_ENVIRONMENT.md` 不存在时停止推进，并报告项目尚未达到 Governance-ready。
+2. 运行 `./harness check-environment --file AI_ENVIRONMENT.md --json`；存在未填写占位符、缺失章节或未确认清单时停止推进。
+3. 运行 `project.yml#environment.probes` 和 `AI_ENVIRONMENT.md` 中的必需能力检查。
+4. 将实际环境和偏差写入 alignment Evidence；不满足声明时将 `environment-confirmed` 报告为 `failed`，不得自行假定兼容。
+5. 运行 `./harness check --json` 和 `./harness status --json`。
+6. 根据 `knowledge/ROUTING.md` 读取与任务相关的最小知识集合。
+7. 阅读当前应用的 `requirement.md`、相关规格、代码入口和邻近测试。
+8. 检查已有工作区改动、允许动作和人工门禁。
 
 ## 代码架构记忆
 

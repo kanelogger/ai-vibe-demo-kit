@@ -1,5 +1,12 @@
 # Harness Changelog
 
+## 0.3.0 - 2026-08-10
+
+- Install an AI environment manifest template that separates project requirements, observed machine facts and effective Agent capabilities.
+- Require target repositories to promote and complete the manifest before claiming Governance-ready status.
+- Define actionable command, service, verification, constraint and cleanup contracts for Agent use.
+- Add `check-environment` to reject missing sections, unresolved placeholders, unchecked alignment items and invalid capability statuses.
+
 ## 0.2.0 - 2026-08-09
 
 - Add the `verification-report/v1` Artifact contract with check, condition and cleanup consistency validation.

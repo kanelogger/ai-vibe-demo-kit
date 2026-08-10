@@ -6,13 +6,13 @@
 
 ## Interface
 
-公共入口是 `harness <command> [options]`。`check-result` 提供不读取控制状态的完成 Evidence 检查。结构与 I/O 错误返回 2，Gate、Policy 或 completion route Refusal 返回 1，成功返回 0。
+公共入口是 `harness <command> [options]`。`check-environment` 校验项目环境 Manifest 的结构完成度，`check-result` 提供不读取控制状态的完成 Evidence 检查。结构与 I/O 错误返回 2，环境未就绪、Gate、Policy 或 completion route Refusal 返回 1，成功返回 0。
 
 ## Invariants
 
 - 公共路径参数必须是仓库相对路径且不得经过 Symlink。
 - 只由 Mutation 命令写入 Git 私有 Harness 状态。
-- CLI 不复制 Validator 规则；`signal` 和无状态检查必须使用同一校验 Interface。
+- CLI 不复制 Validator 规则；环境、`signal` 和无状态 Evidence 检查必须使用对应的 Validator Interface。
 
 ## Files
 

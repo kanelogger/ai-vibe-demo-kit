@@ -15,14 +15,19 @@ test("installer copies the lightweight runtime and is idempotent", async () => {
   assert.ok(result.created.includes(".harness/manifest.json"));
   assert.ok(result.created.includes("scripts/harness/lib/path-safety.mjs"));
   assert.ok(result.created.includes("workflows/verification-report-template.json"));
+  assert.ok(result.created.includes("AI_ENVIRONMENT_template.md"));
   assert.equal((await lstat(join(target, "harness"))).mode & 0o111, 0o111);
   assert.match(await readFile(join(target, "bin", "harness.mjs"), "utf8"), /Harness/);
+  assert.equal(
+    await readFile(join(target, "AI_ENVIRONMENT_template.md"), "utf8"),
+    await readFile(join(sourceRoot, "AI_ENVIRONMENT_template.md"), "utf8"),
+  );
   assert.equal(result.version, 1);
-  assert.equal(result.harnessVersion, "0.2.0");
+  assert.equal(result.harnessVersion, "0.3.0");
   assert.deepEqual(JSON.parse(await readFile(join(target, ".harness", "manifest.json"), "utf8")), {
     schemaVersion: 1,
     name: "project-agent-harness",
-    version: "0.2.0",
+    version: "0.3.0",
     minimumNodeVersion: "22",
   });
 
@@ -38,8 +43,8 @@ test("installer preflight refuses different content without partial writes", asy
   await assert.rejects(
     installHarness({ sourceRoot, targetRoot: target }),
     (error) => error.code === "E_INSTALL_CONFLICT"
-      && error.facts.sourceVersion === "0.2.0"
-      && error.facts.installedVersion === "0.2.0",
+      && error.facts.sourceVersion === "0.3.0"
+      && error.facts.installedVersion === "0.3.0",
   );
   assert.equal(await readFile(join(target, "harness"), "utf8"), "different\n");
 });

@@ -29,6 +29,10 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           package-manager-cache: false
+      - name: Pin npm release toolchain
+        run: npm install --global npm@11.16.0
+      - name: Verify npm release toolchain
+        run: test "$(npm --version)" = "11.16.0"
       - name: Run tests
         run: node --test scripts/harness/test/*.test.mjs
       - name: Validate the default workflow

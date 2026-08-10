@@ -29,6 +29,27 @@
 - `validateWorkflow` remains the single validation path used by check/start/doctor for Required
   Skill entity and Artifact contracts.
 
+## Acceptance Review Corrections
+
+- Redirected rejected revision 25 to implementation at revision 26; the earlier implementation
+  and acceptance results remain in Harness history as superseded.
+- Changed the repository Completion Evidence checker to validate each acceptance result with its
+  sibling `workflow.json`, falling back to the default Workflow only when no sibling exists.
+- Centralized shell-safe lifecycle command formatting in RepositoryGuard. Package versions require
+  strict SemVer and every dynamic shell argument is POSIX single-quoted.
+- Revalidated transaction schema, creating package version, Manifest Digest and committed rollback
+  rules after recover acquires the shared repository lock.
+- Made worktree atomic-write temporary paths transaction-deterministic. Exception cleanup and
+  resume/rollback both remove the exact owned temporary path without touching third-party paths.
+- Persisted preserved path facts in the journal and revalidated them before ledger commit, final
+  commit verification and rollback. Active Work Items are now rejected before orphan cleanup.
+- Preserved Distribution JSON mode and command identity for parse/usage failures and sourced error
+  envelope version data from the Runtime Manifest.
+- Pinned CI npm to 11.16.0, unified Skill document parsing, removed FileStore Interface forwarding,
+  declared Skill permission boundaries and made package tests URL-safe for paths containing spaces.
+- Replaced hook-name collection with table-driven crash injection that throws at staging, journal,
+  target, ledger, committed, gc and removal persistence points and verifies deterministic recovery.
+
 ## Explicitly Not Performed
 
 - No npm publish, registry verification, Git tag, commit, push, MCP implementation, legacy

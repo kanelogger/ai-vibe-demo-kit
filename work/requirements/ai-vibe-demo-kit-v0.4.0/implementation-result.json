@@ -1,6 +1,6 @@
 {
   "outcome": "ready-for-acceptance",
-  "summary": "The reviewed v0.4.0 Distribution, Runtime, lifecycle, Skill and release-preparation scope is implemented with current focused evidence.",
+  "summary": "The rejected Acceptance findings are corrected across Completion Evidence, shell safety, recovery binding, crash cleanup, JSON, CI and maintainability, with current dual-runtime evidence.",
   "conditions": [
     {
       "id": "scope-complete",

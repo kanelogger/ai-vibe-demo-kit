@@ -5,12 +5,24 @@ Distribution CLI, shared Runtime/Lifecycle repository guard, ledger-driven lifec
 transaction protocol, unique Distribution Manifest, bundled Skill, validators, package checks,
 documentation and integration tests are implemented.
 
+## Corrected review findings
+
+- Completion Evidence now uses the acceptance result's sibling Workflow and the exact rejected
+  commit range passes the repository checker.
+- Lifecycle commands are shell-safe, journal versions are strict SemVer, and recover revalidates
+  package/Manifest binding inside the shared lock.
+- Atomic target temporaries are transaction-owned and recoverable; preserved facts are verified
+  before ledger commit; every persistence category has an injected-failure recovery test.
+- Distribution usage errors retain stable JSON, CI pins npm 11.16.0, and all six maintenance issues
+  from the review are addressed.
+
 ## Verified state
 
-- Node 24.18.0 and Node 22.23.1 full suites pass, 98/98 on each runtime.
+- Node 24.18.0/npm 11.16.0 and Node 22.23.1/npm 11.16.0 full suites pass, 123/123 on each runtime.
 - Distribution and bundled Skill validators pass.
 - `npm pack --dry-run --json` passes with an isolated cache and reports 34 package entries.
-- Harness check is valid with no Workflow drift.
+- The actual governed commit range Completion Evidence check passes.
+- Harness check is valid with no Workflow drift or warning.
 - Temporary repositories, caches, tarballs, maintenance transactions and child processes are absent.
 
 ## Deliberately pending

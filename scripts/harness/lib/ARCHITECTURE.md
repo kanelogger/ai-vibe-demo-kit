@@ -9,8 +9,8 @@
 | Module | Interface | Responsibility |
 | --- | --- | --- |
 | ControlKernel | `applyControl`、`inspectState` | 纯状态转换、Gate 和人工控制 |
-| Validator | `validateEnvironmentManifest`、`validateWorkflow`、`validateStageResult`、`validateStateAgainstWorkflow` | 环境 Manifest、Workflow、Stage Result、Evidence contract 和状态绑定校验 |
-| RepositoryGuard | `repositoryPaths`、`withRepositoryMutation`、`readCanonicalMaintenance` | Git 根、共享锁和 canonical maintenance 不变量 |
+| Validator | `validateEnvironmentManifest`、`validateWorkflow`、`validateStageResult`、`validateStateAgainstWorkflow`、`parseSkillDocument` | 环境 Manifest、Workflow、Stage Result、Skill、Evidence contract 和状态绑定校验 |
+| RepositoryGuard | `repositoryPaths`、`withRepositoryMutation`、`readCanonicalMaintenance`、`formatInitCommand`、`formatRecoveryCommand` | Git 根、共享锁、canonical maintenance 和安全生命周期命令 |
 | FileStore | `loadState`、`mutateState` | Revision、原子持久化和历史归档 |
 | Lifecycle | `runDistributionCommand`、`loadDistributionManifest` | Distribution Manifest、账本、计划、事务、恢复和 Doctor |
 | PathSafety | `isInside`、`resolveInside`、`firstSymlinkInPath` | 仓库路径约束和 Symlink 检测 |

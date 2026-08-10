@@ -12,7 +12,7 @@
 | Distribution Check | `check-distribution.mjs` | Manifest 自举、身份、files 投影和 tarball 校验 |
 | Bundled Skill Check | `validate-bundled-skill.mjs` | 内置 Skill 与 OpenAI metadata 的零依赖校验 |
 | Commit Message Check | `check-commit-messages.mjs <base> <head>` | 校验新增提交主题 |
-| Completion Evidence Check | `check-completion-evidence.mjs <base> <head>` | 校验受治理变更的 acceptance Evidence |
+| Completion Evidence Check | `check-completion-evidence.mjs <base> <head>` | 使用 acceptance Result 同目录 Workflow（缺失时回退默认 Workflow）校验受治理变更 Evidence |
 
 ## Invariants
 

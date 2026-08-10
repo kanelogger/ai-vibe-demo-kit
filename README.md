@@ -32,7 +32,7 @@ cd /path/to/project
 
 模板中的留白和空知识骨架是待定输入，不是可以直接引用的事实。未完成上述清单时，应明确称为 Runtime-ready，不能宣称 Governance-ready。
 
-达到 **Completion-evidence-ready** 还需要：为 acceptance Stage 使用 `verification-report/v1`，把 Stage Result 与报告保存到仓库 Evidence 路径，并在本地或 CI 中运行 `check-result --require-complete`。该检查证明 Evidence 具备进入完成 Transition 的资格；Human Gate 仍由本地控制状态或代码托管平台处理。
+达到 **Completion-evidence-ready** 还需要：为 acceptance Stage 使用 `verification-report/v1`，把 Stage Result、报告和生成该结果的 `workflow.json` 保存到同一仓库 Evidence 目录，并在本地或 CI 中运行 `check-result --require-complete`。提交范围检查优先使用同目录 Workflow，缺失时才回退默认 Workflow。该检查证明 Evidence 具备进入完成 Transition 的资格；Human Gate 仍由本地控制状态或代码托管平台处理。
 
 ## 公共命令
 
@@ -107,7 +107,7 @@ Human Control 是所有活动状态的内建能力：
 
 每个 Worktree 同时只有一个活动任务，唯一机器状态位于 `.git/harness/control.json`。Runtime Mutation 与 Lifecycle Apply 共用 `.git/harness/control.lock`；完成或终止记录归档到 `.git/harness/history/<work-id>.json`。Git 私有控制路径若包含 Symlink，RepositoryGuard 会拒绝读写。
 
-生命周期先在 `.git/harness/maintenance.tmp-<id>/` 完整持久化 staged、backup 与 journal，再原子发布为 canonical `maintenance/`。canonical 存在时 Runtime Mutation 停止并由 `status` 返回精确恢复命令。提交后 canonical 原子改名为 `maintenance.gc-<id>/`，因此清理中断不再阻塞 Runtime。
+生命周期先在 `.git/harness/maintenance.tmp-<id>/` 完整持久化 staged、backup、preserved facts 与 journal，再原子发布为 canonical `maintenance/`。canonical 存在时 Runtime Mutation 停止并由 `status` 返回经过版本校验和 shell 引号处理的精确恢复命令。恢复会在持锁后重新校验 journal 版本、Manifest Digest、preserved facts 和每个目标事实。提交后 canonical 原子改名为 `maintenance.gc-<id>/`，因此清理中断不再阻塞 Runtime。
 
 锁文件记录持有者 PID。Mutation 遇到锁时只会自动回收可以确认 PID 已不存在的锁；PID 仍存活、权限不足、空锁或非法 PID 都返回 `E_STATE_BUSY`，JSON 错误中的 `facts` 和 `repair` 会保留诊断信息。人工恢复前必须确认没有 Harness Mutation 正在运行：读取 `.git/harness/control.lock`，对有效 PID 执行 `kill -0 <pid>`；只有系统确认进程不存在，或锁内容无有效 PID且已排除活动写入时，才能删除该精确锁文件，再运行 `./harness status --json` 检查状态。不要在 Mutation 仍运行时删除锁。
 

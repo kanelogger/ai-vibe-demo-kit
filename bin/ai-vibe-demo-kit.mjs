@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { HarnessError } from "../scripts/harness/lib/errors.mjs";
 import { exitCodeForStatus, runDistributionCommand } from "../scripts/harness/lib/lifecycle.mjs";
+import { loadHarnessManifest } from "../scripts/harness/lib/manifest.mjs";
 
 const SOURCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const HELP = `Usage:
@@ -56,14 +57,14 @@ function validate(options) {
   return command;
 }
 
-function fallback(command, error) {
+function fallback(command, error, packageManifest) {
   return {
     schemaVersion: 1,
     command: command ?? "unknown",
     status: "error",
     target: null,
     applied: false,
-    package: { name: "ai-vibe-demo-kit", version: "0.4.0", installedVersion: null },
+    package: { name: packageManifest?.name ?? "ai-vibe-demo-kit", version: packageManifest?.version ?? null, installedVersion: null },
     transaction: null,
     changes: [],
     readiness: null,
@@ -84,9 +85,11 @@ function print(options, payload) {
 }
 
 async function main(argv) {
-  let options = { _: [] };
-  let command = null;
+  let options = { _: [], json: argv.includes("--json") };
+  let command = argv[0] && !argv[0].startsWith("--") ? argv[0] : null;
+  let packageManifest = null;
   try {
+    packageManifest = await loadHarnessManifest(SOURCE_ROOT);
     options = parse(argv);
     command = validate(options);
     if (!command) {
@@ -104,7 +107,7 @@ async function main(argv) {
     return exitCodeForStatus(payload.status);
   } catch (error) {
     const normalized = error instanceof HarnessError ? error : new HarnessError("E_IO", error instanceof Error ? error.message : String(error));
-    const payload = fallback(command, normalized);
+    const payload = fallback(command, normalized, packageManifest);
     print(options, payload);
     return 2;
   }

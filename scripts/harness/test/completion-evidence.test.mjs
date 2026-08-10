@@ -15,7 +15,7 @@ async function commitAll(root, subject) {
   return run("git", ["rev-parse", "HEAD"], root);
 }
 
-async function writeAcceptanceEvidence(root, workId) {
+async function writeAcceptanceEvidence(root, workId, { skills = [{ id: "acceptance.harness-guide", status: "succeeded", artifactRefs: ["verification-report", "handoff"] }] } = {}) {
   const relativeRoot = `work/requirements/${workId}`;
   const evidenceRoot = join(root, relativeRoot);
   await mkdir(evidenceRoot, { recursive: true });
@@ -40,11 +40,44 @@ async function writeAcceptanceEvidence(root, workId) {
       { id: "regression-safe", status: "passed", evidenceRefs: [`${relativeRoot}/verification-report.json`] },
       { id: "cleanup-complete", status: "passed", evidenceRefs: [`${relativeRoot}/verification-report.json`] },
     ],
-    skills: [{ id: "acceptance.harness-guide", status: "succeeded", artifactRefs: ["verification-report", "handoff"] }],
+    skills,
     artifacts: [
       { id: "verification-report", uri: `${relativeRoot}/verification-report.json` },
       { id: "handoff", uri: `${relativeRoot}/handoff.md` },
     ],
+  }, null, 2)}\n`);
+}
+
+async function writeWorkSpecificWorkflow(root, workId) {
+  const evidenceRoot = join(root, "work", "requirements", workId);
+  await writeFile(join(evidenceRoot, "workflow.json"), `${JSON.stringify({
+    schemaVersion: 2,
+    id: `${workId}-workflow`,
+    version: 1,
+    initialStage: "acceptance",
+    stages: {
+      acceptance: {
+        goal: "Verify the work-specific candidate",
+        outcomes: ["accepted"],
+        exitConditions: [
+          { id: "spec-compliant", description: "Specification is satisfied", required: true },
+          { id: "regression-safe", description: "Regression checks pass", required: true },
+          { id: "cleanup-complete", description: "Verification resources are cleaned", required: true },
+        ],
+        skillCalls: [],
+        requiredArtifacts: [
+          { id: "verification-report", required: true, contract: "verification-report/v1" },
+          { id: "handoff", required: true },
+        ],
+      },
+    },
+    transitions: [{
+      id: "acceptance-complete",
+      from: "acceptance",
+      on: "accepted",
+      to: "complete",
+      gate: { mode: "human", prompt: "Accept", onReject: "acceptance" },
+    }],
   }, null, 2)}\n`);
 }
 
@@ -68,6 +101,21 @@ test("governed changes pass with valid completion evidence", async () => {
   await writeFile(join(target, "README.md"), "# Governed change\n");
   await writeAcceptanceEvidence(target, "wi-valid");
   const head = await commitAll(target, "feat: add verified change");
+
+  const result = await runRaw(process.execPath, [sourceChecker, base, head], target);
+
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.stdout, "completion evidence: valid (1)");
+});
+
+test("completion evidence uses a work-specific sibling Workflow when present", async () => {
+  const target = await makeGitRepo();
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
+  const base = await commitAll(target, "chore: install harness");
+  await writeFile(join(target, "README.md"), "# Work-specific governed change\n");
+  await writeAcceptanceEvidence(target, "wi-specific", { skills: [] });
+  await writeWorkSpecificWorkflow(target, "wi-specific");
+  const head = await commitAll(target, "feat: add work-specific verified change");
 
   const result = await runRaw(process.execPath, [sourceChecker, base, head], target);
 

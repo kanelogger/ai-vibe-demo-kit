@@ -150,8 +150,8 @@ async function readJsonPath(root, path, errors, code = "E_REFERENCE_INVALID") {
   }
 }
 
-function skillFrontmatter(content) {
-  const match = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(content);
+export function parseSkillDocument(content) {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)([\s\S]*)$/.exec(content);
   if (!match) return null;
   const metadata = {};
   for (const raw of match[1].split(/\r?\n/)) {
@@ -162,7 +162,7 @@ function skillFrontmatter(content) {
     if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1);
     metadata[entry[1]] = value;
   }
-  return metadata;
+  return { metadata, body: match[2] };
 }
 
 async function validateSkillEntity(root, catalogEntry, call, errors, warnings, path) {
@@ -177,9 +177,10 @@ async function validateSkillEntity(root, catalogEntry, call, errors, warnings, p
         const stat = await lstat(target);
         if (!stat.isFile()) problems.push("skillRef must be a regular file");
         else {
-          const metadata = skillFrontmatter(await readFile(target, "utf8"));
-          if (!metadata) problems.push("SKILL.md frontmatter is invalid");
+          const document = parseSkillDocument(await readFile(target, "utf8"));
+          if (!document) problems.push("SKILL.md frontmatter is invalid");
           else {
+            const { metadata } = document;
             const keys = Object.keys(metadata).sort();
             if (keys.join(",") !== "description,name") problems.push("SKILL.md frontmatter may contain only name and description");
             if (metadata.name !== catalogEntry.id) problems.push("SKILL.md name must equal the Catalog id");

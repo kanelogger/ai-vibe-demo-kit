@@ -1,10 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { makeGitRepo, makeTemporaryDirectory, runRaw } from "./helpers.mjs";
 
-const sourceRoot = new URL("../../..", import.meta.url).pathname.replace(/\/$/, "");
+const sourceRoot = fileURLToPath(new URL("../../..", import.meta.url));
+
+test("CI pins the declared npm release version for every Node test job", async () => {
+  const ci = await readFile(join(sourceRoot, ".github", "workflows", "ci.yml"), "utf8");
+  assert.match(ci, /npm install --global npm@11\.16\.0/);
+  assert.match(ci, /npm --version/);
+});
 
 test("local tarball initializes a Git repository and exposes Runtime lifecycle plans", async () => {
   const packRoot = await makeTemporaryDirectory("ai-vibe-demo-kit-pack-");

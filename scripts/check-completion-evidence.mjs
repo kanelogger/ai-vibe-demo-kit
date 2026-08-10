@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { lstatSync } from "node:fs";
 
 const REF = /^[a-zA-Z0-9][a-zA-Z0-9._/-]*$/;
 const ACCEPTANCE_RESULT = /^work\/requirements\/[^/]+\/acceptance-result\.json$/;
@@ -29,6 +30,17 @@ function changedPaths(base, head, cwd) {
   return { paths: result.stdout ? result.stdout.split("\0").filter(Boolean) : [] };
 }
 
+function workflowForResult(path, cwd) {
+  const sibling = `${dirname(path)}/workflow.json`;
+  try {
+    lstatSync(resolve(cwd, sibling));
+    return sibling;
+  } catch (error) {
+    if (error.code !== "ENOENT") return sibling;
+    return "workflows/workflow-template.json";
+  }
+}
+
 export function checkCompletionEvidence(base, head, { cwd = process.cwd() } = {}) {
   if (!validRef(base) || !validRef(head)) return { code: 2, stderr: "Usage: node scripts/check-completion-evidence.mjs <base-ref> <head-ref>\n" };
   const changed = changedPaths(base, head, cwd);
@@ -39,10 +51,11 @@ export function checkCompletionEvidence(base, head, { cwd = process.cwd() } = {}
   if (results.length === 0) return { code: 1, stderr: "governed changes require at least one changed acceptance result under work/requirements/<work-id>/acceptance-result.json\n" };
 
   for (const path of results) {
+    const workflow = workflowForResult(path, cwd);
     const checked = spawnSync(process.execPath, [
       resolve(cwd, "bin/harness.mjs"),
       "check-result",
-      "--workflow", "workflows/workflow-template.json",
+      "--workflow", workflow,
       "--stage", "acceptance",
       "--file", path,
       "--require-complete",

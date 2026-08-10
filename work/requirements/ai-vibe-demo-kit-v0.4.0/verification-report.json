@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "summary": "The AI Vibe Demo Kit CLI v0.4.0 candidate satisfies the frozen lifecycle, recovery, Skill, package and Runtime requirements; all current deterministic checks pass and verification resources are cleaned.",
+  "summary": "The corrected AI Vibe Demo Kit CLI v0.4.0 candidate satisfies the frozen requirements and the revision 25 review findings; Completion Evidence, security, recovery, crash injection, JSON, CI, Skill and package checks pass with cleaned resources.",
   "conditions": [
     {
       "id": "spec-compliant",
@@ -8,7 +8,8 @@
       "checkRefs": [
         "distribution-contract",
         "bundled-skill-contract",
-        "lifecycle-focused",
+        "acceptance-review-regressions",
+        "completion-scope-check",
         "harness-valid"
       ],
       "cleanupRefs": [],
@@ -64,9 +65,19 @@
       ]
     },
     {
-      "id": "lifecycle-focused",
+      "id": "acceptance-review-regressions",
       "kind": "automated",
-      "command": "node --test scripts/harness/test/distribution-cli.test.mjs scripts/harness/test/lifecycle.test.mjs",
+      "command": "node --test scripts/harness/test/completion-evidence.test.mjs scripts/harness/test/distribution-cli.test.mjs scripts/harness/test/lifecycle.test.mjs scripts/harness/test/package.test.mjs scripts/harness/test/store.test.mjs scripts/harness/test/validator.test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/ai-vibe-demo-kit-v0.4.0/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "completion-scope-check",
+      "kind": "automated",
+      "command": "node scripts/check-completion-evidence.mjs 1f7a410b79d016eea49500549050913a32b14e86 e9f56bcbddb1c2cc404b5593fa1489653b257110",
       "status": "passed",
       "exitCode": 0,
       "evidenceRefs": [
@@ -96,7 +107,7 @@
     {
       "id": "node22-full-suite",
       "kind": "automated",
-      "command": "PATH=/Users/kanehua/.volta/tools/image/node/22.23.1/bin:$PATH node --test scripts/harness/test/*.test.mjs",
+      "command": "PATH=/private/tmp/ai-vibe-demo-kit-node22-npm11.wloG3i:$PATH node --test scripts/harness/test/*.test.mjs",
       "status": "passed",
       "exitCode": 0,
       "evidenceRefs": [
@@ -106,7 +117,7 @@
     {
       "id": "package-dry-run",
       "kind": "automated",
-      "command": "env npm_config_cache=/private/tmp/ai-vibe-demo-kit-npm-cache-acceptance npm pack --dry-run --json",
+      "command": "env npm_config_cache=/private/tmp/ai-vibe-demo-kit-npm-cache-review-fixes npm pack --dry-run --json",
       "status": "passed",
       "exitCode": 0,
       "evidenceRefs": [

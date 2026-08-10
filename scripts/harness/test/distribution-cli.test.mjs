@@ -86,7 +86,23 @@ test("upgrade and uninstall plan by default and reject unknown options", async (
 
   result = await runRaw(process.execPath, [cli, "doctor", "--unknown", "value", "--json"], target);
   assert.equal(result.code, 2);
+  assert.equal(JSON.parse(result.stdout).command, "doctor");
   assert.equal(JSON.parse(result.stdout).errors[0].code, "E_USAGE");
+});
+
+test("Distribution usage failures preserve the JSON envelope and parsed command", async () => {
+  const target = await makeGitRepo();
+  for (const args of [
+    ["init", "--json", "--json"],
+    ["init", "--target", "--json"],
+  ]) {
+    const result = await runRaw(process.execPath, [cli, ...args], target);
+    assert.equal(result.code, 2);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.command, "init");
+    assert.equal(payload.status, "error");
+    assert.equal(payload.errors[0].code, "E_USAGE");
+  }
 });
 
 test("Distribution status and exit mappings match the stable golden", async () => {

@@ -4,6 +4,24 @@ import { fail } from "./errors.mjs";
 
 const wait = (milliseconds) => new Promise((resolveWait) => setTimeout(resolveWait, milliseconds));
 const LOCK_REPAIR = (path) => `Inspect ${path}, verify its PID with "kill -0 <pid>", and remove the lock only when no live owner can be confirmed.`;
+const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
+const PACKAGE_NAME = "ai-vibe-demo-kit";
+
+function shellQuote(value) {
+  return `'${String(value).replaceAll("'", `'"'"'`)}'`;
+}
+
+export function formatRecoveryCommand(transaction, root, strategy = "resume") {
+  if (!SEMVER.test(transaction?.createdByPackageVersion ?? "") || !new Set(["resume", "rollback"]).has(strategy)) {
+    fail("E_TRANSACTION_VERSION", "canonical maintenance journal cannot produce a safe recovery command");
+  }
+  return `npx --yes ${shellQuote(`${PACKAGE_NAME}@${transaction.createdByPackageVersion}`)} recover --target ${shellQuote(root)} --strategy ${strategy} --apply --json`;
+}
+
+export function formatInitCommand(packageVersion, root) {
+  if (!SEMVER.test(packageVersion ?? "")) fail("E_DISTRIBUTION_MANIFEST", "Distribution version cannot produce a safe init command");
+  return `npx --yes ${shellQuote(`${PACKAGE_NAME}@${packageVersion}`)} init --target ${shellQuote(root)} --json`;
+}
 
 export async function assertSafePrivatePath(path, { directory = false } = {}) {
   try {

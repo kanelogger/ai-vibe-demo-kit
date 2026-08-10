@@ -6,8 +6,8 @@ import { applyControl, digestValue, inspectState } from "../scripts/harness/lib/
 import { HarnessError, fail } from "../scripts/harness/lib/errors.mjs";
 import { loadHarnessManifest } from "../scripts/harness/lib/manifest.mjs";
 import { firstSymlinkInPath, isInside, resolveInside } from "../scripts/harness/lib/path-safety.mjs";
-import { readCanonicalMaintenance } from "../scripts/harness/lib/repository-guard.mjs";
-import { loadState, mutateState, readGitActor, statePaths } from "../scripts/harness/lib/store.mjs";
+import { formatRecoveryCommand, readCanonicalMaintenance, repositoryPaths } from "../scripts/harness/lib/repository-guard.mjs";
+import { loadState, mutateState, readGitActor } from "../scripts/harness/lib/store.mjs";
 import { validateEnvironmentManifest, validateStageResult, validateStateAgainstWorkflow, validateWorkflow } from "../scripts/harness/lib/validator.mjs";
 
 const SOURCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -79,7 +79,7 @@ function assertCommandOptions(command, options) {
 }
 
 async function rootFromCwd() {
-  return (await statePaths(process.cwd())).root;
+  return (await repositoryPaths(process.cwd())).root;
 }
 
 async function readRepoText(root, path, label) {
@@ -260,7 +260,7 @@ async function execute(options, context) {
     if (options._.length !== 1) fail("E_USAGE", "status accepts no positional arguments", { repair: HELP });
     const maintenance = await readCanonicalMaintenance(root);
     if (maintenance) {
-      const command = `npx --yes ai-vibe-demo-kit@${maintenance.createdByPackageVersion} recover --target ${JSON.stringify(root)} --strategy resume --apply --json`;
+      const command = formatRecoveryCommand(maintenance, root);
       output(options, {
         revision: null,
         status: "maintenance",

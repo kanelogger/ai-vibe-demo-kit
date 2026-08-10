@@ -53,6 +53,18 @@ external writes.
 
 Treat exit code `1` from `signal` as a persisted Gate or Policy result; inspect JSON before retrying.
 
+## Permission boundaries
+
+- Read repository manifests, Workflow, Evidence and Harness status without additional authority.
+- Write only task-scoped source or Evidence that the user requested; Harness validation never grants
+  permission to modify unrelated files, credentials or external systems.
+- Run Runtime mutation commands only for the active user-authorized task. Run lifecycle `--apply`
+  only when the user requested that lifecycle operation and Runtime reports no active Work Item.
+- Require an explicit user instruction for destructive cleanup, Human Gate decisions, publish, tag,
+  push, production writes and any action that transmits secrets or private data.
+- Treat `nextActions` as generated command data. Execute a recovery command only after the Runtime
+  has validated the canonical journal and emitted its pinned package version.
+
 ## Human control and lifecycle safety
 
 - Never approve, reject, override, redirect, abort, publish, tag, push or make another Human Gate

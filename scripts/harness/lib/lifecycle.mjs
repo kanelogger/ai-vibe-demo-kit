@@ -16,7 +16,7 @@ import { dirname, join, relative, resolve, sep } from "node:path";
 import { HarnessError, fail } from "./errors.mjs";
 import { loadHarnessManifest } from "./manifest.mjs";
 import { firstSymlinkInPath, resolveInside } from "./path-safety.mjs";
-import { readCanonicalMaintenance, repositoryPaths, withRepositoryMutation } from "./repository-guard.mjs";
+import { formatInitCommand, formatRecoveryCommand, readCanonicalMaintenance, repositoryPaths, withRepositoryMutation } from "./repository-guard.mjs";
 import { loadState } from "./store.mjs";
 import { validateEnvironmentManifest, validateWorkflow } from "./validator.mjs";
 
@@ -25,6 +25,7 @@ const MANIFEST_PATH = ".harness/distribution-manifest.json";
 const LEDGER_PATH = ".harness/install-lock.json";
 const KINDS = new Set(["managed", "seed", "package-only"]);
 const FILE_STATES = new Set(["installed", "preserved", "orphaned"]);
+const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
 const STATUS_EXIT = new Map([
   ["ok", 0], ["planned", 0], ["applied", 0], ["idempotent", 0],
   ["manual-action-required", 1], ["conflict", 2], ["error", 2],
@@ -103,7 +104,7 @@ export async function loadDistributionManifest(sourceRoot) {
   if (!isObject(value) || value.schemaVersion !== 1 || !isObject(value.package) || !Array.isArray(value.files)) {
     fail("E_DISTRIBUTION_MANIFEST", "Distribution Manifest schema is invalid");
   }
-  if (value.package.name !== PACKAGE_NAME || typeof value.package.version !== "string" || !/^\d+\.\d+\.\d+/.test(value.package.version)) {
+  if (value.package.name !== PACKAGE_NAME || typeof value.package.version !== "string" || !SEMVER.test(value.package.version)) {
     fail("E_DISTRIBUTION_MANIFEST", "Distribution Manifest package identity is invalid");
   }
   if (!/^[1-9]\d*$/.test(value.package.minimumNodeVersion ?? "")) fail("E_DISTRIBUTION_MANIFEST", "minimumNodeVersion is invalid");
@@ -415,23 +416,41 @@ export function exitCodeForStatus(status) {
   return STATUS_EXIT.get(status) ?? 2;
 }
 
-async function atomicWrite(path, content, mode, fault = async () => {}) {
-  await mkdir(dirname(path), { recursive: true });
-  const temp = `${path}.ai-vibe-demo-kit-${randomUUID()}.tmp`;
-  const handle = await open(temp, "wx", modeNumber(mode));
+async function removeOwnedTemporaryFile(path) {
   try {
+    const stat = await lstat(path);
+    if (stat.isSymbolicLink() || !stat.isFile()) fail("E_MAINTENANCE_CONFLICT", `transaction temporary path is unsafe: ${path}`);
+    await unlink(path);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+}
+
+async function atomicWrite(path, content, mode, fault = async () => {}, temporaryPath = null) {
+  await mkdir(dirname(path), { recursive: true });
+  const temp = temporaryPath ?? `${path}.ai-vibe-demo-kit-${randomUUID()}.tmp`;
+  if (temporaryPath) await removeOwnedTemporaryFile(temp);
+  let handle = null;
+  try {
+    handle = await open(temp, "wx", modeNumber(mode));
     await handle.writeFile(content);
     await handle.sync();
-  } finally {
     await handle.close();
+    handle = null;
+    await fault(`write:${path}`);
+    await rename(temp, path);
+    await chmod(path, modeNumber(mode));
+    await fault(`rename:${path}`);
+    await fault(`chmod:${path}`);
+    await syncDirectory(dirname(path));
+    await fault(`fsync:${path}`);
+  } catch (error) {
+    if (handle) await handle.close().catch(() => {});
+    await unlink(temp).catch((cleanupError) => {
+      if (cleanupError.code !== "ENOENT") throw cleanupError;
+    });
+    throw error;
   }
-  await fault(`write:${path}`);
-  await rename(temp, path);
-  await chmod(path, modeNumber(mode));
-  await fault(`rename:${path}`);
-  await fault(`chmod:${path}`);
-  await syncDirectory(dirname(path));
-  await fault(`fsync:${path}`);
 }
 
 async function atomicJson(path, value, fault = async () => {}) {
@@ -457,12 +476,8 @@ async function cleanupOrphans(paths, fault = async () => {}) {
 
 function transactionView(transaction) {
   if (!transaction) return null;
-  const { actions: ignored, ...view } = transaction;
+  const { actions: ignoredActions, preserved: ignoredPreserved, ...view } = transaction;
   return view;
-}
-
-function recoveryCommand(transaction, root, strategy = "resume") {
-  return `npx --yes ${PACKAGE_NAME}@${transaction.createdByPackageVersion} recover --target ${JSON.stringify(root)} --strategy ${strategy} --apply --json`;
 }
 
 async function prepareTransaction(paths, distribution, command, plan, fault) {
@@ -514,6 +529,9 @@ async function prepareTransaction(paths, distribution, command, plan, fault) {
     cursor: 0,
     createdDirectories: plan.transactionCreatedDirectories ?? [],
     removeDirectories: plan.removeDirectories ?? [],
+    preserved: (plan.changes ?? [])
+      .filter((change) => change.action === "preserve")
+      .map((change) => ({ path: change.path, kind: change.kind, expected: change.before })),
     actions,
   };
   await atomicJson(join(tempPath, "transaction.json"), transaction, fault);
@@ -532,12 +550,14 @@ async function assertActionState(paths, action, expected) {
 }
 
 async function writeActionState(paths, transaction, action, direction, fault) {
+  const target = resolveInside(paths.root, action.path);
+  const temporaryPath = `${target}.ai-vibe-demo-kit-${transaction.transactionId}.tmp`;
+  await removeOwnedTemporaryFile(temporaryPath);
   const desired = direction === "after" ? action.after : action.before;
   const other = direction === "after" ? action.before : action.after;
   const actual = await fileFact(paths.root, action.path);
   if (factEqual(actual, desired)) return;
   if (!factEqual(actual, other)) fail("E_MAINTENANCE_CONFLICT", `maintenance target has an unrecognized third state: ${action.path}`, { facts: { path: action.path, actual, before: action.before, after: action.after } });
-  const target = resolveInside(paths.root, action.path);
   if (desired.type === "absent") {
     await unlink(target).catch((error) => { if (error.code !== "ENOENT") throw error; });
     await fault(`remove:${action.path}`);
@@ -547,7 +567,7 @@ async function writeActionState(paths, transaction, action, direction, fault) {
   }
   const relativeSource = direction === "after" ? action.stagedPath : action.backupPath;
   if (!relativeSource) fail("E_TRANSACTION_VERSION", `transaction lacks ${direction} content for ${action.path}`);
-  await atomicWrite(target, await readFile(join(paths.maintenancePath, relativeSource)), desired.mode, fault);
+  await atomicWrite(target, await readFile(join(paths.maintenancePath, relativeSource)), desired.mode, fault, temporaryPath);
 }
 
 async function updateJournal(paths, transaction, fault) {
@@ -569,8 +589,20 @@ async function removeCreatedDirectories(root, directories) {
   }
 }
 
+async function assertPreservedStates(paths, transaction) {
+  for (const preserved of transaction.preserved) {
+    const actual = await fileFact(paths.root, preserved.path);
+    if (!factEqual(actual, preserved.expected)) {
+      fail("E_MAINTENANCE_CONFLICT", `preserved target changed during maintenance: ${preserved.path}`, {
+        facts: { path: preserved.path, actual, expected: preserved.expected },
+      });
+    }
+  }
+}
+
 async function finalizeCommitted(paths, transaction, fault) {
   for (const action of transaction.actions) await assertActionState(paths, action, action.after);
+  await assertPreservedStates(paths, transaction);
   await fault("committed-before-cleanup");
   const gcPath = join(paths.controlDir, `maintenance.gc-${transaction.transactionId}`);
   await rename(paths.maintenancePath, gcPath);
@@ -580,7 +612,7 @@ async function finalizeCommitted(paths, transaction, fault) {
   await fault("gc-delete");
 }
 
-async function resumeTransaction(paths, transaction, plan, fault) {
+async function resumeTransaction(paths, transaction, fault) {
   if (transaction.phase === "committed") {
     await finalizeCommitted(paths, transaction, fault);
     return;
@@ -589,6 +621,10 @@ async function resumeTransaction(paths, transaction, plan, fault) {
   await updateJournal(paths, transaction, fault);
   for (let index = transaction.cursor; index < transaction.actions.length; index += 1) {
     const action = transaction.actions[index];
+    if (action.kind === "ledger") {
+      await fault("before-ledger-commit");
+      await assertPreservedStates(paths, transaction);
+    }
     await writeActionState(paths, transaction, action, "after", fault);
     if (action.kind === "ledger") await fault("ledger-commit");
     transaction.cursor = index + 1;
@@ -596,6 +632,7 @@ async function resumeTransaction(paths, transaction, plan, fault) {
   }
   if (transaction.operation === "uninstall") await removeCreatedDirectories(paths.root, transaction.removeDirectories);
   for (const action of transaction.actions) await assertActionState(paths, action, action.after);
+  await assertPreservedStates(paths, transaction);
   transaction.phase = "committed";
   await updateJournal(paths, transaction, fault);
   await finalizeCommitted(paths, transaction, fault);
@@ -603,6 +640,7 @@ async function resumeTransaction(paths, transaction, plan, fault) {
 
 async function rollbackTransaction(paths, transaction, fault) {
   if (transaction.phase === "committed") fail("E_RECOVERY_COMMITTED", "committed transactions cannot be rolled back");
+  await assertPreservedStates(paths, transaction);
   transaction.phase = "rolling-back";
   transaction.cursor = transaction.actions.length;
   await updateJournal(paths, transaction, fault);
@@ -612,6 +650,7 @@ async function rollbackTransaction(paths, transaction, fault) {
     await updateJournal(paths, transaction, fault);
   }
   for (const action of transaction.actions) await assertActionState(paths, action, action.before);
+  await assertPreservedStates(paths, transaction);
   await removeCreatedDirectories(paths.root, transaction.createdDirectories);
   const gcPath = join(paths.controlDir, `maintenance.gc-${transaction.transactionId}`);
   await rename(paths.maintenancePath, gcPath);
@@ -620,8 +659,12 @@ async function rollbackTransaction(paths, transaction, fault) {
 }
 
 function validateTransaction(transaction) {
-  const version = (value) => value === null || typeof value === "string" && /^\d+\.\d+\.\d+/.test(value);
+  const version = (value) => value === null || typeof value === "string" && SEMVER.test(value);
   const directories = (value) => Array.isArray(value) && value.every(safeRelative);
+  const preserved = Array.isArray(transaction?.preserved) && transaction.preserved.every((entry) => isObject(entry)
+    && safeRelative(entry.path)
+    && new Set(["managed", "seed"]).has(entry.kind)
+    && validateFact(entry.expected));
   const actions = Array.isArray(transaction?.actions) && transaction.actions.every((action) => isObject(action)
     && new Set(["create", "replace", "remove", "chmod"]).has(action.action)
     && safeRelative(action.path)
@@ -633,7 +676,9 @@ function validateTransaction(transaction) {
   return isObject(transaction)
     && transaction.schemaVersion === 1
     && typeof transaction.transactionId === "string"
+    && /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(transaction.transactionId)
     && typeof transaction.createdByPackageVersion === "string"
+    && SEMVER.test(transaction.createdByPackageVersion)
     && new Set(["init", "upgrade", "uninstall"]).has(transaction.operation)
     && version(transaction.sourceVersion)
     && version(transaction.targetVersion)
@@ -644,19 +689,33 @@ function validateTransaction(transaction) {
     && transaction.cursor <= (transaction.actions?.length ?? -1)
     && directories(transaction.createdDirectories)
     && directories(transaction.removeDirectories)
+    && preserved
     && actions;
+}
+
+function assertRecoveryBinding(transaction, distribution, strategy) {
+  if (!validateTransaction(transaction)) fail("E_TRANSACTION_VERSION", "transaction schema is incompatible");
+  if (transaction.createdByPackageVersion !== distribution.value.package.version) {
+    fail("E_RECOVERY_VERSION_MISMATCH", "recover must use the package version that created the transaction", {
+      facts: { expected: transaction.createdByPackageVersion, actual: distribution.value.package.version },
+    });
+  }
+  if (transaction.distributionManifestDigest !== distribution.digest) {
+    fail("E_RECOVERY_MANIFEST_MISMATCH", "Distribution Manifest digest does not match the transaction");
+  }
+  if (transaction.phase === "committed" && strategy === "rollback") fail("E_RECOVERY_COMMITTED", "committed transactions only support resume");
 }
 
 async function applyPlan(command, target, distribution, fault) {
   return withRepositoryMutation(target, async (paths) => {
     if (await readCanonicalMaintenance(paths)) fail("E_MAINTENANCE_PENDING", "canonical maintenance already exists");
-    await cleanupOrphans(paths, fault);
     const state = await loadState(paths.root);
     if (state.active !== null) fail("E_ACTIVE_WORK_ITEM", "lifecycle apply requires an idle Runtime", { facts: { revision: state.revision, workItemId: state.active.id } });
+    await cleanupOrphans(paths, fault);
     const plan = await planOperation(command, paths.root, distribution);
     if (plan.status === "conflict" || plan.status === "idempotent" || plan.status === "manual-action-required" && !plan.applied) return { plan, transaction: null };
     const transaction = await prepareTransaction(paths, distribution, command, plan, fault);
-    await resumeTransaction(paths, transaction, plan, fault);
+    await resumeTransaction(paths, transaction, fault);
     return { plan: { ...plan, applied: true }, transaction };
   });
 }
@@ -667,24 +726,42 @@ async function recover(target, distribution, strategy, apply, fault) {
   if (!transaction) return envelope("recover", distribution, paths.root, conflictPlan(null, [issue("E_MAINTENANCE_MISSING", null, "no canonical maintenance transaction exists")]));
   const installed = await readLedger(paths.root, { strict: false });
   const installedVersion = installed?.invalid ? null : installed?.package?.version ?? null;
-  const base = { status: "planned", installedVersion, applied: false, changes: transaction.actions?.filter((entry) => entry.kind !== "ledger").map((entry) => publicChange(entry.action, entry.path, entry.kind, entry.before, entry.after)) ?? [], warnings: [], errors: [], nextActions: [recoveryCommand(transaction, paths.root, strategy)] };
-  if (!validateTransaction(transaction)) return envelope("recover", distribution, paths.root, { ...base, status: "conflict", errors: [issue("E_TRANSACTION_VERSION", null, "transaction schema is incompatible")] }, transactionView(transaction));
-  if (transaction.createdByPackageVersion !== distribution.value.package.version) return envelope("recover", distribution, paths.root, { ...base, status: "conflict", errors: [issue("E_RECOVERY_VERSION_MISMATCH", null, "recover must use the package version that created the transaction", { expected: transaction.createdByPackageVersion, actual: distribution.value.package.version })] }, transactionView(transaction));
-  if (transaction.distributionManifestDigest !== distribution.digest) return envelope("recover", distribution, paths.root, { ...base, status: "conflict", errors: [issue("E_RECOVERY_MANIFEST_MISMATCH", null, "Distribution Manifest digest does not match the transaction")] }, transactionView(transaction));
-  if (transaction.phase === "committed" && strategy === "rollback") return envelope("recover", distribution, paths.root, { ...base, status: "conflict", errors: [issue("E_RECOVERY_COMMITTED", null, "committed transactions only support resume")] }, transactionView(transaction));
+  const transactionValid = validateTransaction(transaction);
+  const base = {
+    status: "planned",
+    installedVersion,
+    applied: false,
+    changes: transactionValid
+      ? transaction.actions.filter((entry) => entry.kind !== "ledger").map((entry) => publicChange(entry.action, entry.path, entry.kind, entry.before, entry.after))
+      : [],
+    warnings: [],
+    errors: [],
+    nextActions: transactionValid ? [formatRecoveryCommand(transaction, paths.root, strategy)] : [],
+  };
+  try {
+    assertRecoveryBinding(transaction, distribution, strategy);
+  } catch (error) {
+    const normalized = error instanceof HarnessError ? error : new HarnessError("E_IO", error instanceof Error ? error.message : String(error));
+    return envelope("recover", distribution, paths.root, {
+      ...base,
+      status: "conflict",
+      errors: [issue(normalized.code, null, normalized.message, normalized.facts, normalized.repair)],
+    }, transactionView(transaction));
+  }
   if (!apply) return envelope("recover", distribution, paths.root, base, transactionView(transaction));
   try {
     await withRepositoryMutation(paths.root, async (lockedPaths) => {
       await cleanupOrphans(lockedPaths, fault);
       const current = await readCanonicalMaintenance(lockedPaths);
       if (!current || current.transactionId !== transaction.transactionId) fail("E_MAINTENANCE_CONFLICT", "canonical transaction changed while waiting for the lock");
-      if (strategy === "resume") await resumeTransaction(lockedPaths, current, null, fault);
+      assertRecoveryBinding(current, distribution, strategy);
+      if (strategy === "resume") await resumeTransaction(lockedPaths, current, fault);
       else await rollbackTransaction(lockedPaths, current, fault);
     });
   } catch (error) {
     const normalized = error instanceof HarnessError ? error : new HarnessError("E_IO", error instanceof Error ? error.message : String(error));
-    const status = normalized.code === "E_MAINTENANCE_CONFLICT" ? "conflict" : "error";
-    return envelope("recover", distribution, paths.root, { ...base, status, errors: [issue(normalized.code, null, normalized.message, normalized.facts, normalized.repair)], nextActions: [recoveryCommand(transaction, paths.root, strategy)] }, transactionView(transaction));
+    const status = new Set(["E_MAINTENANCE_CONFLICT", "E_TRANSACTION_VERSION", "E_RECOVERY_VERSION_MISMATCH", "E_RECOVERY_MANIFEST_MISMATCH", "E_RECOVERY_COMMITTED"]).has(normalized.code) ? "conflict" : "error";
+    return envelope("recover", distribution, paths.root, { ...base, status, errors: [issue(normalized.code, null, normalized.message, normalized.facts, normalized.repair)] }, transactionView(transaction));
   }
   return envelope("recover", distribution, paths.root, { ...base, status: "applied", applied: true, nextActions: [] }, transactionView(transaction));
 }
@@ -709,12 +786,19 @@ async function doctor(target, distribution) {
   try { ledger = await readLedger(paths.root); }
   catch (error) { errors.push(issue(error.code, LEDGER_PATH, error.message)); }
   const targets = distribution.files.filter((entry) => entry.kind !== "package-only");
-  if (transaction) errors.push(issue("E_MAINTENANCE_PENDING", null, "canonical maintenance transaction exists", transactionView(transaction), recoveryCommand(transaction, paths.root)));
+  let transactionNextActions = [];
+  if (transaction) {
+    if (validateTransaction(transaction)) {
+      const command = formatRecoveryCommand(transaction, paths.root);
+      transactionNextActions = [command];
+      errors.push(issue("E_MAINTENANCE_PENDING", null, "canonical maintenance transaction exists", transactionView(transaction), command));
+    } else errors.push(issue("E_TRANSACTION_VERSION", null, "transaction schema is incompatible"));
+  }
   if (!ledger && errors.length === 0) {
     const traces = [];
     for (const entry of targets) if ((await fileFact(paths.root, entry.targetPath)).type !== "absent") traces.push(entry.targetPath);
     if (traces.length) errors.push(issue("E_UNTRACKED_INSTALL", null, "managed targets exist without an install ledger", { paths: traces }));
-    else warnings.push(issue("W_NOT_INSTALLED", null, "AI Vibe Demo Kit is not installed", null, `npx --yes ${PACKAGE_NAME}@${distribution.value.package.version} init --target ${JSON.stringify(paths.root)} --json`));
+    else warnings.push(issue("W_NOT_INSTALLED", null, "AI Vibe Demo Kit is not installed", null, formatInitCommand(distribution.value.package.version, paths.root)));
   }
   if (ledger && errors.length === 0) {
     let managedHealthy = ledger.installationState === "installed";
@@ -769,7 +853,7 @@ async function doctor(target, distribution) {
   let status = "ok";
   if (errors.length) status = "conflict";
   else if (!ledger || warnings.length || !readiness.governanceReady) status = "manual-action-required";
-  return envelope("doctor", distribution, paths.root, { status, installedVersion: ledger?.package?.version ?? null, applied: false, changes: [], readiness, warnings, errors, nextActions: transaction ? [recoveryCommand(transaction, paths.root)] : [] }, transactionView(transaction));
+  return envelope("doctor", distribution, paths.root, { status, installedVersion: ledger?.package?.version ?? null, applied: false, changes: [], readiness, warnings, errors, nextActions: transactionNextActions }, transactionView(transaction));
 }
 
 export async function runDistributionCommand({ sourceRoot, command, target = process.cwd(), apply = false, strategy = null, fault = async () => {} }) {
@@ -787,7 +871,16 @@ export async function runDistributionCommand({ sourceRoot, command, target = pro
     return recover(paths.root, distribution, strategy, apply, fault);
   }
   const transaction = await readCanonicalMaintenance(paths);
-  if (transaction) return envelope(command, distribution, paths.root, { ...conflictPlan(null, [issue("E_MAINTENANCE_PENDING", null, "canonical maintenance transaction exists")]), nextActions: [recoveryCommand(transaction, paths.root)] }, transactionView(transaction));
+  if (transaction) {
+    const valid = validateTransaction(transaction);
+    const error = valid
+      ? issue("E_MAINTENANCE_PENDING", null, "canonical maintenance transaction exists")
+      : issue("E_TRANSACTION_VERSION", null, "transaction schema is incompatible");
+    return envelope(command, distribution, paths.root, {
+      ...conflictPlan(null, [error]),
+      nextActions: valid ? [formatRecoveryCommand(transaction, paths.root)] : [],
+    }, transactionView(transaction));
+  }
   if (!new Set(["init", "upgrade", "uninstall"]).has(command)) fail("E_USAGE", `unknown command: ${command}`);
   if (command === "init" || apply) {
     try {
@@ -800,8 +893,9 @@ export async function runDistributionCommand({ sourceRoot, command, target = pro
       const applied = current
         ? current.phase !== "prepared" || current.cursor > 0
         : installed?.package?.version === distribution.value.package.version && command !== "uninstall";
-      const status = new Set(["E_ACTIVE_WORK_ITEM", "E_MAINTENANCE_PENDING", "E_LEDGER_INVALID", "E_INSTALL_CONFLICT"]).has(normalized.code) ? "conflict" : "error";
-      return envelope(command, distribution, paths.root, { status, installedVersion: installed?.package?.version ?? null, applied, changes: [], warnings: [], errors: [issue(normalized.code, null, normalized.message, normalized.facts, normalized.repair)], nextActions: current ? [recoveryCommand(current, paths.root)] : [] }, transactionView(current));
+      const status = new Set(["E_ACTIVE_WORK_ITEM", "E_MAINTENANCE_PENDING", "E_MAINTENANCE_CONFLICT", "E_LEDGER_INVALID", "E_INSTALL_CONFLICT"]).has(normalized.code) ? "conflict" : "error";
+      const currentValid = current && validateTransaction(current);
+      return envelope(command, distribution, paths.root, { status, installedVersion: installed?.package?.version ?? null, applied, changes: [], warnings: [], errors: [issue(normalized.code, null, normalized.message, normalized.facts, normalized.repair)], nextActions: currentValid ? [formatRecoveryCommand(current, paths.root)] : [] }, transactionView(current));
     }
   }
   const plan = await planOperation(command, paths.root, distribution);

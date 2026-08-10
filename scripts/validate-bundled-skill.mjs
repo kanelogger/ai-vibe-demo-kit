@@ -2,6 +2,7 @@
 import { lstat, readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseSkillDocument } from "./harness/lib/validator.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const skillRoot = join(root, ".agents", "skills", "ai-vibe-demo-kit");
@@ -21,18 +22,14 @@ await regular(join(skillRoot, "agents", "openai.yaml"), "agents/openai.yaml");
 
 if (errors.length === 0) {
   const content = await readFile(join(skillRoot, "SKILL.md"), "utf8");
-  const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]+)$/.exec(content);
-  if (!frontmatter) errors.push("SKILL.md requires YAML frontmatter and a body");
+  const document = parseSkillDocument(content);
+  if (!document) errors.push("SKILL.md requires YAML frontmatter and a body");
   else {
-    const entries = frontmatter[1].split(/\r?\n/).filter(Boolean).map((line) => /^([a-zA-Z0-9_-]+):\s*(.+)$/.exec(line));
-    if (entries.some((entry) => !entry)) errors.push("SKILL.md frontmatter contains an invalid line");
-    else {
-      const metadata = Object.fromEntries(entries.map((entry) => [entry[1], entry[2].trim()]));
-      if (Object.keys(metadata).sort().join(",") !== "description,name") errors.push("SKILL.md frontmatter may contain only name and description");
-      if (metadata.name !== "ai-vibe-demo-kit") errors.push("SKILL.md name must be ai-vibe-demo-kit");
-      if (!metadata.description) errors.push("SKILL.md description must be non-empty");
-    }
-    if (frontmatter[2].trim().length < 200) errors.push("SKILL.md body is unexpectedly empty");
+    if (Object.keys(document.metadata).sort().join(",") !== "description,name") errors.push("SKILL.md frontmatter may contain only name and description");
+    if (document.metadata.name !== "ai-vibe-demo-kit") errors.push("SKILL.md name must be ai-vibe-demo-kit");
+    if (!document.metadata.description) errors.push("SKILL.md description must be non-empty");
+    if (document.body.trim().length < 200) errors.push("SKILL.md body is unexpectedly empty");
+    if (!document.body.includes("## Permission boundaries")) errors.push("SKILL.md must declare its permission boundaries");
   }
   const openai = await readFile(join(skillRoot, "agents", "openai.yaml"), "utf8");
   for (const required of [

@@ -5,7 +5,8 @@ import { access, mkdir, readdir, readFile, symlink, unlink, writeFile } from "no
 import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { applyControl } from "../lib/kernel.mjs";
-import { loadState, mutateState, probeLockOwner, readGitActor, statePaths } from "../lib/store.mjs";
+import { probeLockOwner, repositoryPaths as statePaths } from "../lib/repository-guard.mjs";
+import { loadState, mutateState, readGitActor } from "../lib/store.mjs";
 import { makeGitRepo, makeTemporaryDirectory, workflow } from "./helpers.mjs";
 
 const storeUrl = new URL("../lib/store.mjs", import.meta.url).href;

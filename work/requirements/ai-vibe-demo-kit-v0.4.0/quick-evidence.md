@@ -4,22 +4,21 @@
 
 | Command | Result |
 | --- | --- |
-| `node --test scripts/harness/test/lifecycle.test.mjs` | passed, 13/13 |
-| Node 22.23.1 with Node 22 first in `PATH`: `node --test scripts/harness/test/lifecycle.test.mjs` | passed, 13/13 |
-| `node --test scripts/harness/test/cli.test.mjs scripts/harness/test/validator.test.mjs scripts/harness/test/package.test.mjs` | passed, 47/47 |
-| Same focused command under Node 22.23.1 with Node 22 first in `PATH` | passed, 47/47 |
+| `node --test scripts/harness/test/lifecycle.test.mjs` | passed, 35/35 including 18 fault/recovery subtests |
+| Targeted completion/Distribution/package/store/validator suite | passed, 55/55 |
 | `python3 .../skill-creator/scripts/quick_validate.py .agents/skills/ai-vibe-demo-kit` | passed, `Skill is valid!` |
 | `node scripts/validate-bundled-skill.mjs` | passed |
 | `node scripts/check-distribution.mjs` | passed; includes isolated-cache `npm pack --dry-run --json --ignore-scripts` and cleanup |
 | Isolated-cache `npm pack --dry-run --json` | passed; `ai-vibe-demo-kit@0.4.0`, 34 entries, cache removed |
-| `node --test scripts/harness/test/distribution-cli.test.mjs scripts/harness/test/lifecycle.test.mjs` | passed, 19/19 |
-| `./harness check --json` | valid at revision 24, no warning/error |
+| `node scripts/check-completion-evidence.mjs 1f7a410... e9f56bc...` | passed, `completion evidence: valid (1)` |
+| `./harness check --json` | valid at revision 26, no warning/error or Workflow drift |
 | `git diff --check` | passed |
 
 ## Full regression
 
-- Node 24.18.0: current full suite passed, 98/98.
-- Node 22.23.1 with Node 22 first in `PATH`: current full suite passed, 98/98.
+- Node 24.18.0 with npm 11.16.0: current full suite passed, 123/123.
+- Node 22.23.1 with npm 11.16.0 selected for the main process, child Runtime and npm
+  pack/install commands: current full suite passed, 123/123.
 - The local tarball integration test creates a real `.tgz`, installs it with npm, initializes a
   temporary Git repository, and verifies doctor, Runtime version/check/status, upgrade plan and
   uninstall plan.
@@ -30,5 +29,6 @@ fresh isolated cache, and the repository-owned `check-distribution` command alwa
 an isolated cache. The remaining `.npmrc` `allow-remote` warning is outside the repository and does
 not affect the tarball result.
 
-All test helpers removed their temporary repositories and npm caches. No canonical maintenance,
-tmp/gc transaction, child process or tarball remains in the source repository.
+All test helpers removed their temporary repositories and npm caches. The Node 22/npm 11 PATH shim
+and direct-pack cache were explicitly removed. No canonical maintenance, tmp/gc transaction,
+worktree atomic temporary file, child process or tarball remains in the source repository.

@@ -7,14 +7,10 @@ import { HarnessError, fail } from "./errors.mjs";
 import {
   assertRuntimeMutationAllowed,
   assertSafePrivatePath,
-  probeLockOwner,
   repositoryPaths,
   withRepositoryMutation,
 } from "./repository-guard.mjs";
 import { validateControlState } from "./validator.mjs";
-
-export { probeLockOwner };
-export const statePaths = repositoryPaths;
 
 export async function loadState(start) {
   const paths = await repositoryPaths(start);

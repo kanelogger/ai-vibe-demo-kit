@@ -6,7 +6,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { makeGitRepo, run, runRaw } from "./helpers.mjs";
 
 const sourceRoot = join(dirname(fileURLToPath(import.meta.url)), "../../..");
-const sourceCli = join(sourceRoot, "bin", "harness.mjs");
+const distributionCli = join(sourceRoot, "bin", "ai-vibe-demo-kit.mjs");
 const sourceChecker = join(sourceRoot, "scripts", "check-completion-evidence.mjs");
 
 async function commitAll(root, subject) {
@@ -40,7 +40,7 @@ async function writeAcceptanceEvidence(root, workId) {
       { id: "regression-safe", status: "passed", evidenceRefs: [`${relativeRoot}/verification-report.json`] },
       { id: "cleanup-complete", status: "passed", evidenceRefs: [`${relativeRoot}/verification-report.json`] },
     ],
-    skills: [{ id: "acceptance.review", status: "succeeded", artifactRefs: ["verification-report"] }],
+    skills: [{ id: "acceptance.harness-guide", status: "succeeded", artifactRefs: ["verification-report", "handoff"] }],
     artifacts: [
       { id: "verification-report", uri: `${relativeRoot}/verification-report.json` },
       { id: "handoff", uri: `${relativeRoot}/handoff.md` },
@@ -50,7 +50,7 @@ async function writeAcceptanceEvidence(root, workId) {
 
 test("governed changes require a changed acceptance result", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   const base = await commitAll(target, "chore: install harness");
   await writeFile(join(target, "README.md"), "# Governed change\n");
   const head = await commitAll(target, "docs: update readme");
@@ -63,7 +63,7 @@ test("governed changes require a changed acceptance result", async () => {
 
 test("governed changes pass with valid completion evidence", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   const base = await commitAll(target, "chore: install harness");
   await writeFile(join(target, "README.md"), "# Governed change\n");
   await writeAcceptanceEvidence(target, "wi-valid");
@@ -77,7 +77,7 @@ test("governed changes pass with valid completion evidence", async () => {
 
 test("governed changes fail when changed completion evidence is invalid", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   const base = await commitAll(target, "chore: install harness");
   await writeFile(join(target, "README.md"), "# Governed change\n");
   const evidenceRoot = join(target, "work", "requirements", "wi-invalid");
@@ -94,7 +94,7 @@ test("governed changes fail when changed completion evidence is invalid", async 
 
 test("evidence-only changes do not recursively require new completion evidence", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   const base = await commitAll(target, "chore: install harness");
   const evidenceRoot = join(target, "work", "requirements", "wi-notes");
   await mkdir(evidenceRoot, { recursive: true });

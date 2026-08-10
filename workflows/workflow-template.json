@@ -31,14 +31,10 @@
       ],
       "skillCalls": [
         {
-          "id": "alignment.spec",
-          "skill": "to-spec",
-          "required": true
-        },
-        {
-          "id": "alignment.diagnose",
-          "skill": "diagnosing-bugs",
-          "required": false
+          "id": "alignment.harness-guide",
+          "skill": "ai-vibe-demo-kit",
+          "required": true,
+          "artifactIds": ["spec"]
         }
       ],
       "requiredArtifacts": [
@@ -68,14 +64,10 @@
       ],
       "skillCalls": [
         {
-          "id": "implementation.build",
-          "skill": "implement",
-          "required": true
-        },
-        {
-          "id": "implementation.tdd",
-          "skill": "tdd",
-          "required": false
+          "id": "implementation.harness-guide",
+          "skill": "ai-vibe-demo-kit",
+          "required": true,
+          "artifactIds": ["implementation-notes", "quick-evidence"]
         }
       ],
       "requiredArtifacts": [
@@ -115,9 +107,10 @@
       ],
       "skillCalls": [
         {
-          "id": "acceptance.review",
-          "skill": "code-review",
-          "required": true
+          "id": "acceptance.harness-guide",
+          "skill": "ai-vibe-demo-kit",
+          "required": true,
+          "artifactIds": ["verification-report", "handoff"]
         }
       ],
       "requiredArtifacts": [

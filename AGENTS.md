@@ -2,7 +2,7 @@
 
 ## 目标
 
-维护一个零依赖、可安装、可恢复的 Project Agent Harness。它负责确定性的 Workflow 校验、Stage Result 校验、Gate 状态转换和人工决策记录；不执行 Skill、测试、业务写入、Git 提交或外部系统操作。
+维护零依赖、可安装、可恢复的 AI Vibe Demo Kit。内部 Harness Module 负责确定性的 Workflow 校验、Stage Result 校验、Gate 状态转换和人工决策记录；不执行 Skill、测试、业务写入、Git 提交或外部系统操作。
 
 ## 项目地图
 
@@ -38,13 +38,13 @@
 - 不擅自发布、推送、改写 Git 历史或修改生产系统。
 - 不把密钥、客户数据或未脱敏线上数据写入 Prompt、日志、Stage Result 或 Evidence。
 - Harness 不执行报告中声明的命令，也不自动删除测试资源；Agent 或 CI 执行操作后提交可验证 Evidence。
-- 不覆盖目标仓库已有的治理文件；Installer 冲突必须人工审查。
+- 不覆盖目标仓库已有的治理文件；Distribution Lifecycle 冲突必须人工审查。
 
 ## 验证
 
 - ControlKernel 或 FileStore：运行对应状态与存储测试。
 - Validator、Workflow 或 contract：运行 validator 测试和 `./harness check --json`。
-- CLI、Installer 或公共行为：运行 CLI/Installer 测试。
+- CLI、Lifecycle 或公共行为：运行 CLI/Lifecycle 测试。
 - 关键路径或发布候选：运行 `node --test scripts/harness/test/*.test.mjs`。
 - 完成证据：运行 `./harness check-result --workflow workflows/workflow-template.json --stage acceptance --file <acceptance-result.json> --require-complete --json`。
 
@@ -56,4 +56,3 @@
 2. 必需测试通过，测试产生的数据、文件和进程已清理或被明确标记为 Policy Failure。
 3. acceptance Stage Result 和 verification report 通过无状态完成检查。
 4. 通过 `./harness signal` 提交当前 Stage Result；最终 Human Gate 未批准前不得声称交付完成。
-

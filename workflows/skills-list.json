@@ -1,65 +1,17 @@
 {
   "schemaVersion": 1,
-  "catalogId": "project-available-skills",
-  "description": "A discoverable catalog of Skills whose SKILL.md currently resolves from .agents/skills. It describes capability and workflow fit; it does not replace each Skill's own instructions.",
-  "discovery": {
-    "materializedRoot": ".agents/skills",
-    "sourceIntentRef": ".agents/skills.sources.json",
-    "resolvedSourcesRef": ".agents/skills.lock.json",
-    "availabilityRule": "A Skill is available only when .agents/skills/<id>/SKILL.md resolves at execution time.",
-    "availableCount": 38
-  },
-  "fieldGuide": {
-    "purpose": "Short routing summary derived from the Skill description.",
-    "category": "Primary capability family used for filtering.",
-    "workflowStages": "Stages where the Skill is normally relevant; standalone means it is not part of the default delivery path.",
-    "invocation": "explicit means the Skill disables model invocation; auto-or-explicit means the Agent may select it when its trigger matches.",
-    "availability": "locked-source is declared in the project lock; local-skill-port-link currently resolves locally but is not declared by this project's source lock.",
-    "sourceId": "Source identifier from .agents/skills.lock.json, or null when the Skill is only locally linked."
-  },
+  "catalogId": "ai-vibe-demo-kit-skills",
+  "description": "Runtime Skill Catalog. Every default Stage uses the bundled Harness guide.",
   "skills": [
-    { "id": "architecture-diagram", "purpose": "Create a self-contained HTML and SVG architecture diagram.", "category": "visualization", "workflowStages": ["alignment", "acceptance"], "invocation": "auto-or-explicit", "availability": "locked-source", "sourceId": "architecture-diagram", "skillRef": ".agents/skills/architecture-diagram/SKILL.md" },
-    { "id": "ask-matt", "purpose": "Route a situation to the appropriate engineering Skill or flow.", "category": "routing", "workflowStages": ["alignment"], "invocation": "explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/ask-matt/SKILL.md" },
-    { "id": "baoyu-design", "purpose": "Create polished visual artifacts, prototypes, reports, diagrams, documents, and slide decks as HTML.", "category": "design", "workflowStages": ["alignment", "implementation", "acceptance"], "invocation": "auto-or-explicit", "availability": "locked-source", "sourceId": "baoyu-design", "skillRef": ".agents/skills/baoyu-design/SKILL.md" },
-    { "id": "baoyu-translate", "purpose": "Translate or localize content with quick, normal, and refined modes.", "category": "content", "workflowStages": ["standalone"], "invocation": "auto-or-explicit", "availability": "local-skill-port-link", "sourceId": null, "skillRef": ".agents/skills/baoyu-translate/SKILL.md" },
-    { "id": "baoyu-url-to-markdown", "purpose": "Fetch a web page or supported social page and save its content as Markdown.", "category": "research", "workflowStages": ["alignment", "standalone"], "invocation": "auto-or-explicit", "availability": "local-skill-port-link", "sourceId": null, "skillRef": ".agents/skills/baoyu-url-to-markdown/SKILL.md" },
-    { "id": "claude-handoff", "purpose": "Transfer the current conversation to a fresh background Agent for immediate continuation.", "category": "continuity", "workflowStages": ["implementation", "acceptance"], "invocation": "explicit", "availability": "local-skill-port-link", "sourceId": null, "skillRef": ".agents/skills/claude-handoff/SKILL.md" },
-    { "id": "code-review", "purpose": "Review a fixed diff independently against repository standards and the originating specification.", "category": "verification", "workflowStages": ["acceptance"], "invocation": "auto-or-explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/code-review/SKILL.md" },
-    { "id": "codebase-design", "purpose": "Design deep modules, narrow interfaces, seams, adapters, and test surfaces.", "category": "architecture", "workflowStages": ["alignment"], "invocation": "auto-or-explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/codebase-design/SKILL.md" },
-    { "id": "diagnosing-bugs", "purpose": "Establish a tight reproducer, diagnose difficult failures or regressions, and protect the fix.", "category": "diagnosis", "workflowStages": ["alignment", "implementation"], "invocation": "auto-or-explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/diagnosing-bugs/SKILL.md" },
-    { "id": "domain-modeling", "purpose": "Clarify domain terminology, rules, ubiquitous language, and durable decisions.", "category": "domain", "workflowStages": ["alignment"], "invocation": "auto-or-explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/domain-modeling/SKILL.md" },
-    { "id": "git-guardrails-claude-code", "purpose": "Install Claude Code hooks that block dangerous Git operations.", "category": "setup", "workflowStages": ["standalone"], "invocation": "auto-or-explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/git-guardrails-claude-code/SKILL.md" },
-    { "id": "grill-me", "purpose": "Stress-test and sharpen a plan or design without writing repository context.", "category": "clarification", "workflowStages": ["alignment", "standalone"], "invocation": "explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/grill-me/SKILL.md" },
-    { "id": "grill-with-docs", "purpose": "Stress-test a plan or design while recording glossary and decision artifacts in the repository.", "category": "clarification", "workflowStages": ["alignment"], "invocation": "explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/grill-with-docs/SKILL.md" },
-    { "id": "grilling", "purpose": "Run the underlying iterative interview used to resolve consequential unknowns.", "category": "clarification", "workflowStages": ["alignment"], "invocation": "auto-or-explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/grilling/SKILL.md" },
-    { "id": "handoff", "purpose": "Write a compact temporary handoff that references existing artifacts for another Agent or session.", "category": "continuity", "workflowStages": ["implementation", "acceptance"], "invocation": "explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/handoff/SKILL.md" },
-    { "id": "implement", "purpose": "Implement a specification or ordered tickets, using TDD and code review inside its delivery flow.", "category": "delivery", "workflowStages": ["implementation", "acceptance"], "invocation": "explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/implement/SKILL.md" },
-    { "id": "improve-codebase-architecture", "purpose": "Find codebase deepening opportunities and present them in a visual report for selection.", "category": "architecture", "workflowStages": ["alignment", "standalone"], "invocation": "explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/improve-codebase-architecture/SKILL.md" },
-    { "id": "loop-me", "purpose": "Iteratively clarify specifications for workflows in the current workspace.", "category": "clarification", "workflowStages": ["alignment"], "invocation": "explicit", "availability": "local-skill-port-link", "sourceId": null, "skillRef": ".agents/skills/loop-me/SKILL.md" },
-    { "id": "migrate-to-shoehorn", "purpose": "Migrate TypeScript test data away from broad as assertions to shoehorn helpers.", "category": "delivery", "workflowStages": ["implementation"], "invocation": "auto-or-explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/migrate-to-shoehorn/SKILL.md" },
-    { "id": "prototype", "purpose": "Build throwaway code or UI to answer one material design question with runnable evidence.", "category": "discovery", "workflowStages": ["alignment"], "invocation": "auto-or-explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/prototype/SKILL.md" },
-    { "id": "research", "purpose": "Delegate primary-source research to a background Agent and save cited findings in the repository.", "category": "research", "workflowStages": ["alignment"], "invocation": "auto-or-explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/research/SKILL.md" },
-    { "id": "resolving-merge-conflicts", "purpose": "Resolve an active merge or rebase conflict by tracing each hunk to its intended behavior.", "category": "delivery", "workflowStages": ["implementation"], "invocation": "auto-or-explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/resolving-merge-conflicts/SKILL.md" },
-    { "id": "scaffold-exercises", "purpose": "Create course exercise structures with problems, solutions, and explainers that satisfy project checks.", "category": "delivery", "workflowStages": ["implementation"], "invocation": "auto-or-explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/scaffold-exercises/SKILL.md" },
-    { "id": "setup-matt-pocock-skills", "purpose": "Prepare issue tracking, triage vocabulary, and domain document layout required by the engineering Skills.", "category": "setup", "workflowStages": ["standalone"], "invocation": "explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/setup-matt-pocock-skills/SKILL.md" },
-    { "id": "setup-pre-commit", "purpose": "Configure Husky and lint-staged checks for formatting, types, and tests before commits.", "category": "setup", "workflowStages": ["standalone"], "invocation": "auto-or-explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/setup-pre-commit/SKILL.md" },
-    { "id": "setup-ts-deep-modules", "purpose": "Configure dependency-cruiser rules that keep TypeScript module implementations behind entry points.", "category": "setup", "workflowStages": ["standalone"], "invocation": "explicit", "availability": "local-skill-port-link", "sourceId": null, "skillRef": ".agents/skills/setup-ts-deep-modules/SKILL.md" },
-    { "id": "tdd", "purpose": "Drive stable behavior through red-green-refactor with unit or integration tests.", "category": "verification", "workflowStages": ["implementation"], "invocation": "auto-or-explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/tdd/SKILL.md" },
-    { "id": "teach", "purpose": "Teach a concept over multiple sessions using the current directory as a stateful workspace.", "category": "learning", "workflowStages": ["standalone"], "invocation": "explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/teach/SKILL.md" },
-    { "id": "to-questionnaire", "purpose": "Turn an unresolved decision into a targeted questionnaire for the person who owns the missing knowledge.", "category": "clarification", "workflowStages": ["alignment"], "invocation": "explicit", "availability": "local-skill-port-link", "sourceId": null, "skillRef": ".agents/skills/to-questionnaire/SKILL.md" },
-    { "id": "to-spec", "purpose": "Synthesize the confirmed conversation into a specification and publish it to the configured tracker.", "category": "planning", "workflowStages": ["alignment"], "invocation": "explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/to-spec/SKILL.md" },
-    { "id": "to-tickets", "purpose": "Split a specification into tracer-bullet tickets with explicit blocking edges.", "category": "planning", "workflowStages": ["alignment"], "invocation": "explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/to-tickets/SKILL.md" },
-    { "id": "triage", "purpose": "Classify, verify, clarify, and turn incoming issues or external pull requests into agent-ready briefs.", "category": "routing", "workflowStages": ["alignment"], "invocation": "explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/triage/SKILL.md" },
-    { "id": "wayfinder", "purpose": "Map a multi-session effort as decision tickets, resolve uncertainty, and hand a cleared route to specification work.", "category": "planning", "workflowStages": ["alignment"], "invocation": "explicit", "availability": "locked-source", "sourceId": "mattpocock-skills", "skillRef": ".agents/skills/wayfinder/SKILL.md" },
-    { "id": "web-design", "purpose": "Produce a confirmed web design specification, then implement and visually verify the responsive interface.", "category": "design", "workflowStages": ["alignment", "implementation", "acceptance"], "invocation": "auto-or-explicit", "availability": "locked-source", "sourceId": "web-design", "skillRef": ".agents/skills/web-design/SKILL.md" },
-    { "id": "wizard", "purpose": "Generate a verified interactive shell wizard for setup, credentials, migrations, or cutovers that require human action.", "category": "human-operation", "workflowStages": ["implementation", "acceptance"], "invocation": "auto-or-explicit", "availability": "local-skill-port-link", "sourceId": null, "skillRef": ".agents/skills/wizard/SKILL.md" },
-    { "id": "writing-beats", "purpose": "Arrange raw writing material into a grounded sequence of narrative beats.", "category": "content", "workflowStages": ["standalone"], "invocation": "explicit", "availability": "local-skill-port-link", "sourceId": null, "skillRef": ".agents/skills/writing-beats/SKILL.md" },
-    { "id": "writing-fragments", "purpose": "Mine raw material into writing fragments before imposing structure.", "category": "content", "workflowStages": ["standalone"], "invocation": "explicit", "availability": "local-skill-port-link", "sourceId": null, "skillRef": ".agents/skills/writing-fragments/SKILL.md" },
-    { "id": "writing-shape", "purpose": "Shape raw material into a paragraph-by-paragraph article structure.", "category": "content", "workflowStages": ["standalone"], "invocation": "explicit", "availability": "local-skill-port-link", "sourceId": null, "skillRef": ".agents/skills/writing-shape/SKILL.md" }
-  ],
-  "unavailableLockedSkills": [
-    { "id": "edit-article", "sourceId": "mattpocock-skills", "reason": ".agents/skills/edit-article/SKILL.md does not currently resolve." },
-    { "id": "obsidian-vault", "sourceId": "mattpocock-skills", "reason": ".agents/skills/obsidian-vault/SKILL.md does not currently resolve." },
-    { "id": "writing-great-skills", "sourceId": "mattpocock-skills", "reason": ".agents/skills/writing-great-skills/SKILL.md does not currently resolve." }
+    {
+      "id": "ai-vibe-demo-kit",
+      "purpose": "Guide environment checks, Harness state, Stage Results, Evidence and lifecycle safety.",
+      "category": "workflow-control",
+      "workflowStages": ["alignment", "implementation", "acceptance"],
+      "invocation": "auto-or-explicit",
+      "availability": "bundled",
+      "sourceId": "ai-vibe-demo-kit",
+      "skillRef": ".agents/skills/ai-vibe-demo-kit/SKILL.md"
+    }
   ]
 }

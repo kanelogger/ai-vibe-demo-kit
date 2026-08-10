@@ -4,15 +4,14 @@ import { dirname, isAbsolute, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { applyControl, digestValue, inspectState } from "../scripts/harness/lib/kernel.mjs";
 import { HarnessError, fail } from "../scripts/harness/lib/errors.mjs";
-import { installHarness } from "../scripts/harness/lib/installer.mjs";
 import { loadHarnessManifest } from "../scripts/harness/lib/manifest.mjs";
 import { firstSymlinkInPath, isInside, resolveInside } from "../scripts/harness/lib/path-safety.mjs";
+import { readCanonicalMaintenance } from "../scripts/harness/lib/repository-guard.mjs";
 import { loadState, mutateState, readGitActor, statePaths } from "../scripts/harness/lib/store.mjs";
 import { validateEnvironmentManifest, validateStageResult, validateStateAgainstWorkflow, validateWorkflow } from "../scripts/harness/lib/validator.mjs";
 
 const SOURCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const HELP = `Usage:
-  harness init --target <git-root> [--json]
   harness version [--json]
   harness check [--workflow <path>] [--json]
   harness check-environment --file <AI_ENVIRONMENT.md> [--json]
@@ -30,7 +29,6 @@ Exit codes: 0 success, 1 environment/gate/policy refusal, 2 usage/structure/stat
 const BOOLEAN = new Set(["json", "help", "require-complete"]);
 const REPEATED = new Set(["accept-risk"]);
 const COMMAND_OPTIONS = {
-  init: new Set(["target", "json"]),
   version: new Set(["json"]),
   check: new Set(["workflow", "json"]),
   "check-environment": new Set(["file", "json"]),
@@ -206,13 +204,6 @@ async function execute(options, context) {
     else process.stdout.write(`${manifest.name} ${manifest.version} (Node.js ${manifest.minimumNodeVersion}+)\n`);
     return 0;
   }
-  if (command === "init") {
-    if (options._.length !== 1 || !options.target) fail("E_USAGE", "init requires --target", { repair: HELP });
-    const installed = await installHarness({ sourceRoot: SOURCE_ROOT, targetRoot: options.target });
-    output(options, { ...installed, status: "installed", revision: 0, stage: null, pendingGate: null, allowedActions: ["check", "start"] });
-    return 0;
-  }
-
   const root = await rootFromCwd();
   if (command === "check-environment") {
     if (!options.file) fail("E_USAGE", "check-environment requires --file", { repair: HELP });
@@ -267,6 +258,22 @@ async function execute(options, context) {
   }
   if (command === "status") {
     if (options._.length !== 1) fail("E_USAGE", "status accepts no positional arguments", { repair: HELP });
+    const maintenance = await readCanonicalMaintenance(root);
+    if (maintenance) {
+      const command = `npx --yes ai-vibe-demo-kit@${maintenance.createdByPackageVersion} recover --target ${JSON.stringify(root)} --strategy resume --apply --json`;
+      output(options, {
+        revision: null,
+        status: "maintenance",
+        stage: null,
+        pendingGate: null,
+        allowedActions: [],
+        active: null,
+        last: null,
+        transaction: maintenance,
+        nextActions: [command],
+      });
+      return 0;
+    }
     const state = await loadState(root);
     context.state = state;
     let workflowDrift = false;
@@ -286,13 +293,15 @@ async function execute(options, context) {
     if (!options.workflow || !options.intent) fail("E_USAGE", "start requires --workflow and --intent", { repair: HELP });
     const state = await loadState(root);
     context.state = state;
-    const loaded = await loadWorkflow(root, options.workflow);
-    if (!loaded.report.valid) fail("E_WORKFLOW_INVALID", "workflow is structurally invalid", { facts: loaded.report });
-    const result = await mutateState(root, state.revision, (current) => applyControl({
-      state: current,
-      workflow: loaded.workflow,
-      command: { kind: "start", intent: options.intent, workflowRef: options.workflow, workflowDigest: loaded.digest },
-    }));
+    const result = await mutateState(root, state.revision, async (current) => {
+      const loaded = await loadWorkflow(root, options.workflow);
+      if (!loaded.report.valid) fail("E_WORKFLOW_INVALID", "workflow is structurally invalid", { facts: loaded.report });
+      return applyControl({
+        state: current,
+        workflow: loaded.workflow,
+        command: { kind: "start", intent: options.intent, workflowRef: options.workflow, workflowDigest: loaded.digest },
+      });
+    });
     const view = publicState(result.state);
     output(options, view);
     return 0;

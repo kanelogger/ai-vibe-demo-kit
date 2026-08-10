@@ -1,5 +1,12 @@
 # Harness Changelog
 
+## 0.4.0 - 2026-08-10
+
+- Rebrand the public package and project identity as `ai-vibe-demo-kit`.
+- Split npm Distribution lifecycle commands from the installed `./harness` Runtime CLI.
+- Add a unique Distribution Manifest, install ledger, shared RepositoryGuard lock and crash-recoverable maintenance journal.
+- Bundle and validate the `ai-vibe-demo-kit` Skill with Stage-specific Artifact contracts.
+
 ## 0.3.0 - 2026-08-10
 
 - Install an AI environment manifest template that separates project requirements, observed machine facts and effective Agent capabilities.

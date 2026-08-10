@@ -71,6 +71,55 @@ test("workflow skill references must exist in the configured catalog", async () 
   assert.ok(report.errors.some((issue) => issue.code === "E_SKILL_UNKNOWN"));
 });
 
+test("required Skill entities must be regular safe files with exact frontmatter", async () => {
+  const root = await makeGitRepo();
+  const value = workflow({ skillsCatalogRef: "workflows/skills.json" });
+  value.stages.align.skillCalls = [{ id: "guide", skill: "guide", required: true }];
+  await writeFile(join(root, "workflows", "skills.json"), JSON.stringify({ skills: [{ id: "guide", skillRef: ".agents/skills/guide/SKILL.md" }] }));
+
+  let report = await validateWorkflow(value, { root });
+  assert.ok(report.errors.some((entry) => entry.code === "E_SKILL_ENTITY"));
+
+  await mkdir(join(root, ".agents", "skills", "guide"), { recursive: true });
+  await writeFile(join(root, ".agents", "skills", "guide", "SKILL.md"), "---\nname: guide\ndescription: Guide the workflow.\nmetadata: forbidden\n---\n\n# Guide\n");
+  report = await validateWorkflow(value, { root });
+  assert.ok(report.errors.some((entry) => entry.code === "E_SKILL_ENTITY" && /only name and description/.test(entry.message)));
+
+  await writeFile(join(root, ".agents", "skills", "guide", "SKILL.md"), "---\nname: guide\ndescription: Guide the workflow.\n---\n\n# Guide\n");
+  report = await validateWorkflow(value, { root });
+  assert.equal(report.valid, true);
+});
+
+test("optional missing Skill entities produce warnings without invalidating the Workflow", async () => {
+  const root = await makeGitRepo();
+  const value = workflow({ skillsCatalogRef: "workflows/skills.json" });
+  value.stages.align.skillCalls = [{ id: "guide", skill: "guide", required: false }];
+  await writeFile(join(root, "workflows", "skills.json"), JSON.stringify({ skills: [{ id: "guide", skillRef: ".agents/skills/guide/SKILL.md" }] }));
+  const report = await validateWorkflow(value, { root });
+  assert.equal(report.valid, true);
+  assert.ok(report.warnings.some((entry) => entry.code === "W_SKILL_UNAVAILABLE"));
+});
+
+test("Skill artifactIds must be declared and covered by succeeded receipts", async () => {
+  const value = workflow();
+  value.stages.align.requiredArtifacts = [{ id: "spec", required: true }, { id: "note", required: true }];
+  value.stages.align.skillCalls = [{ id: "guide", skill: "guide", required: true, artifactIds: ["spec"] }];
+  let report = await validateWorkflow({ ...value, stages: { ...value.stages, align: { ...value.stages.align, skillCalls: [{ ...value.stages.align.skillCalls[0], artifactIds: ["unknown"] }] } } });
+  assert.ok(report.errors.some((entry) => entry.code === "E_SKILL_ARTIFACT_UNKNOWN"));
+
+  report = await validateStageResult(value, "align", stageResult({
+    skills: [{ id: "guide", status: "succeeded", artifactRefs: ["note"] }],
+    artifacts: [{ id: "spec", uri: "note://spec" }, { id: "note", uri: "note://note" }],
+  }));
+  assert.ok(report.errors.some((entry) => entry.code === "E_SKILL_ARTIFACT_REQUIRED"));
+
+  report = await validateStageResult(value, "align", stageResult({
+    skills: [{ id: "guide", status: "succeeded", artifactRefs: ["spec", "spec", "note"] }],
+    artifacts: [{ id: "spec", uri: "note://spec" }, { id: "note", uri: "note://note" }],
+  }));
+  assert.ok(report.errors.some((entry) => entry.code === "E_RESULT_SKILL_ARTIFACT_DUPLICATE"));
+});
+
 test("condition and required skill policy identifiers cannot collide", async () => {
   const value = workflow();
   value.stages.align.skillCalls = [{ id: "intent-clear", skill: "tdd", required: true }];

@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 2,
+  "id": "ai-vibe-demo-kit-v0.4.0-delivery",
+  "version": 1,
+  "description": "Frozen delivery workflow for the reviewed AI Vibe Demo Kit CLI v0.4.0 plan.",
+  "skillsCatalogRef": "work/requirements/ai-vibe-demo-kit-v0.4.0/skills-list.json",
+  "initialStage": "alignment",
+  "stages": {
+    "alignment": {
+      "goal": "Bind implementation to the reviewed plan and confirmed source environment.",
+      "outcomes": ["ready", "blocked"],
+      "exitConditions": [
+        {
+          "id": "acceptance-observable",
+          "description": "The reviewed plan defines observable interfaces, lifecycle matrices, recovery windows and release checks.",
+          "required": true
+        },
+        {
+          "id": "risk-classified",
+          "description": "Destructive lifecycle actions, crash recovery and release authorization are explicitly bounded.",
+          "required": true
+        },
+        {
+          "id": "environment-confirmed",
+          "description": "Required project.yml probes match the source environment.",
+          "required": true
+        }
+      ],
+      "skillCalls": [],
+      "requiredArtifacts": [
+        { "id": "spec", "required": true }
+      ]
+    },
+    "implementation": {
+      "goal": "Implement the frozen plan without publishing or changing external systems.",
+      "outcomes": ["ready-for-acceptance", "blocked"],
+      "exitConditions": [
+        {
+          "id": "scope-complete",
+          "description": "The CLI, lifecycle, recovery, Skill, manifests and documentation match the frozen plan.",
+          "required": true
+        },
+        {
+          "id": "quick-evidence-current",
+          "description": "Focused verification covers the current candidate.",
+          "required": true
+        }
+      ],
+      "skillCalls": [],
+      "requiredArtifacts": [
+        { "id": "implementation-notes", "required": true },
+        { "id": "quick-evidence", "required": true }
+      ]
+    },
+    "acceptance": {
+      "goal": "Verify the complete candidate, cleanup and publish readiness.",
+      "outcomes": ["accepted", "changes-requested", "blocked"],
+      "exitConditions": [
+        {
+          "id": "spec-compliant",
+          "description": "The candidate satisfies the reviewed plan.",
+          "required": true
+        },
+        {
+          "id": "regression-safe",
+          "description": "Focused, full-suite and package checks pass.",
+          "required": true
+        },
+        {
+          "id": "cleanup-complete",
+          "description": "Verification resources are removed or explicitly reported.",
+          "required": true
+        }
+      ],
+      "skillCalls": [],
+      "requiredArtifacts": [
+        { "id": "verification-report", "required": true, "contract": "verification-report/v1" },
+        { "id": "handoff", "required": true }
+      ]
+    }
+  },
+  "transitions": [
+    {
+      "id": "alignment-ready",
+      "from": "alignment",
+      "on": "ready",
+      "to": "implementation",
+      "gate": {
+        "mode": "human",
+        "prompt": "Confirm the reviewed v0.4.0 plan and environment before implementation.",
+        "onReject": "alignment"
+      }
+    },
+    {
+      "id": "alignment-blocked",
+      "from": "alignment",
+      "on": "blocked",
+      "to": "blocked",
+      "gate": { "mode": "auto" }
+    },
+    {
+      "id": "implementation-ready",
+      "from": "implementation",
+      "on": "ready-for-acceptance",
+      "to": "acceptance",
+      "gate": { "mode": "auto" }
+    },
+    {
+      "id": "implementation-blocked",
+      "from": "implementation",
+      "on": "blocked",
+      "to": "blocked",
+      "gate": { "mode": "auto" }
+    },
+    {
+      "id": "acceptance-approved",
+      "from": "acceptance",
+      "on": "accepted",
+      "to": "complete",
+      "gate": {
+        "mode": "human",
+        "prompt": "Accept the verified publish-ready candidate and residual risks.",
+        "onReject": "acceptance"
+      }
+    },
+    {
+      "id": "acceptance-changes",
+      "from": "acceptance",
+      "on": "changes-requested",
+      "to": "implementation",
+      "gate": { "mode": "auto" }
+    },
+    {
+      "id": "acceptance-blocked",
+      "from": "acceptance",
+      "on": "blocked",
+      "to": "blocked",
+      "gate": { "mode": "auto" }
+    }
+  ]
+}

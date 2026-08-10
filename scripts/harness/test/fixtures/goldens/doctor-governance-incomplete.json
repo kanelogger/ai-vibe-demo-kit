@@ -1,0 +1,11 @@
+{
+  "status": "manual-action-required",
+  "exitCode": 1,
+  "readiness": {
+    "runtimeReady": true,
+    "governanceReady": false,
+    "completionEvidenceToolingReady": true
+  },
+  "warningCodes": ["W_GOVERNANCE_INCOMPLETE"],
+  "errorCodes": []
+}

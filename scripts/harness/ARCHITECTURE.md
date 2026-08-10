@@ -11,6 +11,7 @@
 ## Invariants
 
 - 所有 Mutation 只增加一次 Revision，并通过 PID 短锁和原子 Rename 持久化；仅可证明 owner 已死亡的锁可以自动回收，Git 私有控制路径禁止 Symlink。
+- Runtime Mutation 与 Lifecycle Apply 通过 RepositoryGuard 共用同一 PID 锁；canonical maintenance 存在时 Runtime Mutation 拒绝。
 - Workflow 在 Start 时绑定内容 Digest；漂移后只允许只读命令和 Abort。
 - 结构错误不可 Override；策略失败只有在用户精确接受全部风险后才能继续。
 - Redirect、Reject 和 Override 保留旧证据，失效结果标记为 `superseded`。
@@ -22,8 +23,9 @@
 | --- | --- | --- |
 | ControlKernel | `applyControl`、`inspectState` | 纯状态转换、Gate 和 Human Control |
 | Validator | `validateEnvironmentManifest`、`validateWorkflow`、`validateStageResult`、`validateControlState`、`validateStateAgainstWorkflow` | 环境模板、Workflow、Evidence、状态绑定与策略事实的确定性校验 |
-| FileStore | `loadState`、`mutateState` | Git 私有路径、锁、Revision、原子写入和归档 |
-| Installer | `installHarness` | 发行 Manifest、清单预检、幂等复制和冲突拒绝 |
+| RepositoryGuard | `repositoryPaths`、`withRepositoryMutation`、`readCanonicalMaintenance` | Git 根、共享 PID 锁、maintenance 检测 |
+| FileStore | `loadState`、`mutateState` | Revision、原子写入和归档 |
+| Lifecycle | `runDistributionCommand`、`loadDistributionManifest` | 账本决策、事务发布、恢复、Doctor 与卸载 |
 | PathSafety | `isInside`、`resolveInside`、`firstSymlinkInPath` | 仓库内路径解析和路径级 Symlink 检测 |
 | CLI Adapter | `harness <command>` | 参数、版本、无状态结果检查、JSON/文本输出和稳定退出码 |
 
@@ -33,5 +35,6 @@ Library 的逐文件 Module 索引见 `lib/ARCHITECTURE.md`；`test/` 是 `proje
 
 ```sh
 node --test scripts/harness/test/*.test.mjs
+node scripts/check-distribution.mjs
 ./harness check --json
 ```

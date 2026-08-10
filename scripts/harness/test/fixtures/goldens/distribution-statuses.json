@@ -1,0 +1,8 @@
+{
+  "applied": { "status": "applied", "applied": true, "exitCode": 0 },
+  "planned": { "status": "planned", "applied": false, "exitCode": 0 },
+  "idempotent": { "status": "idempotent", "applied": false, "exitCode": 0 },
+  "manual": { "status": "manual-action-required", "applied": false, "exitCode": 1 },
+  "conflict": { "status": "conflict", "applied": false, "exitCode": 2 },
+  "error": { "status": "error", "applied": false, "exitCode": 2 }
+}

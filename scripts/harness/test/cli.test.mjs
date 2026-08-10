@@ -7,6 +7,7 @@ import { completeEnvironmentTemplate, makeGitRepo, makeTemporaryDirectory, run, 
 
 const sourceRoot = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 const sourceCli = join(sourceRoot, "bin", "harness.mjs");
+const distributionCli = join(sourceRoot, "bin", "ai-vibe-demo-kit.mjs");
 
 test("source and installed CLIs report release metadata outside a Git repository", async () => {
   const outside = await makeTemporaryDirectory("harness-version-cwd-");
@@ -14,24 +15,30 @@ test("source and installed CLIs report release metadata outside a Git repository
   assert.equal(result.code, 0, result.stderr);
   assert.deepEqual(JSON.parse(result.stdout), {
     schemaVersion: 1,
-    name: "project-agent-harness",
-    version: "0.3.0",
+    name: "ai-vibe-demo-kit",
+    version: "0.4.0",
     minimumNodeVersion: "22",
   });
 
   const target = await makeGitRepo();
-  result = await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  result = await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   const installed = JSON.parse(result.stdout);
-  assert.equal(installed.version, 1);
-  assert.equal(installed.harnessVersion, "0.3.0");
+  assert.equal(installed.status, "applied");
+  assert.equal(installed.package.version, "0.4.0");
   result = await runRaw(join(target, "harness"), ["version", "--json"], outside);
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(JSON.parse(result.stdout).version, "0.3.0");
+  assert.equal(JSON.parse(result.stdout).version, "0.4.0");
+  result = await runRaw(join(target, "harness"), ["help"], target);
+  assert.equal(result.code, 0, result.stderr);
+  assert.doesNotMatch(result.stdout, /harness init/);
+  result = await runRaw(join(target, "harness"), ["init", "--target", target, "--json"], target);
+  assert.equal(result.code, 2);
+  assert.equal(JSON.parse(result.stdout).error.code, "E_USAGE");
 });
 
 test("version rejects an invalid installed manifest", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   await writeFile(join(target, ".harness", "manifest.json"), "{}\n");
   const result = await runRaw(join(target, "harness"), ["version", "--json"], target);
   assert.equal(result.code, 2);
@@ -40,7 +47,7 @@ test("version rejects an invalid installed manifest", async () => {
 
 test("check-environment rejects the template and accepts a completed project copy", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
 
   let result = await runRaw(join(target, "harness"), ["check-environment", "--file", "AI_ENVIRONMENT_template.md", "--json"], target);
   assert.equal(result.code, 1);
@@ -56,7 +63,7 @@ test("check-environment rejects the template and accepts a completed project cop
 
 test("check-environment rejects an intermediate symlink path", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   const template = await readFile(join(target, "AI_ENVIRONMENT_template.md"), "utf8");
   const completed = completeEnvironmentTemplate(template);
   await mkdir(join(target, "environment"));
@@ -71,7 +78,7 @@ test("check-environment rejects an intermediate symlink path", async () => {
 
 test("fresh repository installs, checks, starts and advances through the public CLI", async () => {
   const target = await makeGitRepo();
-  let result = await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  let result = await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   assert.equal(result.code, 0, result.stderr);
 
   result = await runRaw(join(target, "harness"), ["check", "--json"], target);
@@ -105,7 +112,7 @@ test("fresh repository installs, checks, starts and advances through the public 
 
 test("check-result validates completion evidence without an active work item", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   const terminal = workflow();
   delete terminal.stages.build;
   terminal.transitions = [{ id: "align-ready", from: "align", on: "ready", to: "complete", gate: { mode: "human", prompt: "Accept", onReject: "align" } }];
@@ -138,7 +145,7 @@ test("check-result validates completion evidence without an active work item", a
 
 test("check-result returns gate refusal for structurally valid policy failures", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   const terminal = workflow();
   delete terminal.stages.build;
   terminal.transitions = [{ id: "align-ready", from: "align", on: "ready", to: "complete", gate: { mode: "human", prompt: "Accept", onReject: "align" } }];
@@ -161,7 +168,7 @@ test("check-result returns gate refusal for structurally valid policy failures",
 
 test("check-result distinguishes non-terminal evidence from structural errors", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   await writeFile(join(target, "workflows", "custom.json"), `${JSON.stringify(workflow(), null, 2)}\n`);
   await writeFile(join(target, "result.json"), `${JSON.stringify(stageResult(), null, 2)}\n`);
 
@@ -186,7 +193,7 @@ test("check-result distinguishes non-terminal evidence from structural errors", 
 
 test("CLI returns stable JSON errors and exit codes", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   const result = await runRaw(join(target, "harness"), ["status", "--json"], target);
   assert.equal(result.code, 0);
   assert.equal(JSON.parse(result.stdout).revision, 0);
@@ -198,7 +205,7 @@ test("CLI returns stable JSON errors and exit codes", async () => {
 
 test("CLI errors retain current state context and text output provides next commands", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   await writeFile(join(target, "workflows", "custom.json"), `${JSON.stringify(workflow(), null, 2)}\n`);
   await writeFile(join(target, "result.json"), `${JSON.stringify(stageResult(), null, 2)}\n`);
   await runRaw(join(target, "harness"), ["start", "--workflow", "workflows/custom.json", "--intent", "Context", "--json"], target);
@@ -219,7 +226,7 @@ test("CLI errors retain current state context and text output provides next comm
 
 test("CLI rejects unknown options as usage errors", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   const result = await runRaw(join(target, "harness"), ["status", "--unknown", "value", "--json"], target);
   assert.equal(result.code, 2);
   assert.equal(JSON.parse(result.stdout).error.code, "E_USAGE");
@@ -227,7 +234,7 @@ test("CLI rejects unknown options as usage errors", async () => {
 
 test("CLI signal idempotency is scoped to the submitted base revision", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   const terminal = workflow();
   delete terminal.stages.build;
   terminal.transitions = [{ id: "align-ready", from: "align", on: "ready", to: "complete", gate: { mode: "auto" } }];
@@ -244,7 +251,7 @@ test("CLI signal idempotency is scoped to the submitted base revision", async ()
 
 test("concurrent identical CLI signals converge on one accepted result", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   await writeFile(join(target, "workflows", "custom.json"), `${JSON.stringify(workflow(), null, 2)}\n`);
   await writeFile(join(target, "result.json"), `${JSON.stringify(stageResult(), null, 2)}\n`);
   await runRaw(join(target, "harness"), ["start", "--workflow", "workflows/custom.json", "--intent", "Concurrent", "--json"], target);
@@ -260,7 +267,7 @@ test("concurrent identical CLI signals converge on one accepted result", async (
 
 test("public CLI supports policy override, pause protection and human acceptance", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   await writeFile(join(target, "workflows", "custom.json"), `${JSON.stringify(workflow(), null, 2)}\n`);
   const failed = stageResult({
     conditions: [{ id: "intent-clear", status: "failed", reason: "Owner unavailable", evidenceRefs: [] }],
@@ -315,7 +322,7 @@ test("public CLI supports policy override, pause protection and human acceptance
 
 test("signal validates contracted reports before mutating gate state", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   const terminal = workflow();
   delete terminal.stages.build;
   terminal.stages.align.requiredArtifacts = [{ id: "report", required: true, contract: "verification-report/v1" }];
@@ -350,7 +357,7 @@ test("signal validates contracted reports before mutating gate state", async () 
 
 test("workflow drift blocks signals but still allows abort", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   const path = join(target, "workflows", "custom.json");
   const value = workflow();
   await writeFile(path, `${JSON.stringify(value, null, 2)}\n`);
@@ -366,7 +373,7 @@ test("workflow drift blocks signals but still allows abort", async () => {
 
 test("structurally invalid workflow exits with code 2", async () => {
   const target = await makeGitRepo();
-  await runRaw(process.execPath, [sourceCli, "init", "--target", target, "--json"], sourceRoot);
+  await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   await writeFile(join(target, "workflows", "invalid.json"), JSON.stringify({ schemaVersion: 2 }));
   const result = await runRaw(join(target, "harness"), ["check", "--workflow", "workflows/invalid.json", "--json"], target);
   assert.equal(result.code, 2);

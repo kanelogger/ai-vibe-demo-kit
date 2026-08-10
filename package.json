@@ -1,0 +1,57 @@
+{
+  "name": "ai-vibe-demo-kit",
+  "version": "0.4.0",
+  "description": "Zero-dependency installable and recoverable control kit for project Agent workflows.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "ai-vibe-demo-kit": "bin/ai-vibe-demo-kit.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "npm@11.16.0",
+  "files": [
+    ".agents/skills/ai-vibe-demo-kit/SKILL.md",
+    ".agents/skills/ai-vibe-demo-kit/agents/openai.yaml",
+    ".harness/CHANGELOG.md",
+    ".harness/LICENSE",
+    ".harness/README.md",
+    ".harness/distribution-manifest.json",
+    ".harness/manifest.json",
+    "AGENTS_template.md",
+    "AI_ENVIRONMENT_template.md",
+    "CODING_AGENT_RULES_template.md",
+    "LICENSE",
+    "README.md",
+    "SPECS/template.md",
+    "bin/ai-vibe-demo-kit.mjs",
+    "bin/harness.mjs",
+    "harness",
+    "package.json",
+    "project-template.yml",
+    "scripts/check-distribution.mjs",
+    "scripts/harness/ARCHITECTURE.md",
+    "scripts/harness/lib/ARCHITECTURE.md",
+    "scripts/harness/lib/errors.mjs",
+    "scripts/harness/lib/kernel.mjs",
+    "scripts/harness/lib/lifecycle.mjs",
+    "scripts/harness/lib/manifest.mjs",
+    "scripts/harness/lib/path-safety.mjs",
+    "scripts/harness/lib/repository-guard.mjs",
+    "scripts/harness/lib/store.mjs",
+    "scripts/harness/lib/validator.mjs",
+    "scripts/validate-bundled-skill.mjs",
+    "workflows/skills-list.json",
+    "workflows/stage-result-template.json",
+    "workflows/verification-report-template.json",
+    "workflows/workflow-template.json"
+  ],
+  "scripts": {
+    "test": "node --test scripts/harness/test/*.test.mjs",
+    "check:skill": "node scripts/validate-bundled-skill.mjs",
+    "check:distribution": "node scripts/check-distribution.mjs",
+    "pack:dry": "npm pack --dry-run --json",
+    "publish:manual": "npm publish --access public"
+  }
+}

@@ -150,6 +150,53 @@ async function readJsonPath(root, path, errors, code = "E_REFERENCE_INVALID") {
   }
 }
 
+function skillFrontmatter(content) {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/.exec(content);
+  if (!match) return null;
+  const metadata = {};
+  for (const raw of match[1].split(/\r?\n/)) {
+    if (raw.trim() === "") continue;
+    const entry = /^([a-zA-Z0-9_-]+):\s*(.+)$/.exec(raw);
+    if (!entry) return null;
+    let value = entry[2].trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) value = value.slice(1, -1);
+    metadata[entry[1]] = value;
+  }
+  return metadata;
+}
+
+async function validateSkillEntity(root, catalogEntry, call, errors, warnings, path) {
+  const problems = [];
+  if (!object(catalogEntry) || !nonEmpty(catalogEntry.skillRef)) problems.push("catalog entry requires skillRef");
+  const target = catalogEntry?.skillRef ? resolveInside(root, catalogEntry.skillRef) : null;
+  if (catalogEntry?.skillRef && !target) problems.push("skillRef must be a safe repository-relative path");
+  if (target) {
+    try {
+      if (await firstSymlinkInPath(root, target)) problems.push("skillRef must not pass through a symlink");
+      else {
+        const stat = await lstat(target);
+        if (!stat.isFile()) problems.push("skillRef must be a regular file");
+        else {
+          const metadata = skillFrontmatter(await readFile(target, "utf8"));
+          if (!metadata) problems.push("SKILL.md frontmatter is invalid");
+          else {
+            const keys = Object.keys(metadata).sort();
+            if (keys.join(",") !== "description,name") problems.push("SKILL.md frontmatter may contain only name and description");
+            if (metadata.name !== catalogEntry.id) problems.push("SKILL.md name must equal the Catalog id");
+            if (!nonEmpty(metadata.description)) problems.push("SKILL.md description must be non-empty");
+          }
+        }
+      }
+    } catch (error) {
+      problems.push(error.code === "ENOENT" ? "skillRef does not exist" : error.message);
+    }
+  }
+  for (const message of problems) {
+    const targetIssues = call.required ? errors : warnings;
+    targetIssues.push(issue(call.required ? "E_SKILL_ENTITY" : "W_SKILL_UNAVAILABLE", path, message));
+  }
+}
+
 async function validateVerificationReport(root, path, stageConditions, errors) {
   const report = await readJsonPath(root, path, errors, "E_VERIFICATION_REPORT");
   if (!report) return null;
@@ -266,10 +313,10 @@ export async function validateWorkflow(workflow, { root, workflowPath = null } =
   const stageIds = Object.keys(stages);
   if (!stageIds.includes(workflow.initialStage)) errors.push(issue("E_INITIAL_STAGE", "initialStage", "initialStage must name a declared stage"));
 
-  const catalogIds = new Set();
+  const catalogEntries = new Map();
   if (nonEmpty(workflow.skillsCatalogRef) && root) {
     const catalog = await readJsonPath(root, workflow.skillsCatalogRef, errors, "E_SKILL_CATALOG");
-    for (const entry of catalog?.skills ?? []) if (nonEmpty(entry?.id)) catalogIds.add(entry.id);
+    for (const entry of catalog?.skills ?? []) if (nonEmpty(entry?.id)) catalogEntries.set(entry.id, entry);
   }
 
   for (const [stageId, stage] of Object.entries(stages)) {
@@ -291,13 +338,20 @@ export async function validateWorkflow(workflow, { root, workflowPath = null } =
     }
 
     const skills = stage?.skillCalls ?? [];
+    const declaredArtifactIds = new Set((Array.isArray(stage?.requiredArtifacts) ? stage.requiredArtifacts : []).map((entry) => entry?.id));
     if (!Array.isArray(skills)) errors.push(issue("E_SKILLS_INVALID", `${path}.skillCalls`, "skillCalls must be an array"));
     for (const duplicate of duplicates(Array.isArray(skills) ? skills.map((entry) => entry?.id) : [])) errors.push(issue("E_SKILL_DUPLICATE", `${path}.skillCalls`, `duplicate skill call: ${duplicate}`));
     for (const [index, call] of (Array.isArray(skills) ? skills : []).entries()) {
       if (!object(call) || !nonEmpty(call.id) || !ID.test(call.id) || !nonEmpty(call.skill) || !ID.test(call.skill) || typeof call.required !== "boolean") {
         errors.push(issue("E_SKILL_INVALID", `${path}.skillCalls.${index}`, "skill call requires id, skill and boolean required"));
-      } else if (workflow.skillsCatalogRef && !catalogIds.has(call.skill)) {
+      } else if (workflow.skillsCatalogRef && !catalogEntries.has(call.skill)) {
         errors.push(issue("E_SKILL_UNKNOWN", `${path}.skillCalls.${index}.skill`, `skill is not present in catalog: ${call.skill}`));
+      } else {
+        if (call.artifactIds !== undefined && !Array.isArray(call.artifactIds)) errors.push(issue("E_SKILL_ARTIFACTS", `${path}.skillCalls.${index}.artifactIds`, "artifactIds must be an array"));
+        const artifactIds = Array.isArray(call.artifactIds) ? call.artifactIds : [];
+        for (const duplicate of duplicates(artifactIds)) errors.push(issue("E_SKILL_ARTIFACT_DUPLICATE", `${path}.skillCalls.${index}.artifactIds`, `duplicate artifact id: ${duplicate}`));
+        for (const id of artifactIds) if (!nonEmpty(id) || !ID.test(id) || !declaredArtifactIds.has(id)) errors.push(issue("E_SKILL_ARTIFACT_UNKNOWN", `${path}.skillCalls.${index}.artifactIds`, `artifactIds must name current Stage requiredArtifacts: ${String(id)}`));
+        if (root && workflow.skillsCatalogRef) await validateSkillEntity(root, catalogEntries.get(call.skill), call, errors, warnings, `${path}.skillCalls.${index}.skill`);
       }
     }
     const conditionIds = new Set((Array.isArray(conditions) ? conditions : []).map((entry) => entry?.id));
@@ -412,6 +466,7 @@ export async function validateStageResult(workflow, stageId, result, { root } = 
     if (!declaredSkills.has(entry?.id)) errors.push(issue("E_RESULT_SKILL_UNKNOWN", "skills", `unknown skill call: ${entry?.id}`));
     if (!SKILL_STATUSES.has(entry?.status)) errors.push(issue("E_RESULT_SKILL_STATUS", `skills.${entry?.id}`, "skill status is invalid"));
     if (entry?.status === "succeeded" && (!Array.isArray(entry.artifactRefs) || entry.artifactRefs.length === 0)) errors.push(issue("E_RESULT_SKILL_ARTIFACT", `skills.${entry?.id}`, "succeeded skill requires artifactRefs"));
+    for (const duplicate of duplicates(Array.isArray(entry?.artifactRefs) ? entry.artifactRefs : [])) errors.push(issue("E_RESULT_SKILL_ARTIFACT_DUPLICATE", `skills.${entry?.id}.artifactRefs`, `duplicate artifact reference: ${duplicate}`));
     if (entry?.status !== "succeeded" && !nonEmpty(entry?.reason)) errors.push(issue("E_RESULT_REASON_REQUIRED", `skills.${entry?.id}`, "failed or skipped skill requires a reason"));
   }
   for (const call of stage.skillCalls ?? []) {
@@ -426,6 +481,11 @@ export async function validateStageResult(workflow, stageId, result, { root } = 
   const declaredArtifacts = new Map((stage.requiredArtifacts ?? []).map((entry) => [entry.id, entry]));
   for (const skill of skillEntries) {
     for (const ref of skill?.artifactRefs ?? []) if (!artifactMap.has(ref)) errors.push(issue("E_ARTIFACT_REF", `skills.${skill?.id}.artifactRefs`, `artifact reference does not resolve: ${ref}`));
+    const call = declaredSkills.get(skill?.id);
+    if (skill?.status === "succeeded" && call) {
+      const receipt = new Set(skill.artifactRefs ?? []);
+      for (const required of call.artifactIds ?? []) if (!receipt.has(required)) errors.push(issue("E_SKILL_ARTIFACT_REQUIRED", `skills.${skill.id}.artifactRefs`, `required Skill artifact is missing: ${required}`));
+    }
   }
   for (const artifact of artifactEntries) {
     const declaration = declaredArtifacts.get(artifact?.id);

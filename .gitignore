@@ -30,7 +30,9 @@ desktop.ini
 
 # Cache
 .cache/
-.agents/skills/
+.agents/skills/*
+!.agents/skills/ai-vibe-demo-kit/
+!.agents/skills/ai-vibe-demo-kit/**
 .claude/skills/
 private-*/
 private-*.md

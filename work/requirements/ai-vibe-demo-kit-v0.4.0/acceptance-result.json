@@ -1,0 +1,38 @@
+{
+  "outcome": "accepted",
+  "summary": "The complete v0.4.0 candidate satisfies the frozen plan, passes Node 22 and Node 24 verification, and leaves no verification resources or unauthorized release side effects.",
+  "conditions": [
+    {
+      "id": "spec-compliant",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/ai-vibe-demo-kit-v0.4.0/verification-report.json"
+      ]
+    },
+    {
+      "id": "regression-safe",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/ai-vibe-demo-kit-v0.4.0/verification-report.json"
+      ]
+    },
+    {
+      "id": "cleanup-complete",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/ai-vibe-demo-kit-v0.4.0/verification-report.json"
+      ]
+    }
+  ],
+  "skills": [],
+  "artifacts": [
+    {
+      "id": "verification-report",
+      "uri": "work/requirements/ai-vibe-demo-kit-v0.4.0/verification-report.json"
+    },
+    {
+      "id": "handoff",
+      "uri": "work/requirements/ai-vibe-demo-kit-v0.4.0/handoff.md"
+    }
+  ]
+}

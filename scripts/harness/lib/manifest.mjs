@@ -7,7 +7,7 @@ const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[
 function validateManifest(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) fail("E_MANIFEST_INVALID", "Harness manifest must be an object");
   if (value.schemaVersion !== 1) fail("E_MANIFEST_INVALID", "Harness manifest schemaVersion must be 1");
-  if (value.name !== "project-agent-harness") fail("E_MANIFEST_INVALID", "Harness manifest name is invalid");
+  if (value.name !== "ai-vibe-demo-kit") fail("E_MANIFEST_INVALID", "Harness manifest name is invalid");
   if (typeof value.version !== "string" || !SEMVER.test(value.version)) fail("E_MANIFEST_INVALID", "Harness manifest version must be semantic versioning");
   if (typeof value.minimumNodeVersion !== "string" || !/^[1-9]\d*$/.test(value.minimumNodeVersion)) {
     fail("E_MANIFEST_INVALID", "Harness manifest minimumNodeVersion must be a positive major version");

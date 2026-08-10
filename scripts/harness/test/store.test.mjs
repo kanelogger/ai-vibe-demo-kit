@@ -22,6 +22,16 @@ async function waitForPath(path) {
   assert.fail(`timed out waiting for ${path}`);
 }
 
+async function waitForLockOwner(path, pid) {
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    try {
+      if (Number((await readFile(path, "utf8")).trim()) === pid) return;
+    } catch {}
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  assert.fail(`timed out waiting for lock owner ${pid} at ${path}`);
+}
+
 function incrementRevision(state, kind = "test") {
   state.revision += 1;
   return { state, decision: { kind } };
@@ -95,8 +105,7 @@ test("a mutation reclaims a lock after its owner is killed", async (t) => {
   t.after(() => {
     if (worker.exitCode === null && worker.signalCode === null) worker.kill("SIGKILL");
   });
-  await waitForPath(paths.lockPath);
-  assert.equal(Number((await readFile(paths.lockPath, "utf8")).trim()), worker.pid);
+  await waitForLockOwner(paths.lockPath, worker.pid);
   const closed = once(worker, "close");
   assert.equal(worker.kill("SIGKILL"), true);
   const [, signal] = await closed;

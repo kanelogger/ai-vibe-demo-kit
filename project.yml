@@ -1,17 +1,17 @@
 schema_version: 1
 
 project:
-  id: "project-agent-harness"
-  name: "Project Agent Harness"
-  summary: "Zero-dependency repository control layer for Agent workflows, evidence and human gates."
+  id: "ai-vibe-demo-kit"
+  name: "AI Vibe Demo Kit"
+  summary: "Zero-dependency installable and recoverable kit for Agent workflows, evidence and human gates."
   in_scope:
     - "Workflow and Stage Result validation"
     - "Deterministic state transitions and human control"
-    - "Safe installation into Git repositories"
+    - "Safe installation lifecycle in Git repositories"
   out_of_scope:
     - "Executing tests, Skills or business code"
     - "Platform Hooks and remote orchestration"
-    - "Publishing or production writes"
+    - "Automatic publishing or production writes"
 
 repositories:
   primary: "."
@@ -36,8 +36,10 @@ environment:
       required: true
       version_source: "system"
     package_manager:
-      name: "none"
-      reason: "The Runtime has no npm dependencies."
+      name: "npm"
+      version: "11.16.0"
+      version_source: "package.json#packageManager"
+      runtime_requirement: "none; installed Runtime has zero npm dependencies"
     containers:
       runtime: "none-required"
   probes:
@@ -60,14 +62,14 @@ environment:
     - tool: "package-manager"
       command: "npm --version"
       expected_source: "project.yml#environment.toolchains.package_manager"
-      required: false
+      required: true
     - tool: "container-runtime"
       command: "docker --version"
       expected_source: "project.yml#environment.toolchains.containers"
       required: false
 
 commands:
-  install_runtime: "node bin/harness.mjs init --target <git-root>"
+  install_runtime: "npx --yes ai-vibe-demo-kit@0.4.0 init --target <git-root> --json"
   develop: "./harness help"
   test: "node --test scripts/harness/test/*.test.mjs"
   typecheck: null
@@ -77,6 +79,24 @@ commands:
   version: "./harness version --json"
   commit_check: "node scripts/check-commit-messages.mjs <base-ref> HEAD"
   completion_check: "node scripts/check-completion-evidence.mjs <base-ref> HEAD"
+  skill_validation: "node scripts/validate-bundled-skill.mjs"
+  distribution_check: "node scripts/check-distribution.mjs"
+  pack: "npm pack --dry-run --json"
+  publish: "npm publish --access public"
+
+release:
+  profile: "source-only"
+  node_version: "24.18.0"
+  npm_version: "11.16.0"
+  manual_approval_required: true
+  registry_network_required: true
+  canonical_sequence:
+    - "node scripts/validate-bundled-skill.mjs"
+    - "node scripts/check-distribution.mjs"
+    - "node --test scripts/harness/test/*.test.mjs"
+    - "npm pack --dry-run --json"
+    - "npm publish --access public"
+    - "npm view ai-vibe-demo-kit@0.4.0"
 
 authoritative_context:
   agent_entry: "AGENTS.md"

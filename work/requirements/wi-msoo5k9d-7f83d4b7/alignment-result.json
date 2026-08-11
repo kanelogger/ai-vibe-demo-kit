@@ -1,0 +1,34 @@
+{
+  "outcome": "ready",
+  "summary": "已冻结三处分发内容补强范围（specs/template.md 需求简报、rules/git.md 证据同区间、agents_template.md 完成条件证据链）、可观察验收条件、零代码风险与回退边界；环境探测零偏差。",
+  "conditions": [
+    {
+      "id": "acceptance-observable",
+      "status": "passed",
+      "evidenceRefs": ["work/requirements/wi-msoo5k9d-7f83d4b7/spec.md"]
+    },
+    {
+      "id": "risk-classified",
+      "status": "passed",
+      "evidenceRefs": ["work/requirements/wi-msoo5k9d-7f83d4b7/spec.md"]
+    },
+    {
+      "id": "environment-confirmed",
+      "status": "passed",
+      "evidenceRefs": ["work/requirements/wi-msoo5k9d-7f83d4b7/spec.md"]
+    }
+  ],
+  "skills": [
+    {
+      "id": "alignment.harness-guide",
+      "status": "succeeded",
+      "artifactRefs": ["spec"]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "spec",
+      "uri": "work/requirements/wi-msoo5k9d-7f83d4b7/spec.md"
+    }
+  ]
+}

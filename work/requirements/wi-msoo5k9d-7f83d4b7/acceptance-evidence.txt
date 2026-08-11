@@ -1,0 +1,30 @@
+$ ./harness check --json
+valid: true errors: 0 digest: sha256:3b24b01651ed60daa488d18c33cf6931706023914297f66c6fab393ee3267380
+exit=0
+
+$ node scripts/check-distribution.mjs
+distribution: valid
+exit=0
+
+$ node scripts/check-commit-messages.mjs e0f6ba9 HEAD
+commit messages: valid (0)
+exit=0
+
+$ node scripts/check-completion-evidence.mjs e0f6ba9 HEAD
+completion evidence: not required
+exit=0
+
+$ head -1 source/specs/template.md; grep -c ...; git diff --stat
+## 需求简报
+1
+source/rules/git.md:1
+source/agents_template.md:1
+1
+ source/agents_template.md | 2 ++
+ source/rules/git.md       | 2 +-
+ source/specs/template.md  | 8 ++++++++
+ 3 files changed, 11 insertions(+), 1 deletion(-)
+exit=0
+
+$ ls /tmp/qe-*
+ls: cannot access '/tmp/qe-*': No such file or directory

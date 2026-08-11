@@ -1,0 +1,40 @@
+{
+  "outcome": "ready-for-acceptance",
+  "summary": "The root npm publish script is implemented with pinned toolchain, Git, registry and confirmation guards, and its isolated dry run passes all canonical checks.",
+  "conditions": [
+    {
+      "id": "scope-complete",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/npm-publish-script/implementation-notes.md"
+      ]
+    },
+    {
+      "id": "quick-evidence-current",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/npm-publish-script/quick-evidence.md"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "id": "implementation.harness-guide",
+      "status": "succeeded",
+      "artifactRefs": [
+        "implementation-notes",
+        "quick-evidence"
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "implementation-notes",
+      "uri": "work/requirements/npm-publish-script/implementation-notes.md"
+    },
+    {
+      "id": "quick-evidence",
+      "uri": "work/requirements/npm-publish-script/quick-evidence.md"
+    }
+  ]
+}

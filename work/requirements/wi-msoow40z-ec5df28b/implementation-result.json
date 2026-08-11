@@ -1,0 +1,33 @@
+{
+  "outcome": "ready-for-acceptance",
+  "summary": "四处修改已按冻结 spec 完成：specs/template.md 三问第 2/3 条恢复文章版（第 1 条、定位句与实现段落未动）；rules/testing.md 在 Required Checks 与 Reporting 之间新增性能与结构审查节；rules/git.md 补并行实现验证后必须删除旧路径规则；plan.md 待随区间以 docs 提交。无范围外改动。",
+  "conditions": [
+    {
+      "id": "scope-complete",
+      "status": "passed",
+      "evidenceRefs": ["work/requirements/wi-msoow40z-ec5df28b/implementation-notes.md"]
+    },
+    {
+      "id": "quick-evidence-current",
+      "status": "passed",
+      "evidenceRefs": ["work/requirements/wi-msoow40z-ec5df28b/quick-evidence.md"]
+    }
+  ],
+  "skills": [
+    {
+      "id": "implementation.harness-guide",
+      "status": "succeeded",
+      "artifactRefs": ["implementation-notes", "quick-evidence"]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "implementation-notes",
+      "uri": "work/requirements/wi-msoow40z-ec5df28b/implementation-notes.md"
+    },
+    {
+      "id": "quick-evidence",
+      "uri": "work/requirements/wi-msoow40z-ec5df28b/quick-evidence.md"
+    }
+  ]
+}

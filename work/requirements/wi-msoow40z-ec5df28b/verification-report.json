@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "summary": "四处修改的验收矩阵全部通过：Harness 契约有效（digest 不变）、分发树与 manifest 一致；内容抽检确认 spec 验收标准 1-4 落地（文章版三问、性能与结构审查节、删除旧路径规则、plan.md 非空），manifest/package.json/workflow-template 零改动。全量 node --test 按 docs-only 跳过并在 c6 记录原因与风险。c3/c4 当前为含 0 提交的基线运行（exit 0），决定性复验在 5 个提交全部完成后、acceptance signal 之前执行（本区间第 8 步），预期 commit messages: valid (5) 与 completion evidence: valid (1)。验证临时文件已清理，无残留资源。",
+  "conditions": [
+    {
+      "id": "spec-compliant",
+      "status": "passed",
+      "checkRefs": ["c1", "c2", "c5"],
+      "cleanupRefs": [],
+      "evidenceRefs": ["work/requirements/wi-msoow40z-ec5df28b/spec.md", "work/requirements/wi-msoow40z-ec5df28b/acceptance-evidence.txt"]
+    },
+    {
+      "id": "regression-safe",
+      "status": "passed",
+      "checkRefs": ["c1", "c2", "c3", "c4"],
+      "cleanupRefs": [],
+      "evidenceRefs": ["work/requirements/wi-msoow40z-ec5df28b/acceptance-evidence.txt"]
+    },
+    {
+      "id": "cleanup-complete",
+      "status": "passed",
+      "checkRefs": [],
+      "cleanupRefs": ["cl1"],
+      "evidenceRefs": ["work/requirements/wi-msoow40z-ec5df28b/acceptance-evidence.txt"]
+    }
+  ],
+  "checks": [
+    {
+      "id": "c1",
+      "kind": "automated",
+      "command": "./harness check --json",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": ["work/requirements/wi-msoow40z-ec5df28b/acceptance-evidence.txt"]
+    },
+    {
+      "id": "c2",
+      "kind": "automated",
+      "command": "node scripts/check-distribution.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": ["work/requirements/wi-msoow40z-ec5df28b/acceptance-evidence.txt"]
+    },
+    {
+      "id": "c3",
+      "kind": "automated",
+      "command": "node scripts/check-commit-messages.mjs 94ace48 HEAD",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": ["work/requirements/wi-msoow40z-ec5df28b/acceptance-evidence.txt"]
+    },
+    {
+      "id": "c4",
+      "kind": "automated",
+      "command": "node scripts/check-completion-evidence.mjs 94ace48 HEAD",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": ["work/requirements/wi-msoow40z-ec5df28b/acceptance-evidence.txt"]
+    },
+    {
+      "id": "c5",
+      "kind": "automated",
+      "command": "grep -c '这一版做什么：本期范围与交付物边界。' source/specs/template.md; grep -c '暂时不做什么：明确排除的范围与边界。' source/specs/template.md; grep -c '## 性能与结构审查' source/rules/testing.md; grep -c '替换验证通过后必须删除旧路径' source/rules/git.md; grep -c '实现<SPEC>。在工作过程中' source/specs/template.md; grep -c '执行版三问' source/specs/template.md; test -s plan.md; git status --porcelain; git diff --stat -- source/manifest.json package.json source/workflows/workflow-template.json",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": ["work/requirements/wi-msoow40z-ec5df28b/acceptance-evidence.txt"]
+    },
+    {
+      "id": "c6",
+      "kind": "automated",
+      "command": "node --test test/runtime/*.test.mjs test/distribution/*.test.mjs",
+      "status": "skipped",
+      "exitCode": null,
+      "reason": "docs-only 内容变更（三个 Markdown 分发文件 + plan.md，零代码改动），plan.md 验证矩阵不强制全量测试；风险：无运行时行为变化可回归，c1/c2 已覆盖契约与分发一致性",
+      "evidenceRefs": []
+    }
+  ],
+  "cleanup": [
+    {
+      "id": "cl1",
+      "resource": "验证临时文件 /tmp/qe2-check.json 与 /tmp/qe2-dist.txt",
+      "action": "rm -f 删除并用 ls 确认不存在；仓库内无测试数据、账户或进程产生",
+      "status": "removed",
+      "evidenceRefs": ["work/requirements/wi-msoow40z-ec5df28b/acceptance-evidence.txt"]
+    }
+  ]
+}

@@ -9,15 +9,14 @@ const ACCEPTANCE_RESULT = /^work\/requirements\/[^/]+\/acceptance-result\.json$/
 const GOVERNED_PATHS = [
   /^harness$/,
   /^bin\//,
+  /^src\//,
+  /^test\//,
   /^scripts\//,
-  /^workflows\//,
+  /^source\//,
   /^\.harness\//,
   /^\.github\/workflows\//,
   /^(?:AGENTS|AGENTS_template|ARCHITECTURE|README)\.md$/,
   /^project(?:-template)?\.yml$/,
-  /^rules\//,
-  /^SPECS\//,
-  /^knowledge\//,
 ];
 
 function validRef(value) {
@@ -37,7 +36,7 @@ function workflowForResult(path, cwd) {
     return sibling;
   } catch (error) {
     if (error.code !== "ENOENT") return sibling;
-    return "workflows/workflow-template.json";
+    return "source/workflows/workflow-template.json";
   }
 }
 
@@ -53,7 +52,7 @@ export function checkCompletionEvidence(base, head, { cwd = process.cwd() } = {}
   for (const path of results) {
     const workflow = workflowForResult(path, cwd);
     const checked = spawnSync(process.execPath, [
-      resolve(cwd, "bin/harness.mjs"),
+      resolve(cwd, "harness"),
       "check-result",
       "--workflow", workflow,
       "--stage", "acceptance",

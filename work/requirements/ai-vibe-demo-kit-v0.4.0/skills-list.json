@@ -1,6 +1,0 @@
-{
-  "schemaVersion": 1,
-  "catalogId": "ai-vibe-demo-kit-v0.4.0-delivery-skills",
-  "description": "Frozen empty catalog for the implementation Work Item. Skill use is recorded in Evidence instead of enforced by this bootstrap workflow.",
-  "skills": []
-}

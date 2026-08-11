@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "summary": "The pre-release cleanup removed obsolete tracked and ignored artifacts, retained canonical Source and Runtime assets, and passes the full regression, distribution, bundled Skill, package and whitespace checks.",
+  "conditions": [
+    {
+      "id": "spec-compliant",
+      "status": "passed",
+      "checkRefs": [
+        "post-cleanup-audit",
+        "distribution-contract",
+        "bundled-skill-contract"
+      ],
+      "cleanupRefs": [],
+      "evidenceRefs": [
+        "work/requirements/release-cleanup/implementation-notes.md"
+      ]
+    },
+    {
+      "id": "regression-safe",
+      "status": "passed",
+      "checkRefs": [
+        "full-suite",
+        "package-dry-run",
+        "diff-check"
+      ],
+      "cleanupRefs": [],
+      "evidenceRefs": [
+        "work/requirements/release-cleanup/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "cleanup-complete",
+      "status": "passed",
+      "checkRefs": [],
+      "cleanupRefs": [
+        "tracked-obsolete-artifacts",
+        "ignored-local-artifacts",
+        "temporary-verification-resources",
+        "external-release-side-effects"
+      ],
+      "evidenceRefs": [
+        "work/requirements/release-cleanup/quick-evidence.md"
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "id": "post-cleanup-audit",
+      "kind": "automated",
+      "command": "assert exact removal targets are absent, protected paths remain, and maintained files have no obsolete references",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/release-cleanup/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "distribution-contract",
+      "kind": "automated",
+      "command": "node scripts/check-distribution.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/release-cleanup/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "bundled-skill-contract",
+      "kind": "automated",
+      "command": "node scripts/validate-bundled-skill.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/release-cleanup/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "full-suite",
+      "kind": "automated",
+      "command": "node --test --test-reporter=dot test/runtime/*.test.mjs test/distribution/*.test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/release-cleanup/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "package-dry-run",
+      "kind": "automated",
+      "command": "npm pack --dry-run --json --cache /tmp/release-cleanup-npm-cache.<temporary>",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/release-cleanup/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "diff-check",
+      "kind": "automated",
+      "command": "git diff --check",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/release-cleanup/quick-evidence.md"
+      ]
+    }
+  ],
+  "cleanup": [
+    {
+      "id": "tracked-obsolete-artifacts",
+      "resource": ".agents/skills.lock.json and work/requirements/ai-vibe-demo-kit-v0.4.0/",
+      "action": "removed the obsolete lock and ten invalid historical Evidence files",
+      "status": "removed",
+      "evidenceRefs": [
+        "work/requirements/release-cleanup/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "ignored-local-artifacts",
+      "resource": ".DS_Store and ignored external Skill materialization/cache paths",
+      "action": "removed macOS metadata, obsolete nested ignore rules and 324 local external Skill files while preserving bundled ai-vibe-demo-kit",
+      "status": "removed",
+      "evidenceRefs": [
+        "work/requirements/release-cleanup/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "temporary-verification-resources",
+      "resource": "temporary test log, npm cache and package JSON output under /tmp",
+      "action": "removed exact temporary paths after verification",
+      "status": "removed",
+      "evidenceRefs": [
+        "work/requirements/release-cleanup/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "external-release-side-effects",
+      "resource": "Git commit, tag, push, npm publication and global npm cache",
+      "action": "kept outside cleanup authority",
+      "status": "not-created",
+      "reason": "No release or external write was attempted; the root-owned global npm cache remains an environment constraint."
+    }
+  ]
+}

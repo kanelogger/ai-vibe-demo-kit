@@ -2,7 +2,7 @@
 import { lstat, readFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseSkillDocument } from "./harness/lib/validator.mjs";
+import { parseSkillDocument } from "../src/runtime/validation/index.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const skillRoot = join(root, ".agents", "skills", "ai-vibe-demo-kit");

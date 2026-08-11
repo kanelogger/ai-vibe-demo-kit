@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "summary": "The CLI distributes a canonical complete Source tree, preserves lifecycle safety and compatibility, and passes all candidate regression, package and cleanup checks.",
+  "conditions": [
+    {
+      "id": "spec-compliant",
+      "status": "passed",
+      "checkRefs": [
+        "distribution-contract",
+        "bundled-skill-contract",
+        "source-layout",
+        "end-to-end-lifecycle",
+        "full-suite"
+      ],
+      "cleanupRefs": [],
+      "evidenceRefs": [
+        "work/requirements/source-distribution-refactor/implementation-notes.md"
+      ]
+    },
+    {
+      "id": "regression-safe",
+      "status": "passed",
+      "checkRefs": [
+        "full-suite",
+        "end-to-end-lifecycle",
+        "package-dry-run",
+        "diff-check"
+      ],
+      "cleanupRefs": [],
+      "evidenceRefs": [
+        "work/requirements/source-distribution-refactor/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "cleanup-complete",
+      "status": "passed",
+      "checkRefs": [],
+      "cleanupRefs": [
+        "temporary-test-resources",
+        "isolated-npm-cache",
+        "external-release-side-effects"
+      ],
+      "evidenceRefs": [
+        "work/requirements/source-distribution-refactor/quick-evidence.md"
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "id": "distribution-contract",
+      "kind": "automated",
+      "command": "node scripts/check-distribution.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/source-distribution-refactor/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "bundled-skill-contract",
+      "kind": "automated",
+      "command": "node scripts/validate-bundled-skill.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/source-distribution-refactor/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "source-layout",
+      "kind": "manual",
+      "command": "inspect source/ tree, manifest identities, remote-only registry and legacy-root absence",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/source-distribution-refactor/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "full-suite",
+      "kind": "automated",
+      "command": "node --test test/runtime/*.test.mjs test/distribution/*.test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/source-distribution-refactor/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "end-to-end-lifecycle",
+      "kind": "automated",
+      "command": "initialize temporary Git repository; run CLI init; run installed harness check; run same-version upgrade --apply; run uninstall --apply; inspect remaining paths",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/source-distribution-refactor/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "package-dry-run",
+      "kind": "automated",
+      "command": "NPM_CONFIG_CACHE=/tmp/ai-vibe-demo-kit-source-refactor-npm npm pack --dry-run --json",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/source-distribution-refactor/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "diff-check",
+      "kind": "automated",
+      "command": "git diff --check",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/source-distribution-refactor/quick-evidence.md"
+      ]
+    }
+  ],
+  "cleanup": [
+    {
+      "id": "temporary-test-resources",
+      "resource": "temporary Git repositories, npm installs, tarballs, lifecycle transactions and child processes created by tests and end-to-end audit",
+      "action": "test helpers removed registered resources and the explicit end-to-end repository was removed after inspection",
+      "status": "removed",
+      "evidenceRefs": [
+        "work/requirements/source-distribution-refactor/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "isolated-npm-cache",
+      "resource": "/tmp/ai-vibe-demo-kit-source-refactor-npm",
+      "action": "removed the exact isolated npm cache after package verification",
+      "status": "removed",
+      "evidenceRefs": [
+        "work/requirements/source-distribution-refactor/quick-evidence.md"
+      ]
+    },
+    {
+      "id": "external-release-side-effects",
+      "resource": "npm publication, Git commit, tag, push and external-system writes",
+      "action": "kept outside implementation authorization",
+      "status": "not-created",
+      "reason": "No release or remote mutation was attempted."
+    }
+  ]
+}

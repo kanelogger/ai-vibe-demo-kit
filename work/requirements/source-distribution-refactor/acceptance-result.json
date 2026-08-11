@@ -1,0 +1,47 @@
+{
+  "outcome": "accepted",
+  "summary": "The Source distribution candidate matches the confirmed scope, passes 141 tests and all package/contract checks, and leaves no verification or release side effects.",
+  "conditions": [
+    {
+      "id": "spec-compliant",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/source-distribution-refactor/verification-report.json"
+      ]
+    },
+    {
+      "id": "regression-safe",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/source-distribution-refactor/verification-report.json"
+      ]
+    },
+    {
+      "id": "cleanup-complete",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/source-distribution-refactor/verification-report.json"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "id": "acceptance.harness-guide",
+      "status": "succeeded",
+      "artifactRefs": [
+        "verification-report",
+        "handoff"
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "verification-report",
+      "uri": "work/requirements/source-distribution-refactor/verification-report.json"
+    },
+    {
+      "id": "handoff",
+      "uri": "work/requirements/source-distribution-refactor/handoff.md"
+    }
+  ]
+}

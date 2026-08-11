@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { HarnessError } from "../scripts/harness/lib/errors.mjs";
-import { exitCodeForStatus, runDistributionCommand } from "../scripts/harness/lib/lifecycle.mjs";
-import { loadHarnessManifest } from "../scripts/harness/lib/manifest.mjs";
+import { HarnessError } from "../src/shared/errors.mjs";
+import { exitCodeForStatus, runDistributionCommand } from "../src/distribution/lifecycle.mjs";
+import { loadHarnessManifest } from "../src/shared/manifest.mjs";
 
 const SOURCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const HELP = `Usage:

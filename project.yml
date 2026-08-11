@@ -3,11 +3,12 @@ schema_version: 1
 project:
   id: "ai-vibe-demo-kit"
   name: "AI Vibe Demo Kit"
-  summary: "Zero-dependency installable and recoverable kit for Agent workflows, evidence and human gates."
+  summary: "Zero-dependency CLI for distributing a recoverable Coding Agent Source and controlling its workflows."
   in_scope:
     - "Workflow and Stage Result validation"
     - "Deterministic state transitions and human control"
     - "Safe installation lifecycle in Git repositories"
+    - "Versioned distribution of knowledge, rules, specs, workflows and project templates under source/"
   out_of_scope:
     - "Executing tests, Skills or business code"
     - "Platform Hooks and remote orchestration"
@@ -71,11 +72,11 @@ environment:
 commands:
   install_runtime: "npx --yes ai-vibe-demo-kit@0.4.0 init --target <git-root> --json"
   develop: "./harness help"
-  test: "node --test scripts/harness/test/*.test.mjs"
+  test: "node --test test/runtime/*.test.mjs test/distribution/*.test.mjs"
   typecheck: null
   lint: null
   build: null
-  harness_check: "./harness check --json"
+  harness_check: "./harness check --workflow source/workflows/workflow-template.json --json"
   version: "./harness version --json"
   commit_check: "node scripts/check-commit-messages.mjs <base-ref> HEAD"
   completion_check: "node scripts/check-completion-evidence.mjs <base-ref> HEAD"
@@ -93,7 +94,7 @@ release:
   canonical_sequence:
     - "node scripts/validate-bundled-skill.mjs"
     - "node scripts/check-distribution.mjs"
-    - "node --test scripts/harness/test/*.test.mjs"
+    - "node --test test/runtime/*.test.mjs test/distribution/*.test.mjs"
     - "npm pack --dry-run --json"
     - "npm publish --access public"
     - "npm view ai-vibe-demo-kit@0.4.0"
@@ -101,30 +102,34 @@ release:
 authoritative_context:
   agent_entry: "AGENTS.md"
   architecture: "ARCHITECTURE.md"
-  knowledge_index: "knowledge/INDEX.md"
-  knowledge_routing: "knowledge/ROUTING.md"
-  rules: "rules/"
-  specs: "SPECS/"
+  source_manifest: "source/manifest.json"
+  knowledge_index: "source/knowledge/INDEX.md"
+  knowledge_routing: "source/knowledge/ROUTING.md"
+  rules: "source/rules/"
+  specs: "source/specs/"
 
 architecture_memory:
   filename: "ARCHITECTURE.md"
   code_roots:
     - "bin"
+    - "src"
     - "scripts"
   exclude:
-    - "scripts/harness/test"
+    - "test"
+    - "payload"
     - "**/fixtures"
     - "**/generated"
 
 capabilities:
+  skill_sources: "source/.agents/skills.sources.json"
   installed_skills: ".agents/skills/"
 
 workflow:
-  definitions: "workflows/"
-  default: "workflows/workflow-template.json"
+  definitions: "source/workflows/"
+  default: "source/workflows/workflow-template.json"
   active_state: ".git/harness/control.json"
-  stage_result_template: "workflows/stage-result-template.json"
-  verification_report_template: "workflows/verification-report-template.json"
+  stage_result_template: "source/workflows/stage-result-template.json"
+  verification_report_template: "source/workflows/verification-report-template.json"
   evidence_root: "work/requirements/"
 
 permissions:

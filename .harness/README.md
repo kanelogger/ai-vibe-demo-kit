@@ -6,7 +6,7 @@
 ./harness check
 ./harness check-environment --file AI_ENVIRONMENT.md --json
 ./harness version --json
-./harness start --workflow workflows/workflow-template.json --intent "<goal>"
+./harness start --workflow source/workflows/workflow-template.json --intent "<goal>"
 ./harness status --json
 ./harness check-result --workflow <workflow.json> --stage <stage> --file <stage-result.json> --require-complete --json
 ./harness signal --revision <n> --file <stage-result.json>
@@ -15,7 +15,7 @@
 
 运行 `./harness help` 查看完整参数。Harness 只控制和校验 Workflow，不执行 Skill、测试、Shell、Git 提交或外部写入。
 
-Distribution Lifecycle 完成且 `./harness check --json` 通过只表示 **Runtime-ready**。达到 **Governance-ready** 还需要：在不覆盖现有文件的前提下将 `AGENTS_template.md`、`project-template.yml`、`AI_ENVIRONMENT_template.md` 分别提升为 `AGENTS.md`、`project.yml`、`AI_ENVIRONMENT.md`，填写全部占位符，通过 `check-environment`，按需从 Kit 选择 `knowledge/`、`rules/` 和架构模板，扩展已安装的 `SPECS/template.md`，并用代码、配置、实际探测或负责人确认每条项目事实。空模板不能作为正式知识引用。达到 **Completion-evidence-ready** 还需要提交 acceptance Stage Result 与 `verification-report/v1`，并由 Agent 或 CI 调用 `check-result --require-complete`。
+Distribution Lifecycle 完成且 `./harness check --json` 通过只表示 **Runtime-ready**。达到 **Governance-ready** 还需要：在不覆盖现有文件的前提下将 `source/agents_template.md`、`source/project-template.yml`、`source/ai_environment_template.md` 分别提升为 `AGENTS.md`、`project.yml`、`AI_ENVIRONMENT.md`，填写全部占位符，通过 `check-environment`，并用代码、配置、实际探测或负责人确认每条项目事实。`source/knowledge/`、`source/rules/`、`source/specs/` 和 `source/workflows/` 是 Lifecycle 管理的上游资料，项目专属内容不得直接写入 Source。达到 **Completion-evidence-ready** 还需要提交 acceptance Stage Result 与 `verification-report/v1`，并由 Agent 或 CI 调用 `check-result --require-complete`。
 
 `signal --json` 的无错误响应包含 `applied` 和 `requiresHumanAction`。进入 Human Gate 或 Policy Block 时 Stage Result 已持久化，但命令仍返回退出码 `1`；同内容、同 Revision 重试返回 `applied: false` 和退出码 `0`。
 
@@ -23,6 +23,8 @@ Mutation 锁位于 `.git/harness/control.lock`，Runtime 和 Distribution Lifecy
 
 发行身份位于 `.harness/manifest.json`，变更记录位于 `.harness/CHANGELOG.md`。升级使用目标 npm 版本的 `ai-vibe-demo-kit upgrade` 先计划再应用；不自动覆盖第三状态内容或合并治理文件。
 
+安装后的生产投影位于 `.harness/runtime/` 与 `.harness/shared/`，根目录 `harness` 只加载 `.harness/runtime/cli.mjs`。`.harness/manifest.json` schema v2 通过 `capabilities.commands` 和 `capabilities.contracts` 明确声明 Runtime 能力；Doctor 不读取 JavaScript 源码文本。
+
 `check-result` 是无状态检查：它不读取本地控制历史，也不证明 Human Gate 已批准。`completionEligible: true` 表示结果结构、Policy 和完成 Transition 均满足；`requiresHumanApproval` 表示仍需外部人工决策。
 
-Distribution Lifecycle 只安装 Manifest 中的 Runtime、内置 Skill、默认 Workflow 和入口模板；`knowledge/`、`rules/` 等项目内容由目标仓库自行选择和维护，不属于 Runtime-ready 的自动安装范围。
+Distribution Lifecycle 安装 Runtime、内置控制 Skill 和完整 `source/`。Source 由 `source/manifest.json` 与安装账本管理；项目生效治理文件和用户 Workflow 位于 Source 外，不由 Lifecycle 接管。

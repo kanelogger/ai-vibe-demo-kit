@@ -2,26 +2,24 @@
 
 ## Responsibility
 
-保存 Harness Library、仓库级确定性检查脚本及其测试入口。
+保存仓库、CI 与发布投影检查。生产 Runtime、Distribution 和 Shared 实现全部位于 `src/`。
 
 ## Module Index
 
-| Module | Interface | Responsibility |
-| --- | --- | --- |
-| Harness Runtime | `harness/ARCHITECTURE.md` | 状态、校验、生命周期和路径安全 |
-| Distribution Check | `check-distribution.mjs` | Manifest 自举、身份、files 投影和 tarball 校验 |
-| Bundled Skill Check | `validate-bundled-skill.mjs` | 内置 Skill 与 OpenAI metadata 的零依赖校验 |
-| Commit Message Check | `check-commit-messages.mjs <base> <head>` | 校验新增提交主题 |
-| Completion Evidence Check | `check-completion-evidence.mjs <base> <head>` | 使用 acceptance Result 同目录 Workflow（缺失时回退默认 Workflow）校验受治理变更 Evidence |
+| Script | Responsibility |
+| --- | --- |
+| `check-distribution.mjs` | Source 完整性、Manifest 自举、package files 与 tarball 投影校验 |
+| `validate-bundled-skill.mjs` | 内置 Skill 和 metadata 校验 |
+| `check-commit-messages.mjs` | 校验指定 Git 范围的提交主题 |
+| `check-completion-evidence.mjs` | 使用公开 Runtime CLI 校验 acceptance Evidence |
 
 ## Invariants
 
-- 检查脚本只读取 Git 和工作树事实。
-- 脚本通过稳定退出码表达结果，不修改业务文件或 Git 历史。
-- Harness Library 只依赖 Node.js 标准库。
+- 检查脚本只读取 Git、发行投影和工作树事实。
+- 脚本不实现 Runtime 或 Lifecycle 领域规则，不修改业务文件或 Git 历史。
 
 ## Verification
 
 ```sh
-node --test scripts/harness/test/*.test.mjs
+node --test test/distribution/*.test.mjs
 ```

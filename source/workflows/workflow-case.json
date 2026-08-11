@@ -1,0 +1,253 @@
+{
+  "caseKind": "illustrative-completed-control-record",
+  "description": "A compact v2 example showing policy override, human gates, pause/resume and redirect without executing work.",
+  "state": {
+    "schemaVersion": 1,
+    "revision": 14,
+    "active": null,
+    "last": {
+      "id": "wi-example-control",
+      "intent": "Reject an ineligible cancellation before any durable outbox write.",
+      "workflow": {
+        "id": "risk-adaptive-skill-workflow",
+        "version": 1,
+        "ref": "source/workflows/workflow-template.json",
+        "digest": "example://workflow-digest"
+      },
+      "status": "completed-with-override",
+      "stage": "acceptance",
+      "pendingGate": null,
+      "pendingPolicy": null,
+      "paused": null,
+      "acceptedRisks": [
+        "risk-classified"
+      ],
+      "results": [
+        {
+          "id": "result-1",
+          "stage": "alignment",
+          "status": "current",
+          "digest": "example://alignment-result",
+          "value": {
+            "outcome": "ready",
+            "summary": "Acceptance is observable; rollback owner is temporarily unavailable.",
+            "conditions": [
+              {
+                "id": "acceptance-observable",
+                "status": "passed",
+                "evidenceRefs": [
+                  "example://spec"
+                ]
+              },
+              {
+                "id": "risk-classified",
+                "status": "failed",
+                "reason": "Rollback owner is unavailable.",
+                "evidenceRefs": []
+              }
+            ],
+            "skills": [
+              {
+                "id": "alignment.spec",
+                "status": "succeeded",
+                "artifactRefs": [
+                  "spec"
+                ]
+              },
+              {
+                "id": "alignment.diagnose",
+                "status": "skipped",
+                "reason": "Diagnosis already exists."
+              }
+            ],
+            "artifacts": [
+              {
+                "id": "spec",
+                "uri": "example://spec"
+              }
+            ]
+          },
+          "recordedAt": "2026-08-08T09:10:00.000Z"
+        },
+        {
+          "id": "result-2",
+          "stage": "implementation",
+          "status": "superseded",
+          "digest": "example://implementation-first",
+          "value": {
+            "outcome": "ready-for-acceptance",
+            "summary": "First candidate sent to acceptance."
+          },
+          "recordedAt": "2026-08-08T10:10:00.000Z"
+        },
+        {
+          "id": "result-3",
+          "stage": "implementation",
+          "status": "current",
+          "digest": "example://implementation-second",
+          "value": {
+            "outcome": "ready-for-acceptance",
+            "summary": "Redirected changes completed."
+          },
+          "recordedAt": "2026-08-08T11:10:00.000Z"
+        },
+        {
+          "id": "result-4",
+          "stage": "acceptance",
+          "status": "current",
+          "digest": "example://acceptance-result",
+          "value": {
+            "outcome": "accepted",
+            "summary": "Verification and cleanup passed."
+          },
+          "recordedAt": "2026-08-08T12:00:00.000Z"
+        }
+      ],
+      "decisions": [
+        {
+          "action": "override",
+          "actor": "user",
+          "reason": "Accept temporary rollback-owner risk for the prototype.",
+          "at": "2026-08-08T09:12:00.000Z",
+          "transitionId": "alignment-ready",
+          "acceptedRisks": [
+            "risk-classified"
+          ]
+        },
+        {
+          "action": "approve",
+          "actor": "user",
+          "reason": "Alignment is sufficient to begin implementation.",
+          "at": "2026-08-08T09:15:00.000Z",
+          "transitionId": "alignment-ready"
+        },
+        {
+          "action": "pause",
+          "actor": "user",
+          "reason": "Inspect the candidate before continuing.",
+          "at": "2026-08-08T09:40:00.000Z"
+        },
+        {
+          "action": "resume",
+          "actor": "user",
+          "reason": "Inspection completed.",
+          "at": "2026-08-08T09:45:00.000Z"
+        },
+        {
+          "action": "redirect",
+          "actor": "user",
+          "reason": "Acceptance found a missing compatibility case.",
+          "at": "2026-08-08T10:30:00.000Z",
+          "target": "implementation"
+        },
+        {
+          "action": "approve",
+          "actor": "user",
+          "reason": "Accept the verified candidate and recorded risk.",
+          "at": "2026-08-08T12:05:00.000Z",
+          "transitionId": "acceptance-approved"
+        }
+      ],
+      "events": [
+        {
+          "sequence": 1,
+          "type": "work-started",
+          "at": "2026-08-08T09:00:00.000Z",
+          "stage": "alignment"
+        },
+        {
+          "sequence": 2,
+          "type": "policy-blocked",
+          "at": "2026-08-08T09:10:00.000Z",
+          "transitionId": "alignment-ready",
+          "unmet": [
+            "risk-classified"
+          ]
+        },
+        {
+          "sequence": 3,
+          "type": "human-decision",
+          "at": "2026-08-08T09:12:00.000Z",
+          "action": "override",
+          "actor": "user"
+        },
+        {
+          "sequence": 4,
+          "type": "gate-pending",
+          "at": "2026-08-08T09:12:00.000Z",
+          "transitionId": "alignment-ready"
+        },
+        {
+          "sequence": 5,
+          "type": "human-decision",
+          "at": "2026-08-08T09:15:00.000Z",
+          "action": "approve",
+          "actor": "user"
+        },
+        {
+          "sequence": 6,
+          "type": "stage-entered",
+          "at": "2026-08-08T09:15:00.000Z",
+          "stage": "implementation"
+        },
+        {
+          "sequence": 7,
+          "type": "human-decision",
+          "at": "2026-08-08T09:40:00.000Z",
+          "action": "pause",
+          "actor": "user"
+        },
+        {
+          "sequence": 8,
+          "type": "human-decision",
+          "at": "2026-08-08T09:45:00.000Z",
+          "action": "resume",
+          "actor": "user"
+        },
+        {
+          "sequence": 9,
+          "type": "stage-entered",
+          "at": "2026-08-08T10:10:00.000Z",
+          "stage": "acceptance"
+        },
+        {
+          "sequence": 10,
+          "type": "human-decision",
+          "at": "2026-08-08T10:30:00.000Z",
+          "action": "redirect",
+          "actor": "user",
+          "target": "implementation"
+        },
+        {
+          "sequence": 11,
+          "type": "stage-entered",
+          "at": "2026-08-08T10:30:00.000Z",
+          "stage": "implementation",
+          "redirected": true
+        },
+        {
+          "sequence": 12,
+          "type": "stage-entered",
+          "at": "2026-08-08T11:10:00.000Z",
+          "stage": "acceptance"
+        },
+        {
+          "sequence": 13,
+          "type": "gate-pending",
+          "at": "2026-08-08T12:00:00.000Z",
+          "transitionId": "acceptance-approved"
+        },
+        {
+          "sequence": 14,
+          "type": "work-closed",
+          "at": "2026-08-08T12:05:00.000Z",
+          "outcome": "completed-with-override"
+        }
+      ],
+      "createdAt": "2026-08-08T09:00:00.000Z",
+      "updatedAt": "2026-08-08T12:05:00.000Z",
+      "closedAt": "2026-08-08T12:05:00.000Z",
+      "outcome": "completed-with-override"
+    }
+  }
+}

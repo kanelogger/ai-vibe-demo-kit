@@ -1,0 +1,42 @@
+{
+  "outcome": "ready",
+  "summary": "The release cleanup scope, exact deletion targets, preservation boundaries, environment and recovery risks are recorded.",
+  "conditions": [
+    {
+      "id": "acceptance-observable",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/release-cleanup/alignment.md"
+      ]
+    },
+    {
+      "id": "risk-classified",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/release-cleanup/alignment.md"
+      ]
+    },
+    {
+      "id": "environment-confirmed",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/release-cleanup/alignment.md"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "id": "alignment.harness-guide",
+      "status": "succeeded",
+      "artifactRefs": [
+        "spec"
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "spec",
+      "uri": "work/requirements/release-cleanup/alignment.md"
+    }
+  ]
+}

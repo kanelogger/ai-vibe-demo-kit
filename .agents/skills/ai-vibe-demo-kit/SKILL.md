@@ -1,6 +1,6 @@
 ---
 name: ai-vibe-demo-kit
-description: "Guide agents through an installed AI Vibe Demo Kit Harness: inspect environment and readiness, follow Workflow and Gate state, produce Stage Results and verification evidence, and use lifecycle commands safely. Use when a repository contains ./harness, .harness/manifest.json, or workflows/workflow-template.json, or when the user asks to operate, diagnose, upgrade, recover, or uninstall AI Vibe Demo Kit."
+description: "Guide agents through an installed AI Vibe Demo Kit Harness: inspect environment and readiness, follow Workflow and Gate state, produce Stage Results and verification evidence, and use lifecycle commands safely. Use when a repository contains ./harness, .harness/manifest.json, or source/workflows/workflow-template.json, or when the user asks to operate, diagnose, upgrade, recover, or uninstall AI Vibe Demo Kit."
 ---
 
 # AI Vibe Demo Kit
@@ -12,7 +12,7 @@ external writes.
 ## Cold start
 
 1. Read `AGENTS.md`, `project.yml`, `ARCHITECTURE.md` and the minimum context routed by
-   `knowledge/ROUTING.md` when those files exist.
+   `source/knowledge/ROUTING.md` when those files exist.
 2. Run every required command in `project.yml#environment.probes`. Stop before implementation
    when a required probe is incompatible; record actual values and deviations in alignment Evidence.
 3. Run `./harness check --json` and `./harness status --json`.
@@ -32,11 +32,11 @@ external writes.
    Artifact IDs.
 2. Perform the work outside Harness. Save repository-local Evidence under the configured Evidence
    root and avoid Symlink paths.
-3. Build a Stage Result from `workflows/stage-result-template.json`.
+3. Build a Stage Result from `source/workflows/stage-result-template.json`.
 4. For a succeeded Skill receipt, include every `skillCall.artifactIds` entry in
    `skills[].artifactRefs`; ensure every reference resolves to `artifacts[].id`.
 5. For acceptance, build `verification-report/v1` from
-   `workflows/verification-report-template.json`. Record actual commands, exit codes, evidence,
+   `source/workflows/verification-report-template.json`. Record actual commands, exit codes, evidence,
    skipped checks, cleanup and residual risks.
 6. Validate completion candidates before signaling:
 

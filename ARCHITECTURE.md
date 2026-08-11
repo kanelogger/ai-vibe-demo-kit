@@ -2,48 +2,50 @@
 
 ## Responsibility
 
-提供可安装到 Git 仓库的零依赖控制层，把项目治理模板、Workflow、Evidence 契约、确定性 Gate 和人工决策组织成可校验资产。
+提供可安装、零依赖、可恢复的 Agent Workflow 控制层。Runtime 负责确定性校验、状态投影和人工 Gate；Distribution 负责完整 Source 与 Runtime 的 Manifest 驱动安装生命周期。
 
-## Interface
+## Public Interfaces
 
-维护者和用户通过 npm `ai-vibe-demo-kit` 使用安装生命周期；目标仓库中的 `./harness` 是 Runtime Interface。仓库治理入口是 `AGENTS.md` 和 `project.yml`；安装后的 `AI_ENVIRONMENT_template.md` 提升为 `AI_ENVIRONMENT.md` 后提供环境与能力操作契约；长期知识从 `knowledge/INDEX.md` 渐进加载。
+- `ai-vibe-demo-kit <command>`：Distribution CLI。
+- `./harness <command>`：源码仓库与下游仓库一致的 Runtime CLI。
+- `runRuntimeCommand({ runtimeRoot, cwd, command })`：不接触进程 I/O 的 Runtime command Interface。
+- `runDistributionCommand(...)`、`loadDistributionManifest(...)`、`exitCodeForStatus(...)`：Distribution Lifecycle Interface。
 
 ## Invariants
 
-- Runtime 不执行 Stage、测试、Skill、Git 提交或外部写入。
-- 所有状态 Mutation 使用 Expected Revision、PID 锁和原子 Rename。
-- Runtime Mutation 与 Distribution Lifecycle Apply 共用 RepositoryGuard 的单一锁。
-- 生命周期只按 Distribution Manifest 和安装账本授权写入，并通过 canonical transaction 恢复。
-- Workflow 在任务启动时绑定 Digest；漂移后禁止继续解释旧状态。
-- 本地 Artifact 和 Evidence 必须位于仓库内、真实存在且不经过 Symlink。
-- 结构错误不可 Override；Policy Failure 只能由人工精确接受风险。
+- Runtime 不执行 Stage、测试、Skill、Git 提交或外部系统写入。
+- CLI Adapter 只解析参数、格式化输出并转交退出码；领域决策位于 Runtime 或 Distribution Module。
+- Runtime Mutation 与 Lifecycle Apply 共用 RepositoryGuard 的单一 PID 锁。
+- 生命周期只写 Distribution Manifest 与安装账本授权的路径，并通过 canonical transaction 恢复。
+- Workflow 在任务启动时绑定 Digest；结构错误不可 Override，Policy Failure 只能由人工精确接受。
+- Doctor 只读取 Manifest 能力、managed 文件、Workflow 和 contract 事实，不检查 JavaScript 源码文本。
 
 ## Module Index
 
-| Module | Interface | Responsibility | Dependencies |
+| Module | Entry | Responsibility | Dependencies |
 | --- | --- | --- | --- |
-| Distribution CLI Adapter | `bin/ai-vibe-demo-kit.mjs` | init/upgrade/doctor/uninstall/recover/version、稳定 JSON 与退出码 | Lifecycle Module |
-| CLI Adapter | `bin/harness.mjs` | 参数、输出、稳定退出码和 Runtime 编排 | Harness Library |
-| Repository Scripts | `scripts/ARCHITECTURE.md` | Harness Library、测试和仓库检查脚本 | Node.js、Git |
-| Workflow Assets | `workflows/` | 默认状态图、Stage Result 和 Evidence 模板 | Validator contracts |
-| Governance | `AGENTS.md`、`project.yml`、`AI_ENVIRONMENT_template.md`、`rules/` | Agent 冷启动、环境、能力、权限和验证规则 | Repository facts |
-| Knowledge | `knowledge/INDEX.md` | 稳定项目知识和渐进路由 | Code evidence |
+| Distribution CLI Adapter | `bin/ai-vibe-demo-kit.mjs` | 参数、JSON/文本格式、退出码 | Distribution |
+| Source Runtime shim | `harness` | 加载 `src/runtime/cli.mjs` | Runtime |
+| Install projection shim | `payload/harness` | 加载 `.harness/runtime/cli.mjs` | Installed Runtime |
+| Coding Agent Source | `source/manifest.json` | 知识、规则、规格、Workflow 与项目模板的唯一分发树 | Distribution、Agent 与人工调用方 |
+| Production Source | `src/ARCHITECTURE.md` | Runtime、Distribution、Shared | Node.js 标准库 |
+| Repository Scripts | `scripts/ARCHITECTURE.md` | 仓库、CI、发布检查 | Production facades |
+| Tests | `test/` | Runtime 与 Distribution 黑盒/接口验证 | Public facades |
 
 ## Dependency Direction
 
 ```text
-ai-vibe-demo-kit -> Distribution CLI Adapter -> Lifecycle -> RepositoryGuard
-harness ----------------> Runtime CLI Adapter -> Harness Library -> RepositoryGuard
-Workflow Assets ------------------------------------------> Validator
-Governance/Knowledge -------------------------------------> Agent and human callers
+bin/ai-vibe-demo-kit.mjs -> src/distribution/lifecycle.mjs -> src/shared/
+source/manifest.json ----> src/distribution/lifecycle.mjs -> target/source/
+harness -> src/runtime/cli.mjs -> src/runtime/runtime.mjs -> runtime internals + src/shared/
+payload/harness -> .harness/runtime/cli.mjs -> installed runtime/shared projection
+scripts/ and test/ -> public production facades
 ```
-
-两个 CLI Adapter 可以依赖 Library；Library 不依赖 CLI、治理文档或平台能力。
 
 ## Verification
 
 ```sh
-node --test scripts/harness/test/*.test.mjs
+node --test test/runtime/*.test.mjs test/distribution/*.test.mjs
 node scripts/validate-bundled-skill.mjs
 node scripts/check-distribution.mjs
 ./harness check --json

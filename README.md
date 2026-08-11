@@ -13,7 +13,7 @@ npx --yes ai-vibe-demo-kit@0.4.0 init --target /path/to/project --json
 cd /path/to/project
 ./harness check --json
 ./harness status --json
-./harness start --workflow workflows/workflow-template.json --intent "完成一个可观察目标"
+./harness start --workflow source/workflows/workflow-template.json --intent "完成一个可观察目标"
 ```
 
 相同版本 `init` 幂等。无账本安装、未登记路径、第三种内容、Symlink、活动 Work Item 或非法事务会整体拒绝；生命周期不自动提交、发布或接管用户文件。
@@ -24,9 +24,9 @@ cd /path/to/project
 
 达到 **Governance-ready** 前，项目负责人需要完成以下清单：
 
-1. 在目标路径不存在时，将 `AGENTS_template.md`、`project-template.yml`、`AI_ENVIRONMENT_template.md` 分别复制为 `AGENTS.md`、`project.yml`、`AI_ENVIRONMENT.md`；禁止覆盖已有项目文件。
+1. 在目标路径不存在时，将 `source/agents_template.md`、`source/project-template.yml`、`source/ai_environment_template.md` 分别复制为 `AGENTS.md`、`project.yml`、`AI_ENVIRONMENT.md`；禁止覆盖已有项目文件。
 2. 先填写 `AI_ENVIRONMENT.md` 中全部 `{填写：...}`，实际探测机器状态和 Agent 能力；再填写其余模板中的 `{填写}`、`<placeholder>`、代码根目录、权限和人工确认边界。
-3. 从 Kit 中按需选择 `knowledge/`、`rules/` 和架构模板，并扩展已安装的 `SPECS/template.md`；Distribution Lifecycle 不复制 `knowledge/` 和 `rules/`。
+3. 使用 Lifecycle 管理的 `source/knowledge/`、`source/rules/`、`source/specs/` 和 `source/workflows/` 作为上游控制资料；项目专属内容放在 Source 外的生效治理文件中。
 4. 为已声明的代码根建立 `ARCHITECTURE.md`，只录入能够由代码、配置或负责人确认的项目事实。
 5. 运行 `./harness check-environment --file AI_ENVIRONMENT.md --json`、`./harness check --json` 与 `./harness status --json`，确认环境模板、Workflow、状态和下一步动作均符合目标项目。
 
@@ -117,25 +117,33 @@ Human Control 是所有活动状态的内建能力：
 
 ```text
 .
-├── harness                         # 安装后的公共入口
-├── bin/harness.mjs                 # CLI Adapter
+├── harness                         # 源码仓库 Runtime shim
 ├── bin/ai-vibe-demo-kit.mjs        # npm Distribution CLI Adapter
-├── scripts/harness/lib/            # ControlKernel、Validator、FileStore、RepositoryGuard、Lifecycle
-├── workflows/                      # Workflow v2、Stage Result 模板、案例与 Skill Catalog
-│   └── verification-report-template.json
-├── project-template.yml            # 项目身份和权威入口模板
-├── AGENTS_template.md              # Agent 冷启动入口模板
-├── AI_ENVIRONMENT_template.md       # 机器、Agent 能力和项目操作契约模板
-├── knowledge/                      # 长期项目与业务知识
-├── rules/                          # 测试、安全和 Git 规则
-└── SPECS/                          # 长期实现规格
+├── payload/harness                 # 下游安装 shim
+├── source/                         # 可分发、可升级、可卸载的 Coding Agent Source
+│   ├── manifest.json               # npm 内容与安装目标的唯一事实源
+│   ├── .agents/skills.sources.json # 默认 Skill 远程仓库地址
+│   ├── knowledge/                  # 长期项目与业务知识
+│   ├── rules/                      # 测试、安全和 Git 规则
+│   ├── specs/                      # 长期实现规格
+│   └── workflows/                  # Workflow、Stage Result 与 Evidence 契约
+├── src/runtime/                    # command Interface、Control、Validator、Store、Readiness
+├── src/distribution/               # Lifecycle、Ownership、Transaction、Doctor
+├── src/shared/                     # Errors、PathSafety、Manifest、RepositoryGuard
+├── scripts/                        # 仓库、CI 与发布检查
+├── test/runtime/                   # Runtime Interface 与 CLI 验证
+└── test/distribution/              # Lifecycle、迁移与 tarball 验证
 ```
 
-`workflows/workflow-case.json` 是带 Policy Override、Human Gate、Pause/Resume 和 Redirect 的说明性完成记录，不是真实执行证明。`workflows/skills-list.json` 只负责 Skill ID 路由；Skill 是否实际可用属于 Stage Result 的策略事实。
+`source/workflows/workflow-case.json` 是带 Policy Override、Human Gate、Pause/Resume 和 Redirect 的说明性完成记录，不是真实执行证明。`source/workflows/skills-list.json` 只负责 Skill ID 路由；Skill 是否实际可用属于 Stage Result 的策略事实。
+
+`source/.agents/skills.sources.json` 只保存默认技能组的远程仓库地址和跟踪策略。外部 Skill 的本机缓存和源文件不属于 Source，也不进入发行包；当前 bundled `ai-vibe-demo-kit` Skill 是 Runtime 控制资产。
 
 ## 安全升级与卸载
 
-使用目标 npm 版本生成 upgrade 计划，人工审查 `changes/warnings/errors` 后再加 `--apply`。`managed` 只在账本证明安全时替换或删除；修改后的 `seed` 被保留并进入人工处理或 residual 账本。`.git/harness`、Evidence、生效治理文件、用户 Workflow 和未登记内容始终保留。
+使用目标 npm 版本生成 upgrade 计划，人工审查 `changes/warnings/errors` 后再加 `--apply`。Lifecycle 原样管理 `source/`；修改后的 Source 或 seed 会触发冲突或人工处理，不会被静默覆盖。`.git/harness`、Evidence、生效治理文件、用户 Workflow 和未登记内容始终保留。
+
+v0.4.0 同版本 upgrade 会把旧 `bin/harness.mjs` 与 `scripts/harness/**` Runtime 布局迁入 `.harness/runtime/`、`.harness/shared/`。旧 managed 文件必须与账本内容和 mode 完全一致；任何修改、Symlink 或第三状态都会在写入前整体拒绝。旧 installer-created 目录仅在为空时删除，包含用户内容时保留并从新账本放弃所有权。Doctor 对健康旧布局返回 `W_RUNTIME_LAYOUT_OUTDATED` 和精确 upgrade 命令。
 
 ## 明确不做
 

@@ -1,0 +1,47 @@
+{
+  "outcome": "accepted",
+  "summary": "The release cleanup removes obsolete repository and local artifacts, preserves the canonical distribution surface, and passes all required regression, package and cleanup checks.",
+  "conditions": [
+    {
+      "id": "spec-compliant",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/release-cleanup/verification-report.json"
+      ]
+    },
+    {
+      "id": "regression-safe",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/release-cleanup/verification-report.json"
+      ]
+    },
+    {
+      "id": "cleanup-complete",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/release-cleanup/verification-report.json"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "id": "acceptance.harness-guide",
+      "status": "succeeded",
+      "artifactRefs": [
+        "verification-report",
+        "handoff"
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "verification-report",
+      "uri": "work/requirements/release-cleanup/verification-report.json"
+    },
+    {
+      "id": "handoff",
+      "uri": "work/requirements/release-cleanup/handoff.md"
+    }
+  ]
+}

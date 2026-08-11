@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "description": "External Skill sources: track declares update intent; materialized Skill directories are ignored.",
+  "skillsRoot": ".agents/skills",
+  "sources": [
+    {
+      "id": "web-design",
+      "repo": "https://github.com/xiaopu-ai/web-design.git",
+      "path": ".",
+      "track": { "kind": "branch", "value": "main" }
+    },
+    {
+      "id": "baoyu-design",
+      "repo": "https://github.com/JimLiu/baoyu-design.git",
+      "path": "skills/baoyu-design",
+      "track": { "kind": "branch", "value": "main" }
+    },
+    {
+      "id": "mattpocock-skills",
+      "repo": "https://github.com/mattpocock/skills.git",
+      "path": "skills",
+      "track": { "kind": "branch", "value": "main" },
+      "exclude": ["deprecated/", "in-progress/"]
+    },
+    {
+      "id": "architecture-diagram",
+      "repo": "https://github.com/Cocoon-AI/architecture-diagram-generator.git",
+      "path": ".",
+      "track": { "kind": "branch", "value": "main" }
+    }
+  ]
+}

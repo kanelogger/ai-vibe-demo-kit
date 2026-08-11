@@ -14,4 +14,4 @@
 
 ## Dependency Direction
 
-Runtime 与 Distribution 可以依赖 Shared；Distribution Doctor 可以读取 Runtime readiness facade；Distribution Skills Module 可以读取 Runtime 的 store 与 digest 原语以执行 Active 限制和 binding 比对。Shared 不反向依赖 Runtime、Distribution 或 CLI。
+Runtime 与 Distribution 可以依赖 Shared；Distribution Doctor 可以读取 Runtime readiness facade。Shared 不反向依赖 Runtime、Distribution 或 CLI。

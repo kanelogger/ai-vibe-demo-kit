@@ -27,7 +27,7 @@ test("Runtime command Interface returns version payload without process I/O or a
     payload: {
       schemaVersion: 1,
       name: "ai-vibe-demo-kit",
-      version: "0.6.0",
+      version: "0.5.0",
       minimumNodeVersion: "22",
     },
   });

@@ -14,6 +14,7 @@
 ## Invariants
 
 - Runtime 不执行 Stage、测试、Skill、Git 提交或外部系统写入。
+- 项目只把 `source/.agents/skills.sources.json` 作为外部 Skill 推荐声明分发；不解析、锁定、安装、更新、物化或判断外部 Skill 就绪状态。
 - CLI Adapter 只解析参数、格式化输出并转交退出码；领域决策位于 Runtime 或 Distribution Module。
 - Runtime Mutation 与 Lifecycle Apply 共用 RepositoryGuard 的单一 PID 锁。
 - 生命周期只写 Distribution Manifest 与安装账本授权的路径，并通过 canonical transaction 恢复。

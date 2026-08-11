@@ -35,8 +35,6 @@ jobs:
         run: test "$(npm --version)" = "11.16.0"
       - name: Run tests
         run: node --test test/runtime/*.test.mjs test/distribution/*.test.mjs
-      - name: Materialize lock-pinned external skills
-        run: node bin/ai-vibe-demo-kit.mjs skills sync --json
       - name: Validate the default workflow
         run: ./harness check --json
       - name: Read release metadata

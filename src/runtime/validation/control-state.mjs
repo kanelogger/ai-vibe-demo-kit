@@ -11,19 +11,6 @@ function validateWorkRecord(record, path, errors, { terminal = false } = {}) {
   if (!object(record.workflow) || !nonEmpty(record.workflow.id) || !Number.isInteger(record.workflow.version) || !nonEmpty(record.workflow.ref) || !nonEmpty(record.workflow.digest)) {
     errors.push(issue("E_STATE_WORKFLOW", `${path}.workflow`, "workflow binding requires id, version, ref and digest"));
   }
-  // Profile binding fields were introduced with schemaVersion 1 Profile
-  // orchestration; records written before it are tolerated, but a record
-  // carrying any binding field must carry all of them, well-formed.
-  const bindingFields = ["profileId", "workflowRef", "bindingDigest", "bindingLockDigest"];
-  const present = bindingFields.filter((field) => record[field] !== undefined);
-  if (present.length > 0 && present.length < bindingFields.length) {
-    errors.push(issue("E_STATE_BINDING", `${path}.binding`, "profile binding requires profileId, workflowRef, bindingDigest and bindingLockDigest"));
-  } else if (present.length === bindingFields.length) {
-    if (record.profileId !== null && !nonEmpty(record.profileId)) errors.push(issue("E_STATE_BINDING", `${path}.profileId`, "profileId must be null or a profile id"));
-    if (!nonEmpty(record.workflowRef)) errors.push(issue("E_STATE_BINDING", `${path}.workflowRef`, "workflowRef must be non-empty"));
-    if (!nonEmpty(record.bindingDigest)) errors.push(issue("E_STATE_BINDING", `${path}.bindingDigest`, "bindingDigest must be non-empty"));
-    if (record.bindingLockDigest !== null && !nonEmpty(record.bindingLockDigest)) errors.push(issue("E_STATE_BINDING", `${path}.bindingLockDigest`, "bindingLockDigest must be null or a digest"));
-  }
   if (!terminal && !new Set(["active", "paused", "awaiting-human", "policy-blocked"]).has(record.status)) errors.push(issue("E_STATE_STATUS", `${path}.status`, "active work status is invalid"));
   if (!terminal && !nonEmpty(record.stage)) errors.push(issue("E_STATE_STAGE", `${path}.stage`, "active work requires a stage"));
   for (const field of ["acceptedRisks", "results", "decisions", "events"]) if (!Array.isArray(record[field])) errors.push(issue("E_STATE_COLLECTION", `${path}.${field}`, `${field} must be an array`));

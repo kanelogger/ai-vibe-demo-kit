@@ -6,18 +6,10 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadDistributionManifest } from "../src/distribution/lifecycle.mjs";
 import { loadHarnessManifest } from "../src/shared/manifest.mjs";
-import { validateProfiles } from "../src/runtime/selection.mjs";
-import { validateWorkflow } from "../src/runtime/validation/index.mjs";
-import { parseSkillLockText, parseSkillRegistryText, registryMatchesLock } from "../src/shared/skills.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const errors = [];
 let distribution;
-
-const SEED_PROJECTIONS = new Map([
-  ["source/.agents/skills.sources.json", ".agents/skills.sources.json"],
-  ["source/.agents/skills.lock.json", ".agents/skills.lock.json"],
-]);
 
 async function sourceFiles(path, prefix = "source") {
   const files = [];
@@ -54,69 +46,21 @@ if (distribution) {
     errors.push(`Source tree mismatch: unexpected=${JSON.stringify(unexpected)} missing=${JSON.stringify(missing)}`);
   }
   for (const entry of distribution.value.files.filter((item) => item.sourcePath.startsWith("source/") && item.sourcePath !== "source/manifest.json")) {
-    const seedTarget = SEED_PROJECTIONS.get(entry.sourcePath);
-    if (seedTarget) {
-      if (entry.targetPath !== seedTarget || entry.kind !== "seed") errors.push(`${entry.sourcePath} must seed unchanged to ${seedTarget}`);
-      continue;
-    }
     if (entry.targetPath !== entry.sourcePath || !new Set(["managed", "seed"]).has(entry.kind)) errors.push(`${entry.sourcePath} must project unchanged as lifecycle-owned Source`);
   }
-  if (declaredSource.some((path) => path.startsWith("source/.agents/") && !SEED_PROJECTIONS.has(path))) {
-    errors.push("source/.agents may contain only skills.sources.json and skills.lock.json");
+  if (declaredSource.some((path) => path.startsWith("source/.agents/") && path !== "source/.agents/skills.sources.json")) {
+    errors.push("source/.agents may contain only skills.sources.json");
   }
-
-  // Profile -> complete Workflow -> Stage Skill Calls closure, plus the
-  // Catalog <-> registry <-> lock closure for lock-owned external skills.
   try {
-    const profiles = JSON.parse(await readFile(join(root, "source", "workflows", "profiles.json"), "utf8"));
-    const profilesReport = validateProfiles(profiles);
-    if (!profilesReport.valid) errors.push(`profiles.json is invalid: ${JSON.stringify(profilesReport.errors)}`);
-    const calledSkills = new Set();
-    const workflowRefs = new Set((profiles.profiles ?? []).map((entry) => entry.workflowRef));
-    for (const workflowRef of workflowRefs) {
-      if (!declaredSource.includes(workflowRef)) {
-        errors.push(`profile workflowRef is not distributed Source: ${workflowRef}`);
-        continue;
-      }
-      const workflow = JSON.parse(await readFile(join(root, workflowRef), "utf8"));
-      const report = await validateWorkflow(workflow, { root, workflowPath: workflowRef });
-      if (!report.valid) errors.push(`${workflowRef} is invalid: ${JSON.stringify(report.errors)}`);
-      for (const stage of Object.values(workflow.stages ?? {})) {
-        for (const call of stage.skillCalls ?? []) calledSkills.add(call.skill);
-      }
-    }
-    const catalog = JSON.parse(await readFile(join(root, "source", "workflows", "skills-list.json"), "utf8"));
-    const catalogIds = new Set((catalog.skills ?? []).map((entry) => entry.id));
-    const unexpectedCatalog = [...catalogIds].filter((id) => !calledSkills.has(id));
-    const missingCatalog = [...calledSkills].filter((id) => !catalogIds.has(id));
-    if (unexpectedCatalog.length || missingCatalog.length) {
-      errors.push(`Catalog must equal the union of Profile-referenced skills: unexpected=${JSON.stringify(unexpectedCatalog)} missing=${JSON.stringify(missingCatalog)}`);
-    }
-    const registry = parseSkillRegistryText(await readFile(join(root, "source", ".agents", "skills.sources.json"), "utf8"));
-    if (registry.sources.length === 0) errors.push("skills.sources.json requires a non-empty sources array");
-    for (const source of registry.sources) {
+    const skillSources = JSON.parse(await readFile(join(root, "source", ".agents", "skills.sources.json"), "utf8"));
+    if (!Array.isArray(skillSources.sources) || skillSources.sources.length === 0) errors.push("skills.sources.json requires a non-empty sources array");
+    for (const source of skillSources.sources ?? []) {
+      if (typeof source.repo !== "string" || source.repo.length === 0) errors.push("every Skill source requires a remote repository address");
       if (["resolved", "skills", "licenseFiles", "files"].some((key) => Object.hasOwn(source, key))) errors.push(`${source.id ?? "unknown Skill source"} embeds resolved or materialized Skill data`);
     }
-    const lock = parseSkillLockText(await readFile(join(root, "source", ".agents", "skills.lock.json"), "utf8"));
-    if (!registryMatchesLock(registry, lock)) errors.push("skills lock source specs do not match the registry; run skills update");
-    const sourceIds = new Set(registry.sources.map((entry) => entry.id));
-    const lockedSkillIds = new Set(lock.sources.flatMap((entry) => entry.skills.map((skill) => skill.name)));
-    for (const entry of catalog.skills ?? []) {
-      if (!["bundled", "lock-owned"].includes(entry.availability) || typeof entry.sourceId !== "string" || entry.sourceId.length === 0
-          || typeof entry.skillRef !== "string" || entry.skillRef.length === 0
-          || !Array.isArray(entry.workflowStages) || entry.workflowStages.length === 0) {
-        errors.push(`Catalog entry ${entry.id ?? "?"} must declare availability, sourceId, skillRef and workflowStages`);
-        continue;
-      }
-      if (entry.availability !== "lock-owned") continue;
-      if (!sourceIds.has(entry.sourceId)) errors.push(`Catalog entry ${entry.id} references unknown Skill source ${entry.sourceId}`);
-      if (!lockedSkillIds.has(entry.id)) errors.push(`Catalog entry ${entry.id} is not owned by the skills lock`);
-    }
-    if (lock.sources.some((entry) => entry.skills.some((skill) => skill.name === "ai-vibe-demo-kit"))) errors.push("the bundled Skill must never enter the skills lock");
   } catch (error) {
-    errors.push(`Profile/Catalog/registry/lock closure failed: ${error.message}`);
+    errors.push(`skills.sources.json is invalid: ${error.message}`);
   }
-
   for (const entry of distribution.value.files) {
     try {
       const stat = await lstat(join(root, entry.sourcePath));
@@ -153,4 +97,3 @@ if (errors.length) {
   process.stderr.write(`${errors.map((entry) => `ERROR ${entry}`).join("\n")}\n`);
   process.exitCode = 1;
 } else process.stdout.write("distribution: valid\n");
-

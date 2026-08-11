@@ -26,7 +26,7 @@ function upgradeEnvelope(version, target, overrides = {}) {
     status: "planned",
     target,
     applied: false,
-    package: { name: "ai-vibe-demo-kit", version, installedVersion: "0.6.0" },
+    package: { name: "ai-vibe-demo-kit", version, installedVersion: "0.5.0" },
     transaction: null,
     changes: [{ action: "replace", path: "harness" }],
     readiness: null,
@@ -41,7 +41,7 @@ function assertSyncEnvelope(result, target, installedVersion) {
   assert.equal(result.schemaVersion, 1);
   assert.equal(result.command, "sync");
   assert.equal(result.target, target);
-  assert.deepEqual(result.package, { name: "ai-vibe-demo-kit", version: "0.6.0", installedVersion });
+  assert.deepEqual(result.package, { name: "ai-vibe-demo-kit", version: "0.5.0", installedVersion });
   assert.equal(result.transaction, null);
 }
 
@@ -83,7 +83,7 @@ test("sync blocks prerelease downgrade before delegation", async () => {
   let delegated = false;
   const adapter = fakeAdapter("0.5.0-beta.2", () => { delegated = true; });
   const result = await runDistributionCommand({ sourceRoot, target, command: "sync", syncAdapter: adapter });
-  assertSyncEnvelope(result, target, "0.6.0");
+  assertSyncEnvelope(result, target, "0.5.0");
   assert.equal(result.status, "manual-action-required");
   assert.equal(result.update.relation, "newer");
   assert.equal(result.warnings[0].code, "W_INSTALLED_VERSION_AHEAD");
@@ -94,12 +94,12 @@ test("sync delegates when the installed version equals npm latest", async () => 
   const target = await makeGitRepo();
   await runDistributionCommand({ sourceRoot, target, command: "init", apply: true });
   const calls = [];
-  const adapter = fakeAdapter("0.6.0", ({ version, gitRoot }) => upgradeEnvelope(version, gitRoot, { status: "idempotent", changes: [] }), calls);
+  const adapter = fakeAdapter("0.5.0", ({ version, gitRoot }) => upgradeEnvelope(version, gitRoot, { status: "idempotent", changes: [] }), calls);
   const result = await runDistributionCommand({ sourceRoot, target, command: "sync", syncAdapter: adapter });
-  assertSyncEnvelope(result, target, "0.6.0");
+  assertSyncEnvelope(result, target, "0.5.0");
   assert.equal(result.status, "idempotent");
   assert.equal(result.update.relation, "equal");
-  assert.deepEqual(calls, [{ version: "0.6.0", gitRoot: target, apply: false }]);
+  assert.deepEqual(calls, [{ version: "0.5.0", gitRoot: target, apply: false }]);
 });
 
 test("sync delegates a pinned JSON upgrade against the canonical Git root", async () => {
@@ -108,14 +108,14 @@ test("sync delegates a pinned JSON upgrade against the canonical Git root", asyn
   const child = join(target, "nested");
   await mkdir(child);
   const calls = [];
-  const adapter = fakeAdapter("0.7.0", ({ version, gitRoot }) => upgradeEnvelope(version, gitRoot), calls);
+  const adapter = fakeAdapter("0.6.0", ({ version, gitRoot }) => upgradeEnvelope(version, gitRoot), calls);
   const result = await runDistributionCommand({ sourceRoot, target: child, command: "sync", syncAdapter: adapter });
   assert.equal(result.command, "sync");
   assert.equal(result.target, target);
-  assert.equal(result.package.version, "0.6.0");
+  assert.equal(result.package.version, "0.5.0");
   assert.equal(result.update.relation, "older");
-  assert.deepEqual(calls, [{ version: "0.7.0", gitRoot: target, apply: false }]);
-  assert.match(result.nextActions[0], /ai-vibe-demo-kit@0\.7\.0/);
+  assert.deepEqual(calls, [{ version: "0.6.0", gitRoot: target, apply: false }]);
+  assert.match(result.nextActions[0], /ai-vibe-demo-kit@0\.6\.0/);
 });
 
 test("sync rejects a delegated Envelope that does not match the pinned request", async () => {

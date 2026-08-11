@@ -33,7 +33,6 @@ desktop.ini
 .agents/skills/*
 !.agents/skills/ai-vibe-demo-kit/
 !.agents/skills/ai-vibe-demo-kit/**
-!.agents/skills/.gitignore
 .claude/skills/
 private-*/
 private-*.md

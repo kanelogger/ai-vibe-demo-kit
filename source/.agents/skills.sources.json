@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "description": "External Skill sources: track declares update intent; materialized Skill directories are ignored.",
+  "description": "Recommended external Skill sources only; consumers choose whether and how to resolve or install them.",
   "skillsRoot": ".agents/skills",
   "sources": [
     {
@@ -20,7 +20,6 @@
       "repo": "https://github.com/mattpocock/skills.git",
       "path": "skills",
       "track": { "kind": "branch", "value": "main" },
-      "only": ["code-review", "diagnosing-bugs", "implement", "tdd", "to-spec"],
       "exclude": ["deprecated/", "in-progress/"]
     },
     {

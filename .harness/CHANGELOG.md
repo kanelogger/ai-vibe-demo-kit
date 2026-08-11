@@ -1,13 +1,5 @@
 # Harness Changelog
 
-## 0.6.0 - 2026-08-11
-
-- Add Profile orchestration: `profiles.json` selects a complete Workflow per Profile (`core`, `bugfix`, `web-ui`, `visual-design`); `check`, `start` and `check-result` accept mutually exclusive `--profile`/`--workflow`, and `harness profiles` lists the registry.
-- Bind Active Work Items to a normalized digest of the Profile entry, Workflow, Catalog, registry, lock and Skill entities; `status` reports `bindingDrift`/`bindingIssues` read-only, `signal` and non-abort `decide` revalidate the binding, and abort stays available under drift.
-- Add the Skills Module: lock-first v2 registry/lock, `skills status|sync|update` with fixed `--force` semantics, deterministic `.agents/skills/.gitignore`, and a three-tier Runtime readiness model (`E_SKILLS_NOT_READY` gates `start`; Optional skills degrade to warnings).
-- Expand the default Catalog to nine Skills: the bundled Harness guide plus eight lock-owned external Skills wired into the built-in Profiles.
-- Seed `skills.sources.json` and the new `skills.lock.json` to root `.agents/`; `init` stays offline and materialization happens only through explicit `skills sync/update`.
-
 ## 0.5.0 - 2026-08-11
 
 - Add `sync` to resolve npm `latest`, pin the exact package version and delegate safe upgrade planning or apply.

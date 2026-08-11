@@ -149,14 +149,8 @@ export function applyControl({ state, workflow, command, now = () => new Date(),
       createdAt: at,
       updatedAt: at,
     };
-    if (command.bindingDigest !== undefined && command.bindingDigest !== null) {
-      active.profileId = command.profileId ?? null;
-      active.workflowRef = command.workflowRef;
-      active.bindingDigest = command.bindingDigest;
-      active.bindingLockDigest = command.bindingLockDigest ?? null;
-    }
     if (!active.intent) fail("E_USAGE", "intent is required");
-    event(active, "work-started", at, { stage: active.stage, ...(active.workflowRef !== undefined ? { profileId: active.profileId, workflowRef: active.workflowRef } : {}) });
+    event(active, "work-started", at, { stage: active.stage });
     next.active = active;
     next.revision += 1;
     return { state: next, decision: decisionFor(next, "ready") };

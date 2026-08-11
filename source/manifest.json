@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "package": {
     "name": "ai-vibe-demo-kit",
-    "version": "0.6.0",
+    "version": "0.5.0",
     "minimumNodeVersion": "22"
   },
   "files": [
@@ -21,8 +21,7 @@
     { "sourcePath": "scripts/check-distribution.mjs", "targetPath": null, "kind": "package-only", "mode": "0644" },
     { "sourcePath": "scripts/validate-bundled-skill.mjs", "targetPath": null, "kind": "package-only", "mode": "0644" },
     { "sourcePath": "source/manifest.json", "targetPath": null, "kind": "package-only", "mode": "0644" },
-    { "sourcePath": "source/.agents/skills.lock.json", "targetPath": ".agents/skills.lock.json", "kind": "seed", "mode": "0644" },
-    { "sourcePath": "source/.agents/skills.sources.json", "targetPath": ".agents/skills.sources.json", "kind": "seed", "mode": "0644" },
+    { "sourcePath": "source/.agents/skills.sources.json", "targetPath": "source/.agents/skills.sources.json", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/agents_template.md", "targetPath": "source/agents_template.md", "kind": "seed", "mode": "0644" },
     { "sourcePath": "source/ai_environment_template.md", "targetPath": "source/ai_environment_template.md", "kind": "seed", "mode": "0644" },
     { "sourcePath": "source/coding_agent_rules_template.md", "targetPath": "source/coding_agent_rules_template.md", "kind": "seed", "mode": "0644" },
@@ -50,23 +49,18 @@
     { "sourcePath": "source/rules/security.md", "targetPath": "source/rules/security.md", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/rules/testing.md", "targetPath": "source/rules/testing.md", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/specs/template.md", "targetPath": "source/specs/template.md", "kind": "managed", "mode": "0644" },
-    { "sourcePath": "source/workflows/profiles.json", "targetPath": "source/workflows/profiles.json", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/workflows/skills-list.json", "targetPath": "source/workflows/skills-list.json", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/workflows/stage-result-template.json", "targetPath": "source/workflows/stage-result-template.json", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/workflows/verification-report-template.json", "targetPath": "source/workflows/verification-report-template.json", "kind": "managed", "mode": "0644" },
-    { "sourcePath": "source/workflows/workflow-bugfix.json", "targetPath": "source/workflows/workflow-bugfix.json", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/workflows/workflow-case-zh.md", "targetPath": "source/workflows/workflow-case-zh.md", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/workflows/workflow-case.json", "targetPath": "source/workflows/workflow-case.json", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/workflows/workflow-template.json", "targetPath": "source/workflows/workflow-template.json", "kind": "managed", "mode": "0644" },
-    { "sourcePath": "source/workflows/workflow-visual-design.json", "targetPath": "source/workflows/workflow-visual-design.json", "kind": "managed", "mode": "0644" },
-    { "sourcePath": "source/workflows/workflow-web-ui.json", "targetPath": "source/workflows/workflow-web-ui.json", "kind": "managed", "mode": "0644" },
     { "sourcePath": "src/ARCHITECTURE.md", "targetPath": null, "kind": "package-only", "mode": "0644" },
     { "sourcePath": "src/distribution/ARCHITECTURE.md", "targetPath": null, "kind": "package-only", "mode": "0644" },
     { "sourcePath": "src/distribution/doctor.mjs", "targetPath": null, "kind": "package-only", "mode": "0644" },
     { "sourcePath": "src/distribution/lifecycle.mjs", "targetPath": null, "kind": "package-only", "mode": "0644" },
     { "sourcePath": "src/distribution/ownership.mjs", "targetPath": null, "kind": "package-only", "mode": "0644" },
     { "sourcePath": "src/distribution/planning.mjs", "targetPath": null, "kind": "package-only", "mode": "0644" },
-    { "sourcePath": "src/distribution/skills-sync.mjs", "targetPath": null, "kind": "package-only", "mode": "0644" },
     { "sourcePath": "src/distribution/sync.mjs", "targetPath": null, "kind": "package-only", "mode": "0644" },
     { "sourcePath": "src/distribution/transaction.mjs", "targetPath": null, "kind": "package-only", "mode": "0644" },
     { "sourcePath": "src/runtime/ARCHITECTURE.md", "targetPath": ".harness/runtime/ARCHITECTURE.md", "kind": "managed", "mode": "0644" },
@@ -74,7 +68,6 @@
     { "sourcePath": "src/runtime/kernel.mjs", "targetPath": ".harness/runtime/kernel.mjs", "kind": "managed", "mode": "0644" },
     { "sourcePath": "src/runtime/readiness.mjs", "targetPath": ".harness/runtime/readiness.mjs", "kind": "managed", "mode": "0644" },
     { "sourcePath": "src/runtime/runtime.mjs", "targetPath": ".harness/runtime/runtime.mjs", "kind": "managed", "mode": "0644" },
-    { "sourcePath": "src/runtime/selection.mjs", "targetPath": ".harness/runtime/selection.mjs", "kind": "managed", "mode": "0644" },
     { "sourcePath": "src/runtime/store.mjs", "targetPath": ".harness/runtime/store.mjs", "kind": "managed", "mode": "0644" },
     { "sourcePath": "src/runtime/validation/control-state.mjs", "targetPath": ".harness/runtime/validation/control-state.mjs", "kind": "managed", "mode": "0644" },
     { "sourcePath": "src/runtime/validation/environment.mjs", "targetPath": ".harness/runtime/validation/environment.mjs", "kind": "managed", "mode": "0644" },
@@ -85,8 +78,6 @@
     { "sourcePath": "src/shared/errors.mjs", "targetPath": ".harness/shared/errors.mjs", "kind": "managed", "mode": "0644" },
     { "sourcePath": "src/shared/manifest.mjs", "targetPath": ".harness/shared/manifest.mjs", "kind": "managed", "mode": "0644" },
     { "sourcePath": "src/shared/path-safety.mjs", "targetPath": ".harness/shared/path-safety.mjs", "kind": "managed", "mode": "0644" },
-    { "sourcePath": "src/shared/repo-io.mjs", "targetPath": ".harness/shared/repo-io.mjs", "kind": "managed", "mode": "0644" },
-    { "sourcePath": "src/shared/repository-guard.mjs", "targetPath": ".harness/shared/repository-guard.mjs", "kind": "managed", "mode": "0644" },
-    { "sourcePath": "src/shared/skills.mjs", "targetPath": ".harness/shared/skills.mjs", "kind": "managed", "mode": "0644" }
+    { "sourcePath": "src/shared/repository-guard.mjs", "targetPath": ".harness/shared/repository-guard.mjs", "kind": "managed", "mode": "0644" }
   ]
 }

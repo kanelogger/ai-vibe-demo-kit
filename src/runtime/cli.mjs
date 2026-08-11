@@ -7,31 +7,27 @@ import { runRuntimeCommand } from "./runtime.mjs";
 const RUNTIME_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const HELP = `Usage:
   harness version [--json]
-  harness profiles [--json]
-  harness check [--profile <id> | --workflow <path>] [--json]
+  harness check [--workflow <path>] [--json]
   harness check-environment --file <AI_ENVIRONMENT.md> [--json]
-  harness check-result (--profile <id> | --workflow <path>) --stage <stage> --file <stage-result.json>
+  harness check-result --workflow <path> --stage <stage> --file <stage-result.json>
       [--require-complete] [--json]
-  harness start (--profile <id> | --workflow <path>) --intent <text> [--json]
+  harness start --workflow <path> --intent <text> [--json]
   harness status [--json]
   harness signal --revision <n> --file <stage-result.json> [--json]
   harness decide --revision <n> --action <approve|reject|pause|resume|redirect|override|abort>
       [--actor <name>] --reason <text> [--target <stage>]
       [--accept-risk <condition-id> ...] [--json]
 
---profile and --workflow are mutually exclusive. An idle check defaults to the
-default Profile; start requires an explicit selector.
 Exit codes: 0 success, 1 environment/gate/policy refusal, 2 usage/structure/state/I/O error.`;
 
 const BOOLEAN = new Set(["json", "help", "require-complete"]);
 const REPEATED = new Set(["accept-risk"]);
 const COMMAND_OPTIONS = {
   version: new Set(["json"]),
-  profiles: new Set(["json"]),
-  check: new Set(["profile", "workflow", "json"]),
+  check: new Set(["workflow", "json"]),
   "check-environment": new Set(["file", "json"]),
-  "check-result": new Set(["profile", "workflow", "stage", "file", "require-complete", "json"]),
-  start: new Set(["profile", "workflow", "intent", "json"]),
+  "check-result": new Set(["workflow", "stage", "file", "require-complete", "json"]),
+  start: new Set(["workflow", "intent", "json"]),
   status: new Set(["json"]),
   signal: new Set(["revision", "file", "json"]),
   decide: new Set(["revision", "action", "actor", "reason", "target", "accept-risk", "json"]),
@@ -72,15 +68,13 @@ function normalize(options) {
   const allowed = COMMAND_OPTIONS[kind];
   if (!allowed || options._.length !== 1) fail("E_USAGE", `unknown or malformed command: ${kind ?? ""}`.trim(), { repair: HELP });
   for (const key of Object.keys(options)) if (key !== "_" && !allowed.has(key)) fail("E_USAGE", `unknown option for ${kind}: --${key}`, { repair: HELP });
-  if (options.profile && options.workflow) fail("E_USAGE", "--profile and --workflow are mutually exclusive", { repair: HELP });
   if (kind === "check-environment" && !options.file) fail("E_USAGE", "check-environment requires --file", { repair: HELP });
-  if (kind === "check-result" && (!(options.profile || options.workflow) || !options.stage || !options.file)) fail("E_USAGE", "check-result requires --profile or --workflow, plus --stage and --file", { repair: HELP });
-  if (kind === "start" && (!(options.profile || options.workflow) || !options.intent)) fail("E_USAGE", "start requires --profile or --workflow, plus --intent", { repair: HELP });
+  if (kind === "check-result" && (!options.workflow || !options.stage || !options.file)) fail("E_USAGE", "check-result requires --workflow, --stage and --file", { repair: HELP });
+  if (kind === "start" && (!options.workflow || !options.intent)) fail("E_USAGE", "start requires --workflow and --intent", { repair: HELP });
   if (kind === "signal" && !options.file) fail("E_USAGE", "signal requires --file", { repair: HELP });
   if (kind === "decide" && (!options.action || !options.reason)) fail("E_USAGE", "decide requires --action and --reason", { repair: HELP });
   return {
     kind,
-    profile: options.profile,
     workflow: options.workflow,
     stage: options.stage,
     file: options.file,
@@ -102,11 +96,6 @@ function print(options, command, result) {
     process.stderr.write(`ERROR ${payload.error.code}: ${payload.error.message}\n`);
     if (payload.error.repair) process.stderr.write(`REPAIR: ${payload.error.repair}\n`);
   } else if (command.kind === "version") process.stdout.write(`${payload.name} ${payload.version} (Node.js ${payload.minimumNodeVersion}+)\n`);
-  else if (command.kind === "profiles") {
-    for (const profile of payload.profiles) {
-      process.stdout.write(`${profile.default ? "*" : " "} ${profile.id} -> ${profile.workflowRef}\n    ${profile.description}\n`);
-    }
-  }
   else if (payload.valid !== undefined) process.stdout.write(payload.valid ? "check: valid\n" : `check: invalid (${payload.errors.length} error(s))\n`);
   else {
     process.stdout.write(`${payload.status}: revision=${payload.revision}${payload.stage ? ` stage=${payload.stage}` : ""}\n`);

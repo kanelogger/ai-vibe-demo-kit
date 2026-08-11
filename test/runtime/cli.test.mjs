@@ -16,7 +16,7 @@ test("source and installed CLIs report release metadata outside a Git repository
   assert.deepEqual(JSON.parse(result.stdout), {
     schemaVersion: 1,
     name: "ai-vibe-demo-kit",
-    version: "0.6.0",
+    version: "0.5.0",
     minimumNodeVersion: "22",
   });
 
@@ -24,10 +24,10 @@ test("source and installed CLIs report release metadata outside a Git repository
   result = await runRaw(process.execPath, [distributionCli, "init", "--target", target, "--json"], sourceRoot);
   const installed = JSON.parse(result.stdout);
   assert.equal(installed.status, "applied");
-  assert.equal(installed.package.version, "0.6.0");
+  assert.equal(installed.package.version, "0.5.0");
   result = await runRaw(join(target, "harness"), ["version", "--json"], outside);
   assert.equal(result.code, 0, result.stderr);
-  assert.equal(JSON.parse(result.stdout).version, "0.6.0");
+  assert.equal(JSON.parse(result.stdout).version, "0.5.0");
   result = await runRaw(join(target, "harness"), ["help"], target);
   assert.equal(result.code, 0, result.stderr);
   assert.doesNotMatch(result.stdout, /harness init/);
@@ -82,10 +82,8 @@ test("fresh repository installs, checks, starts and advances through the public 
   assert.equal(result.code, 0, result.stderr);
 
   result = await runRaw(join(target, "harness"), ["check", "--json"], target);
-  assert.equal(result.code, 1, "offline init leaves the default Profile valid but not ready");
-  const checked = JSON.parse(result.stdout);
-  assert.equal(checked.valid, true);
-  assert.equal(checked.skillsReadiness.ready, false);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(JSON.parse(result.stdout).valid, true);
 
   const custom = workflow();
   await writeFile(join(target, "workflows", "custom.json"), `${JSON.stringify(custom, null, 2)}\n`);

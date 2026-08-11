@@ -39,7 +39,7 @@ test("Distribution version uses the stable envelope outside a Git repository", a
     status: "ok",
     target: null,
     applied: false,
-    package: { name: "ai-vibe-demo-kit", version: "0.6.0", installedVersion: null },
+    package: { name: "ai-vibe-demo-kit", version: "0.5.0", installedVersion: null },
     transaction: null,
     changes: [],
     readiness: null,
@@ -94,6 +94,17 @@ test("upgrade and uninstall plan by default and reject unknown options", async (
   assert.equal(JSON.parse(result.stdout).command, "sync");
   const help = await runRaw(process.execPath, [cli, "help"], sourceRoot);
   assert.match(help.stdout, /ai-vibe-demo-kit sync \[--target/);
+});
+
+test("Distribution CLI does not manage external Skills", async () => {
+  const target = await makeGitRepo();
+  const result = await runCli(target, ["skills", "status"]);
+  assert.equal(result.code, 2);
+  assert.equal(JSON.parse(result.stdout).command, "skills");
+  assert.equal(JSON.parse(result.stdout).errors[0].code, "E_USAGE");
+
+  const help = await runRaw(process.execPath, [cli, "help"], sourceRoot);
+  assert.doesNotMatch(help.stdout, /skills (?:status|sync|update)/);
 });
 
 test("Distribution usage failures preserve the JSON envelope and parsed command", async () => {

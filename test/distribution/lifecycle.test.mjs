@@ -53,14 +53,11 @@ async function legacyLayoutSource() {
       ".harness/ARCHITECTURE.md",
       "src/runtime/ARCHITECTURE.md",
       "src/runtime/readiness.mjs",
-      "src/runtime/selection.mjs",
       "src/runtime/validation/control-state.mjs",
       "src/runtime/validation/environment.mjs",
       "src/runtime/validation/result.mjs",
       "src/runtime/validation/workflow.mjs",
       "src/shared/ARCHITECTURE.md",
-      "src/shared/repo-io.mjs",
-      "src/shared/skills.mjs",
     ]);
     for (const entry of manifest.files) {
       if (legacyTargets.has(entry.sourcePath)) entry.targetPath = legacyTargets.get(entry.sourcePath);
@@ -121,28 +118,20 @@ test("fresh init installs a ledger-driven Runtime and is idempotent", async () =
   let result = await command(target, "init");
   assert.equal(result.status, "applied");
   assert.equal(result.applied, true);
-  assert.equal(result.package.version, "0.6.0");
+  assert.equal(result.package.version, "0.5.0");
   assert.equal((await lstat(join(target, "harness"))).mode & 0o111, 0o111);
   assert.equal((await lstat(join(target, ".agents", "skills", "ai-vibe-demo-kit", "SKILL.md"))).isFile(), true);
-  assert.equal((await lstat(join(target, ".agents", "skills.sources.json"))).isFile(), true);
-  assert.equal((await lstat(join(target, ".agents", "skills.lock.json"))).isFile(), true);
+  assert.equal((await lstat(join(target, "source", ".agents", "skills.sources.json"))).isFile(), true);
   assert.equal((await lstat(join(target, "source", "knowledge", "INDEX.md"))).isFile(), true);
   assert.equal((await lstat(join(target, "source", "rules", "testing.md"))).isFile(), true);
   assert.equal((await lstat(join(target, "source", "specs", "template.md"))).isFile(), true);
   assert.equal((await lstat(join(target, "source", "workflows", "workflow-template.json"))).isFile(), true);
-  assert.equal((await lstat(join(target, "source", "workflows", "profiles.json"))).isFile(), true);
   await assert.rejects(lstat(join(target, "workflows", "workflow-template.json")), { code: "ENOENT" });
-  // init stays offline: the default check resolves the core Profile and
-  // reports valid-but-not-ready until skills sync materializes the lock.
   const checked = await runRaw(join(target, "harness"), ["check", "--json"], target);
-  assert.equal(checked.code, 1, checked.stderr);
-  const checkedPayload = JSON.parse(checked.stdout);
-  assert.equal(checkedPayload.valid, true);
-  assert.equal(checkedPayload.skillsReadiness.ready, false);
-  assert.equal(checkedPayload.selection.profileId, "core");
+  assert.equal(checked.code, 0, checked.stderr);
   const ledger = JSON.parse(await readFile(join(target, ".harness", "install-lock.json"), "utf8"));
   assert.equal(ledger.package.name, "ai-vibe-demo-kit");
-  assert.equal(ledger.package.version, "0.6.0");
+  assert.equal(ledger.package.version, "0.5.0");
   assert.equal(ledger.installationState, "installed");
   assert.ok(ledger.files.some((entry) => entry.path === "harness" && entry.kind === "managed"));
 
@@ -270,13 +259,12 @@ test("prepared transactions can roll back and committed transactions only resume
   });
   assert.equal(result.status, "error");
   assert.equal((await readCanonicalMaintenance(committedTarget)).phase, "committed");
-  await writeFile(join(committedTarget, "workflows", "block.json"), `${JSON.stringify(workflow(), null, 2)}\n`);
   const status = await runRaw(join(committedTarget, "harness"), ["status", "--json"], committedTarget);
   assert.equal(status.code, 0, status.stderr);
   const statusPayload = JSON.parse(status.stdout);
   assert.equal(statusPayload.status, "maintenance");
-  assert.match(statusPayload.nextActions[0], /'ai-vibe-demo-kit@0\.6\.0' recover/);
-  const mutation = await runRaw(join(committedTarget, "harness"), ["start", "--workflow", "workflows/block.json", "--intent", "must block", "--json"], committedTarget);
+  assert.match(statusPayload.nextActions[0], /'ai-vibe-demo-kit@0\.5\.0' recover/);
+  const mutation = await runRaw(join(committedTarget, "harness"), ["start", "--workflow", "source/workflows/workflow-template.json", "--intent", "must block", "--json"], committedTarget);
   assert.equal(mutation.code, 2);
   assert.equal(JSON.parse(mutation.stdout).error.code, "E_MAINTENANCE_PENDING");
   const rollback = await command(committedTarget, "recover", { strategy: "rollback", apply: true });
@@ -371,7 +359,7 @@ test("recover binds schema, package version, Manifest digest and rejects third-s
 test("recovery nextActions shell-quote target paths and reject executable journal versions", async () => {
   const target = await namedGitRepo("kit-review-$(printf PWNED)-repository");
   const diagnosis = await command(target, "doctor");
-  assert.equal(diagnosis.warnings[0].repair, `npx --yes 'ai-vibe-demo-kit@0.6.0' init --target '${target}' --json`);
+  assert.equal(diagnosis.warnings[0].repair, `npx --yes 'ai-vibe-demo-kit@0.5.0' init --target '${target}' --json`);
   await command(target, "init");
   let injected = false;
   const interrupted = await command(target, "uninstall", {
@@ -383,7 +371,7 @@ test("recovery nextActions shell-quote target paths and reject executable journa
       }
     },
   });
-  const expected = `npx --yes 'ai-vibe-demo-kit@0.6.0' recover --target '${target}' --strategy resume --apply --json`;
+  const expected = `npx --yes 'ai-vibe-demo-kit@0.5.0' recover --target '${target}' --strategy resume --apply --json`;
   assert.equal(interrupted.nextActions[0], expected);
 
   let runtimeStatus = await runRaw(join(target, "harness"), ["status", "--json"], target);
@@ -499,14 +487,13 @@ test("same-version upgrade migrates the pre-Source projection and preserves effe
   assert.equal((await lstat(join(target, "source", "knowledge", "INDEX.md"))).isFile(), true);
   await assert.rejects(lstat(join(target, "workflows", "workflow-template.json")), { code: "ENOENT" });
   const checked = await runRaw(join(target, "harness"), ["check", "--json"], target);
-  assert.equal(checked.code, 1, checked.stderr);
-  assert.equal(JSON.parse(checked.stdout).valid, true);
+  assert.equal(checked.code, 0, checked.stderr);
   const ledger = JSON.parse(await readFile(join(target, ".harness", "install-lock.json"), "utf8"));
   assert.equal(ledger.files.find((entry) => entry.path === "AGENTS_template.md").state, "orphaned");
   assert.equal(ledger.files.find((entry) => entry.path === "source/agents_template.md").state, "installed");
 });
 
-test("upgrade migrates the legacy Runtime layout and abandons non-empty legacy directories", async () => {
+test("same-version upgrade migrates the legacy Runtime layout and abandons non-empty legacy directories", async () => {
   const target = await makeGitRepo();
   const legacySource = await legacyLayoutSource();
   let result = await runDistributionCommand({ sourceRoot: legacySource, target, command: "init", apply: true });
@@ -524,7 +511,7 @@ test("upgrade migrates the legacy Runtime layout and abandons non-empty legacy d
   await assert.rejects(lstat(join(target, "scripts", "harness")), { code: "ENOENT" });
   assert.equal(await readFile(join(target, "scripts", "user-owned.txt"), "utf8"), "preserve me\n");
   const ledger = JSON.parse(await readFile(join(target, ".harness", "install-lock.json"), "utf8"));
-  assert.equal(ledger.package.version, "0.6.0");
+  assert.equal(ledger.package.version, "0.5.0");
   assert.equal(ledger.createdDirectories.includes("bin"), false);
   assert.equal(ledger.createdDirectories.some((path) => path.startsWith("scripts/harness")), false);
   assert.equal(ledger.createdDirectories.includes("scripts"), false);
@@ -691,30 +678,30 @@ test("same-version migration transaction recovers every layout-specific persiste
 test("upgrade blocks kind changes and removed modified managed files atomically", async () => {
   const kindTarget = await makeGitRepo();
   await command(kindTarget, "init");
-  const kindSource = await distributionVariant("0.6.0", async ({ manifest }) => {
+  const kindSource = await distributionVariant("0.5.0", async ({ manifest }) => {
     manifest.files.find((entry) => entry.targetPath === "harness").kind = "seed";
   });
   let result = await runDistributionCommand({ sourceRoot: kindSource, target: kindTarget, command: "upgrade", apply: true });
   assert.equal(result.status, "conflict");
   assert.equal(result.errors[0].code, "E_OWNERSHIP_CHANGE");
-  assert.equal(JSON.parse(await readFile(join(kindTarget, ".harness", "install-lock.json"), "utf8")).package.version, "0.6.0");
+  assert.equal(JSON.parse(await readFile(join(kindTarget, ".harness", "install-lock.json"), "utf8")).package.version, "0.5.0");
 
   const removedTarget = await makeGitRepo();
   await command(removedTarget, "init");
   await writeFile(join(removedTarget, "harness"), "modified managed\n");
-  const removedSource = await distributionVariant("0.6.0", async ({ manifest }) => {
+  const removedSource = await distributionVariant("0.5.0", async ({ manifest }) => {
     manifest.files = manifest.files.filter((entry) => entry.targetPath !== "harness");
   });
   result = await runDistributionCommand({ sourceRoot: removedSource, target: removedTarget, command: "upgrade", apply: true });
   assert.equal(result.status, "conflict");
   assert.equal(await readFile(join(removedTarget, "harness"), "utf8"), "modified managed\n");
-  assert.equal(JSON.parse(await readFile(join(removedTarget, ".harness", "install-lock.json"), "utf8")).package.version, "0.6.0");
+  assert.equal(JSON.parse(await readFile(join(removedTarget, ".harness", "install-lock.json"), "utf8")).package.version, "0.5.0");
 });
 
 test("Runtime start and Lifecycle Apply serialize through the shared RepositoryGuard lock", async () => {
   const target = await makeGitRepo();
   await command(target, "init");
-  const nextSource = await distributionVariant("0.6.0", async ({ root }) => {
+  const nextSource = await distributionVariant("0.5.0", async ({ root }) => {
     const path = join(root, "source", "workflows", "workflow-template.json");
     const value = JSON.parse(await readFile(path, "utf8"));
     value.description = "Updated while Runtime start waits for the shared lock.";
@@ -739,8 +726,7 @@ test("Runtime start and Lifecycle Apply serialize through the shared RepositoryG
     },
   });
   await enteredPromise;
-  await writeFile(join(target, "workflows", "serialize.json"), `${JSON.stringify(workflow(), null, 2)}\n`);
-  const starting = runRaw(join(target, "harness"), ["start", "--workflow", "workflows/serialize.json", "--intent", "serialize start", "--json"], target);
+  const starting = runRaw(join(target, "harness"), ["start", "--workflow", "source/workflows/workflow-template.json", "--intent", "serialize start", "--json"], target);
   await new Promise((resolveWait) => setTimeout(resolveWait, 100));
   release();
   const [upgraded, started] = await Promise.all([upgrade, starting]);
@@ -771,7 +757,7 @@ test("upgrade rechecks preserved seed facts before committing the new ledger", a
   const target = await makeGitRepo();
   await command(target, "init");
   await writeFile(join(target, "source", "agents_template.md"), "user-owned seed\n");
-  const nextSource = await distributionVariant("0.6.0", async ({ root }) => {
+  const nextSource = await distributionVariant("0.5.0", async ({ root }) => {
     await writeFile(join(root, "harness"), "#!/usr/bin/env node\n// changed Runtime\n");
   });
   let changed = false;
@@ -790,7 +776,7 @@ test("upgrade rechecks preserved seed facts before committing the new ledger", a
 
   assert.equal(result.status, "conflict");
   assert.equal(result.errors[0].code, "E_MAINTENANCE_CONFLICT");
-  assert.equal(JSON.parse(await readFile(join(target, ".harness", "install-lock.json"), "utf8")).package.version, "0.6.0");
+  assert.equal(JSON.parse(await readFile(join(target, ".harness", "install-lock.json"), "utf8")).package.version, "0.5.0");
   assert.equal((await readCanonicalMaintenance(target)).phase, "applying");
 });
 

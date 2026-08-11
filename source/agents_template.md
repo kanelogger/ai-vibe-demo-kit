@@ -95,3 +95,5 @@ Acceptance 使用 `verification-report/v1` 记录实际命令、退出码、关�
 {填写：允许声称完成的明确状态，以及验证失败时必须报告的信息。}
 
 完成前通过 `./harness signal` 提交当前 Stage Result；需要人工 Gate 时停止推进。稳定经验先进入 `source/knowledge/candidate/`，经确认后才能进入正式知识区。
+
+受治理变更的交付判定：acceptance Stage Result 与 verification report 通过 `check-result --require-complete`；验收证据与受治理内容提交落在同一 `<base-ref>..HEAD` 区间（规则见 `source/rules/git.md`）；最终人工 Gate 未批准前不得声称交付完成。

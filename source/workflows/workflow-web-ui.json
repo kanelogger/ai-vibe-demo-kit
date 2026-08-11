@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "id": "risk-adaptive-skill-workflow",
-  "version": 2,
-  "description": "A lightweight control workflow for alignment, implementation and acceptance.",
+  "id": "web-ui-skill-workflow",
+  "version": 1,
+  "description": "A web UI control workflow with web design guidance in every stage.",
   "skillsCatalogRef": "source/workflows/skills-list.json",
   "initialStage": "alignment",
   "stages": {
     "alignment": {
-      "goal": "Freeze intent, observable acceptance criteria, risk and the implementation shape.",
+      "goal": "Freeze intent, observable acceptance criteria, risk and the UI implementation shape.",
       "outcomes": [
         "ready",
         "blocked"
@@ -37,8 +37,8 @@
           "artifactIds": ["spec"]
         },
         {
-          "id": "alignment.to-spec",
-          "skill": "to-spec",
+          "id": "alignment.web-design",
+          "skill": "web-design",
           "required": true,
           "artifactIds": ["spec"]
         }
@@ -51,7 +51,7 @@
       ]
     },
     "implementation": {
-      "goal": "Implement only the confirmed scope and preserve current verification evidence.",
+      "goal": "Implement only the confirmed UI scope and preserve current verification evidence.",
       "outcomes": [
         "ready-for-acceptance",
         "blocked"
@@ -76,8 +76,8 @@
           "artifactIds": ["implementation-notes", "quick-evidence"]
         },
         {
-          "id": "implementation.implement",
-          "skill": "implement",
+          "id": "implementation.web-design",
+          "skill": "web-design",
           "required": true,
           "artifactIds": ["implementation-notes", "quick-evidence"]
         }
@@ -94,7 +94,7 @@
       ]
     },
     "acceptance": {
-      "goal": "Prove specification compliance, regression safety and cleanup before delivery.",
+      "goal": "Prove specification compliance, visual quality, regression safety and cleanup before delivery.",
       "outcomes": [
         "accepted",
         "changes-requested",
@@ -123,6 +123,12 @@
           "skill": "ai-vibe-demo-kit",
           "required": true,
           "artifactIds": ["verification-report", "handoff"]
+        },
+        {
+          "id": "acceptance.web-design",
+          "skill": "web-design",
+          "required": true,
+          "artifactIds": ["verification-report"]
         },
         {
           "id": "acceptance.code-review",

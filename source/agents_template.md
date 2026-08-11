@@ -41,7 +41,7 @@
 - 架构模块及依赖方向：`ARCHITECTURE.md`
 - 代码根目录与架构索引范围：`project.yml#architecture_memory`
 - Source 分发清单：`source/manifest.json`
-- 默认 Skill 远程来源：`source/.agents/skills.sources.json`
+- 外部 Skill 来源与锁定：`.agents/skills.sources.json`、`.agents/skills.lock.json`
 - 长期知识入口：`source/knowledge/INDEX.md`
 - 知识渐进加载规则：`source/knowledge/ROUTING.md`
 - 可复用工作流：`source/workflows/`

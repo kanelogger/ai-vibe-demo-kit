@@ -10,8 +10,10 @@
 | --- | --- |
 | `errors.mjs` | `HarnessError`、`fail` |
 | `path-safety.mjs` | `isInside`、`resolveInside`、`firstSymlinkInPath` |
+| `repo-io.mjs` | `readRepoText`、`readRepoJson` 安全仓库读取 |
 | `manifest.mjs` | `loadHarnessManifest` 与 schema v2 能力校验 |
 | `repository-guard.mjs` | `repositoryPaths`、`withRepositoryMutation`、maintenance 读取和安全命令格式化 |
+| `skills.mjs` | Skill 控制路径定位、registry/lock schema、外部 SKILL.md parser、entity digest、gitignore 投影与 Runtime 就绪模型 |
 
 ## Invariants
 

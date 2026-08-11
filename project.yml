@@ -70,18 +70,20 @@ environment:
       required: false
 
 commands:
-  install_runtime: "npx --yes ai-vibe-demo-kit@0.5.0 init --target <git-root> --json"
+  install_runtime: "npx --yes ai-vibe-demo-kit@0.6.0 init --target <git-root> --json"
   develop: "./harness help"
   test: "node --test test/runtime/*.test.mjs test/distribution/*.test.mjs"
   typecheck: null
   lint: null
   build: null
-  harness_check: "./harness check --workflow source/workflows/workflow-template.json --json"
+  harness_check: "./harness check --profile core --json"
   version: "./harness version --json"
   commit_check: "node scripts/check-commit-messages.mjs <base-ref> HEAD"
   completion_check: "node scripts/check-completion-evidence.mjs <base-ref> HEAD"
   skill_validation: "node scripts/validate-bundled-skill.mjs"
   distribution_check: "node scripts/check-distribution.mjs"
+  skills_status: "node bin/ai-vibe-demo-kit.mjs skills status --json"
+  skills_materialize: "node bin/ai-vibe-demo-kit.mjs skills sync --json"
   pack: "npm pack --dry-run --json"
   publish: "npm publish --access public"
 
@@ -94,10 +96,11 @@ release:
   canonical_sequence:
     - "node scripts/validate-bundled-skill.mjs"
     - "node scripts/check-distribution.mjs"
+    - "node bin/ai-vibe-demo-kit.mjs skills sync --json"
     - "node --test test/runtime/*.test.mjs test/distribution/*.test.mjs"
     - "npm pack --dry-run --json"
     - "npm publish --access public"
-    - "npm view ai-vibe-demo-kit@0.5.0"
+    - "npm view ai-vibe-demo-kit@0.6.0"
 
 authoritative_context:
   agent_entry: "AGENTS.md"
@@ -122,10 +125,12 @@ architecture_memory:
 
 capabilities:
   skill_sources: "source/.agents/skills.sources.json"
+  skill_lock: "source/.agents/skills.lock.json"
   installed_skills: ".agents/skills/"
 
 workflow:
   definitions: "source/workflows/"
+  profiles: "source/workflows/profiles.json"
   default: "source/workflows/workflow-template.json"
   active_state: ".git/harness/control.json"
   stage_result_template: "source/workflows/stage-result-template.json"

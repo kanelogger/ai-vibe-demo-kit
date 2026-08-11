@@ -1,8 +1,10 @@
 import { lstat, readFile, realpath } from "node:fs/promises";
 import { firstSymlinkInPath, resolveInside } from "../../shared/path-safety.mjs";
+import { externalSkillIdentity } from "../../shared/skills.mjs";
 
 const TERMINALS = new Set(["complete", "blocked", "aborted"]);
 const ARTIFACT_CONTRACTS = new Set(["verification-report/v1"]);
+const AVAILABILITIES = new Set(["bundled", "lock-owned"]);
 const ID = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
 
 const issue = (code, path, message) => ({ code, path, message });
@@ -54,6 +56,7 @@ export function parseSkillDocument(content) {
 
 async function validateSkillEntity(root, catalogEntry, call, errors, warnings, path) {
   const problems = [];
+  const lockOwned = catalogEntry?.availability === "lock-owned";
   if (!object(catalogEntry) || !nonEmpty(catalogEntry.skillRef)) problems.push("catalog entry requires skillRef");
   const target = catalogEntry?.skillRef ? resolveInside(root, catalogEntry.skillRef) : null;
   if (catalogEntry?.skillRef && !target) problems.push("skillRef must be a safe repository-relative path");
@@ -63,7 +66,15 @@ async function validateSkillEntity(root, catalogEntry, call, errors, warnings, p
       else {
         const stat = await lstat(target);
         if (!stat.isFile()) problems.push("skillRef must be a regular file");
-        else {
+        else if (lockOwned) {
+          // Lock-owned entities are materialized by the Skills Module; the
+          // external parser accepts extra fields, quoted values and block
+          // scalars. A missing entity is a readiness concern (exit 1 tier),
+          // not a structural one; digest drift is checked against the lock.
+          const identity = externalSkillIdentity(await readFile(target, "utf8"));
+          if (!identity.ok) problems.push(`SKILL.md ${identity.problem}`);
+          else if (identity.name !== catalogEntry.id) problems.push("SKILL.md name must equal the Catalog id");
+        } else {
           const document = parseSkillDocument(await readFile(target, "utf8"));
           if (!document) problems.push("SKILL.md frontmatter is invalid");
           else {
@@ -76,6 +87,7 @@ async function validateSkillEntity(root, catalogEntry, call, errors, warnings, p
         }
       }
     } catch (error) {
+      if (error.code === "ENOENT" && lockOwned) return; // readiness tier reports missing lock-owned entities
       problems.push(error.code === "ENOENT" ? "skillRef does not exist" : error.message);
     }
   }
@@ -83,6 +95,33 @@ async function validateSkillEntity(root, catalogEntry, call, errors, warnings, p
     const targetIssues = call.required ? errors : warnings;
     targetIssues.push(issue(call.required ? "E_SKILL_ENTITY" : "W_SKILL_UNAVAILABLE", path, message));
   }
+}
+
+function validateCatalogEntries(catalog, errors) {
+  const entries = new Map();
+  if (!object(catalog) || !Array.isArray(catalog.skills)) {
+    errors.push(issue("E_SKILL_CATALOG", "skills", "catalog requires a skills array"));
+    return entries;
+  }
+  const ids = new Set();
+  for (const [index, entry] of catalog.skills.entries()) {
+    const path = `skills.${index}`;
+    if (!object(entry) || !nonEmpty(entry.id) || !ID.test(entry.id)) {
+      errors.push(issue("E_SKILL_CATALOG", `${path}.id`, "catalog entry requires a valid id"));
+      continue;
+    }
+    if (ids.has(entry.id)) errors.push(issue("E_SKILL_CATALOG", `${path}.id`, `duplicate catalog entry: ${entry.id}`));
+    ids.add(entry.id);
+    // Entries without an availability keep the legacy bundled semantics; the
+    // distributed Catalog declares every field and the Distribution check
+    // enforces its full shape.
+    if (entry.availability !== undefined && !AVAILABILITIES.has(entry.availability)) errors.push(issue("E_SKILL_CATALOG", `${path}.availability`, "availability must be bundled or lock-owned"));
+    if (entry.workflowStages !== undefined && (!Array.isArray(entry.workflowStages) || entry.workflowStages.some((stage) => !nonEmpty(stage) || !ID.test(stage)))) {
+      errors.push(issue("E_SKILL_CATALOG", `${path}.workflowStages`, "workflowStages must be an array of stage ids"));
+    }
+    entries.set(entry.id, entry);
+  }
+  return entries;
 }
 
 export async function validateWorkflow(workflow, { root, workflowPath = null } = {}) {
@@ -97,10 +136,11 @@ export async function validateWorkflow(workflow, { root, workflowPath = null } =
   const stageIds = Object.keys(stages);
   if (!stageIds.includes(workflow.initialStage)) errors.push(issue("E_INITIAL_STAGE", "initialStage", "initialStage must name a declared stage"));
 
+  let catalog = null;
   const catalogEntries = new Map();
   if (nonEmpty(workflow.skillsCatalogRef) && root) {
-    const catalog = await readJsonPath(root, workflow.skillsCatalogRef, errors, "E_SKILL_CATALOG");
-    for (const entry of catalog?.skills ?? []) if (nonEmpty(entry?.id)) catalogEntries.set(entry.id, entry);
+    catalog = await readJsonPath(root, workflow.skillsCatalogRef, errors, "E_SKILL_CATALOG");
+    if (catalog) for (const [id, entry] of validateCatalogEntries(catalog, errors)) catalogEntries.set(id, entry);
   }
 
   for (const [stageId, stage] of Object.entries(stages)) {
@@ -129,6 +169,10 @@ export async function validateWorkflow(workflow, { root, workflowPath = null } =
       } else if (workflow.skillsCatalogRef && !catalogEntries.has(call.skill)) {
         errors.push(issue("E_SKILL_UNKNOWN", `${path}.skillCalls.${index}.skill`, `skill is not present in catalog: ${call.skill}`));
       } else {
+        const catalogEntry = catalogEntries.get(call.skill);
+        if (catalogEntry && Array.isArray(catalogEntry.workflowStages) && !catalogEntry.workflowStages.includes(stageId)) {
+          errors.push(issue("E_SKILL_STAGE", `${path}.skillCalls.${index}.skill`, `skill "${call.skill}" is not declared for stage "${stageId}" in the catalog`));
+        }
         if (call.artifactIds !== undefined && !Array.isArray(call.artifactIds)) errors.push(issue("E_SKILL_ARTIFACTS", `${path}.skillCalls.${index}.artifactIds`, "artifactIds must be an array"));
         const artifactIds = Array.isArray(call.artifactIds) ? call.artifactIds : [];
         for (const duplicate of duplicates(artifactIds)) errors.push(issue("E_SKILL_ARTIFACT_DUPLICATE", `${path}.skillCalls.${index}.artifactIds`, `duplicate artifact id: ${duplicate}`));
@@ -199,5 +243,5 @@ export async function validateWorkflow(workflow, { root, workflowPath = null } =
   }
 
   if (workflowPath && root && !resolveInside(root, workflowPath)) errors.push(issue("E_PATH_OUTSIDE", "workflowPath", "workflow path must stay inside the repository"));
-  return { valid: errors.length === 0, errors, warnings };
+  return { valid: errors.length === 0, errors, warnings, catalog };
 }

@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "defaultProfile": "core",
+  "profiles": [
+    {
+      "id": "core",
+      "description": "Default engineering flow: specification, implementation and code review over the standard alignment, implementation and acceptance stages.",
+      "workflowRef": "source/workflows/workflow-template.json"
+    },
+    {
+      "id": "bugfix",
+      "description": "Bug-fix flow: diagnose the defect first, implement test-first, then review the fix before acceptance.",
+      "workflowRef": "source/workflows/workflow-bugfix.json"
+    },
+    {
+      "id": "web-ui",
+      "description": "Web UI flow: web design guidance in every stage with code review at acceptance.",
+      "workflowRef": "source/workflows/workflow-web-ui.json"
+    },
+    {
+      "id": "visual-design",
+      "description": "Visual design flow: baoyu design guidance throughout, with an optional architecture diagram during implementation.",
+      "workflowRef": "source/workflows/workflow-visual-design.json"
+    }
+  ]
+}

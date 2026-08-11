@@ -1,0 +1,39 @@
+{
+  "outcome": "ready",
+  "summary": "冻结 v0.6 目标、可观测验收标准、风险分类与环境事实（全部通过）。",
+  "conditions": [
+    {
+      "id": "acceptance-observable",
+      "status": "passed",
+      "evidenceRefs": ["work/requirements/wi-msovsjvq-3df7f94a/spec.md"]
+    },
+    {
+      "id": "risk-classified",
+      "status": "passed",
+      "evidenceRefs": ["work/requirements/wi-msovsjvq-3df7f94a/spec.md"]
+    },
+    {
+      "id": "environment-confirmed",
+      "status": "passed",
+      "evidenceRefs": ["work/requirements/wi-msovsjvq-3df7f94a/spec.md"]
+    }
+  ],
+  "skills": [
+    {
+      "id": "alignment.harness-guide",
+      "status": "succeeded",
+      "artifactRefs": ["spec"]
+    },
+    {
+      "id": "alignment.to-spec",
+      "status": "succeeded",
+      "artifactRefs": ["spec"]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "spec",
+      "uri": "work/requirements/wi-msovsjvq-3df7f94a/spec.md"
+    }
+  ]
+}

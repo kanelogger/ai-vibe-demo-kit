@@ -1,0 +1,43 @@
+{
+  "outcome": "accepted",
+  "summary": "v0.6 改造通过完整测试、分发闭环、打包与就绪检查；待最终人工 Gate。",
+  "conditions": [
+    {
+      "id": "spec-compliant",
+      "status": "passed",
+      "evidenceRefs": ["work/requirements/wi-msovsjvq-3df7f94a/verification-report.json"]
+    },
+    {
+      "id": "regression-safe",
+      "status": "passed",
+      "evidenceRefs": ["work/requirements/wi-msovsjvq-3df7f94a/verification-report.json"]
+    },
+    {
+      "id": "cleanup-complete",
+      "status": "passed",
+      "evidenceRefs": ["work/requirements/wi-msovsjvq-3df7f94a/verification-report.json"]
+    }
+  ],
+  "skills": [
+    {
+      "id": "acceptance.harness-guide",
+      "status": "succeeded",
+      "artifactRefs": ["verification-report", "handoff"]
+    },
+    {
+      "id": "acceptance.code-review",
+      "status": "succeeded",
+      "artifactRefs": ["verification-report"]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "verification-report",
+      "uri": "work/requirements/wi-msovsjvq-3df7f94a/verification-report.json"
+    },
+    {
+      "id": "handoff",
+      "uri": "work/requirements/wi-msovsjvq-3df7f94a/handoff.md"
+    }
+  ]
+}

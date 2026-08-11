@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "id": "risk-adaptive-skill-workflow",
-  "version": 2,
-  "description": "A lightweight control workflow for alignment, implementation and acceptance.",
+  "id": "bugfix-skill-workflow",
+  "version": 1,
+  "description": "A bug-fix control workflow: diagnose first, implement test-first, then review.",
   "skillsCatalogRef": "source/workflows/skills-list.json",
   "initialStage": "alignment",
   "stages": {
     "alignment": {
-      "goal": "Freeze intent, observable acceptance criteria, risk and the implementation shape.",
+      "goal": "Reproduce and diagnose the defect; freeze the observable fix criteria and risk.",
       "outcomes": [
         "ready",
         "blocked"
@@ -37,8 +37,8 @@
           "artifactIds": ["spec"]
         },
         {
-          "id": "alignment.to-spec",
-          "skill": "to-spec",
+          "id": "alignment.diagnosing-bugs",
+          "skill": "diagnosing-bugs",
           "required": true,
           "artifactIds": ["spec"]
         }
@@ -51,7 +51,7 @@
       ]
     },
     "implementation": {
-      "goal": "Implement only the confirmed scope and preserve current verification evidence.",
+      "goal": "Fix only the diagnosed defect test-first and preserve current verification evidence.",
       "outcomes": [
         "ready-for-acceptance",
         "blocked"
@@ -76,8 +76,8 @@
           "artifactIds": ["implementation-notes", "quick-evidence"]
         },
         {
-          "id": "implementation.implement",
-          "skill": "implement",
+          "id": "implementation.tdd",
+          "skill": "tdd",
           "required": true,
           "artifactIds": ["implementation-notes", "quick-evidence"]
         }
@@ -94,7 +94,7 @@
       ]
     },
     "acceptance": {
-      "goal": "Prove specification compliance, regression safety and cleanup before delivery.",
+      "goal": "Prove the fix resolves the diagnosis, regression safety and cleanup before delivery.",
       "outcomes": [
         "accepted",
         "changes-requested",
@@ -152,7 +152,7 @@
       "to": "implementation",
       "gate": {
         "mode": "human",
-        "prompt": "Confirm intent, acceptance criteria and risk before implementation.",
+        "prompt": "Confirm the diagnosis, fix criteria and risk before implementation.",
         "onReject": "alignment"
       }
     },
@@ -190,7 +190,7 @@
       "to": "complete",
       "gate": {
         "mode": "human",
-        "prompt": "Accept the verified candidate and recorded residual risks.",
+        "prompt": "Accept the verified fix and recorded residual risks.",
         "onReject": "acceptance"
       }
     },

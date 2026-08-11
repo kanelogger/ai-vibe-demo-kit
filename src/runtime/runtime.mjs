@@ -1,47 +1,26 @@
-import { readFile, realpath } from "node:fs/promises";
-import { isAbsolute } from "node:path";
+import { realpath } from "node:fs/promises";
 import { applyControl, digestValue, inspectState } from "./kernel.mjs";
+import { computeBinding, inspectActiveBinding, loadProfiles, resolveWorkflowSelection } from "./selection.mjs";
 import { HarnessError, fail } from "../shared/errors.mjs";
 import { loadHarnessManifest } from "../shared/manifest.mjs";
-import { firstSymlinkInPath, isInside, resolveInside } from "../shared/path-safety.mjs";
+import { readRepoJson, readRepoText } from "../shared/repo-io.mjs";
 import { formatRecoveryCommand, readCanonicalMaintenance, repositoryPaths } from "../shared/repository-guard.mjs";
+import { inspectSkillsReadiness } from "../shared/skills.mjs";
 import { loadState, mutateState, readGitActor } from "./store.mjs";
 import { validateEnvironmentManifest, validateStageResult, validateStateAgainstWorkflow, validateWorkflow } from "./validation/index.mjs";
 
-const DEFAULT_WORKFLOW = "source/workflows/workflow-template.json";
-
-async function readRepoText(root, path, label) {
-  if (typeof path !== "string" || path.trim() === "" || isAbsolute(path)) fail("E_PATH_OUTSIDE", `${label} path must be repository-relative`);
-  const target = resolveInside(root, path);
-  if (!target) fail("E_PATH_OUTSIDE", `${label} path leaves the repository`);
-  try {
-    if (await firstSymlinkInPath(root, target)) fail("E_PATH_SYMLINK", `${label} path must not use symlinks`);
-    const actual = await realpath(target);
-    if (!isInside(root, actual)) fail("E_PATH_OUTSIDE", `${label} resolves outside the repository`);
-    return await readFile(target, "utf8");
-  } catch (error) {
-    if (error instanceof HarnessError) throw error;
-    if (error.code === "ENOENT") fail("E_REFERENCE_INVALID", `${label} file does not exist: ${path}`);
-    fail("E_REFERENCE_INVALID", `${label} cannot be read: ${error.message}`);
-  }
-}
-
-async function readRepoJson(root, path, label) {
-  const content = await readRepoText(root, path, label);
-  try { return JSON.parse(content); }
-  catch (error) { fail("E_REFERENCE_INVALID", `${label} is not valid JSON: ${error.message}`); }
-}
+const DEFAULT_START_PROFILE = "core";
 
 async function loadWorkflow(root, path) {
   const workflow = await readRepoJson(root, path, "workflow");
   const report = await validateWorkflow(workflow, { root, workflowPath: path });
-  return { workflow, report, digest: digestValue(workflow) };
+  return { workflow, report, catalog: report.catalog ?? null, digest: digestValue(workflow) };
 }
 
 function nextActionsFor(value) {
   const revisionArg = `--revision ${value.revision}`;
   return (value.allowedActions ?? []).map((action) => {
-    if (action === "start") return `./harness start --workflow ${DEFAULT_WORKFLOW} --intent "<intent>"`;
+    if (action === "start") return value.startAction ?? `./harness start --profile ${DEFAULT_START_PROFILE} --intent "<intent>"`;
     if (action === "signal") return `./harness signal ${revisionArg} --file "<stage-result.json>"`;
     if (action === "redirect") return `./harness decide ${revisionArg} --action redirect --target "<stage>" --reason "<reason>"`;
     if (action === "override") {
@@ -93,14 +72,36 @@ function signalRevisionMismatch(state, expectedRevision, stageResult) {
   fail("E_STALE_REVISION", `expected revision ${expectedRevision}, current revision is ${state.revision}`, { facts });
 }
 
-async function assertCurrentWorkflow(root, state) {
+async function assertActiveBinding(root, state) {
   if (!state.active) fail("E_IDLE", "there is no active work item");
-  const loaded = await loadWorkflow(root, state.active.workflow.ref);
-  if (!loaded.report.valid) fail("E_WORKFLOW_INVALID", "active workflow is structurally invalid", { facts: loaded.report });
-  if (loaded.digest !== state.active.workflow.digest) fail("E_WORKFLOW_DRIFT", "active workflow changed after work started", { facts: { expected: state.active.workflow.digest, actual: loaded.digest } });
-  const stateReport = validateStateAgainstWorkflow(state, loaded.workflow);
+  const inspection = await inspectActiveBinding({ root, active: state.active, loadWorkflowFor: (ref) => loadWorkflow(root, ref) });
+  if (inspection.drift) {
+    const first = inspection.issues[0];
+    fail(first.code, first.message, { facts: { issues: inspection.issues } });
+  }
+  const stateReport = validateStateAgainstWorkflow(state, inspection.loaded.workflow);
   if (!stateReport.valid) fail("E_STATE_INVALID", "active state does not match its workflow", { facts: stateReport });
-  return loaded;
+  return inspection.loaded;
+}
+
+// Resolves the effective selection for state commands. An explicit selector
+// must match the Active binding exactly; a Workflow ref cannot impersonate a
+// Profile-bound Work Item.
+async function selectionForCommand(root, state, command) {
+  const active = state.active;
+  if (!active) return resolveWorkflowSelection({ root, profileId: command.profile ?? null, workflowRef: command.workflow ?? null });
+  const boundProfile = active.profileId ?? null;
+  const boundRef = active.workflowRef ?? active.workflow.ref;
+  if (command.profile) {
+    if (boundProfile !== command.profile) fail("E_BINDING_MISMATCH", `active work item is bound to profile "${boundProfile ?? "none"}", not "${command.profile}"`, { facts: { boundProfile, boundRef } });
+    return resolveWorkflowSelection({ root, profileId: command.profile });
+  }
+  if (command.workflow) {
+    if (boundProfile !== null) fail("E_BINDING_MISMATCH", `active work item is bound to profile "${boundProfile}"; an explicit --workflow cannot impersonate the binding`, { facts: { boundProfile, boundRef } });
+    if (boundRef !== command.workflow) fail("E_BINDING_MISMATCH", "explicit workflow differs from the active binding", { facts: { boundProfile, boundRef } });
+    return resolveWorkflowSelection({ root, workflowRef: command.workflow });
+  }
+  return resolveWorkflowSelection({ root, profileId: boundProfile, workflowRef: boundProfile ? null : boundRef });
 }
 
 async function execute({ runtimeRoot, cwd, command, context }) {
@@ -109,12 +110,23 @@ async function execute({ runtimeRoot, cwd, command, context }) {
     return { exitCode: 0, payload: { schemaVersion: 1, name: manifest.name, version: manifest.version, minimumNodeVersion: manifest.minimumNodeVersion } };
   }
   const root = (await repositoryPaths(await realpath(cwd))).root;
+  if (command.kind === "profiles") {
+    const registry = await loadProfiles(root);
+    return {
+      exitCode: 0,
+      payload: {
+        defaultProfile: registry.defaultProfile,
+        profiles: registry.profiles.map((entry) => ({ ...entry, default: entry.id === registry.defaultProfile })),
+      },
+    };
+  }
   if (command.kind === "check-environment") {
     const payload = validateEnvironmentManifest(await readRepoText(root, command.file, "AI environment manifest"));
     return { exitCode: payload.valid ? 0 : 1, payload };
   }
   if (command.kind === "check-result") {
-    const loaded = await loadWorkflow(root, command.workflow);
+    const selection = await resolveWorkflowSelection({ root, profileId: command.profile ?? null, workflowRef: command.workflow ?? null });
+    const loaded = await loadWorkflow(root, selection.workflowRef);
     const stageResult = await readRepoJson(root, command.file, "stage result");
     const validation = loaded.report.valid
       ? await validateStageResult(loaded.workflow, command.stage, stageResult, { root })
@@ -143,14 +155,36 @@ async function execute({ runtimeRoot, cwd, command, context }) {
   if (command.kind === "check") {
     const state = await loadState(root);
     context.state = state;
-    const workflowPath = command.workflow ?? state.active?.workflow.ref ?? DEFAULT_WORKFLOW;
-    const loaded = await loadWorkflow(root, workflowPath);
+    const selection = await selectionForCommand(root, state, command);
+    const loaded = await loadWorkflow(root, selection.workflowRef);
     const errors = [...loaded.report.errors];
-    if (state.active && (state.active.workflow.ref !== workflowPath || state.active.workflow.digest !== loaded.digest)) {
-      errors.push({ code: "E_WORKFLOW_DRIFT", path: "state.active.workflow", message: "active workflow reference or digest differs" });
-    } else if (state.active) errors.push(...validateStateAgainstWorkflow(state, loaded.workflow).errors);
-    const payload = { ...publicState(state), valid: errors.length === 0, errors, warnings: loaded.report.warnings, workflow: { id: loaded.workflow.id, version: loaded.workflow.version, digest: loaded.digest } };
-    return { exitCode: payload.valid ? 0 : 2, payload };
+    if (state.active) {
+      const boundRef = state.active.workflowRef ?? state.active.workflow.ref;
+      if (boundRef !== selection.workflowRef || state.active.workflow.digest !== loaded.digest) {
+        errors.push({ code: "E_WORKFLOW_DRIFT", path: "state.active.workflow", message: "active workflow reference or digest differs" });
+      } else if (state.active.bindingDigest === undefined || state.active.bindingDigest === null) {
+        errors.push({ code: "E_BINDING_LEGACY", path: "state.active.binding", message: "active binding predates Profile binding; abort and restart the Work Item" });
+      } else {
+        const binding = await computeBinding({ root, selection, workflow: loaded.workflow, catalog: loaded.catalog });
+        for (const entry of binding.issues) errors.push({ code: entry.code, path: "state.active.binding", message: entry.message });
+        if (binding.issues.length === 0 && binding.bindingDigest !== state.active.bindingDigest) {
+          errors.push({ code: "E_BINDING_DRIFT", path: "state.active.binding", message: "active binding inputs changed after work started" });
+        }
+        if (errors.length === 0) errors.push(...validateStateAgainstWorkflow(state, loaded.workflow).errors);
+      }
+    }
+    const readiness = await inspectSkillsReadiness({ root, workflow: loaded.workflow, catalog: loaded.catalog });
+    const valid = errors.length === 0 && readiness.valid;
+    const payload = {
+      ...publicState(state),
+      valid,
+      errors,
+      warnings: [...loaded.report.warnings, ...readiness.warnings],
+      workflow: { id: loaded.workflow.id, version: loaded.workflow.version, digest: loaded.digest },
+      selection: { profileId: selection.profileId, workflowRef: selection.workflowRef },
+      skillsReadiness: { valid: readiness.valid, ready: readiness.ready, issues: readiness.issues },
+    };
+    return { exitCode: !valid ? 2 : !readiness.ready ? 1 : 0, payload };
   }
   if (command.kind === "status") {
     const maintenance = await readCanonicalMaintenance(root);
@@ -160,12 +194,26 @@ async function execute({ runtimeRoot, cwd, command, context }) {
     const state = await loadState(root);
     context.state = state;
     let workflowDrift = false;
+    let bindingDrift = false;
+    let bindingIssues = [];
     if (state.active) {
-      try { await assertCurrentWorkflow(root, state); }
-      catch (error) { if (new Set(["E_WORKFLOW_DRIFT", "E_WORKFLOW_INVALID", "E_REFERENCE_INVALID"]).has(error.code)) workflowDrift = true; else throw error; }
+      const inspection = await inspectActiveBinding({ root, active: state.active, loadWorkflowFor: (ref) => loadWorkflow(root, ref) });
+      workflowDrift = inspection.workflowDrift;
+      bindingDrift = inspection.drift;
+      bindingIssues = inspection.issues;
+      if (!inspection.drift && inspection.loaded) {
+        const stateReport = validateStateAgainstWorkflow(state, inspection.loaded.workflow);
+        if (!stateReport.valid) fail("E_STATE_INVALID", "active state does not match its workflow", { facts: stateReport });
+      }
     }
-    const payload = publicState(state, { workflowDrift });
-    if (workflowDrift) {
+    const payload = publicState(state, {
+      workflowDrift,
+      profileId: state.active?.profileId ?? null,
+      workflowRef: state.active ? state.active.workflowRef ?? state.active.workflow.ref : null,
+      bindingDrift,
+      bindingIssues,
+    });
+    if (bindingDrift) {
       payload.allowedActions = ["abort"];
       payload.nextActions = nextActionsFor(payload);
     }
@@ -174,12 +222,36 @@ async function execute({ runtimeRoot, cwd, command, context }) {
   if (command.kind === "start") {
     const state = await loadState(root);
     context.state = state;
-    const result = await mutateState(root, state.revision, async (current) => {
-      const loaded = await loadWorkflow(root, command.workflow);
-      if (!loaded.report.valid) fail("E_WORKFLOW_INVALID", "workflow is structurally invalid", { facts: loaded.report });
-      return applyControl({ state: current, workflow: loaded.workflow, command: { kind: "start", intent: command.intent, workflowRef: command.workflow, workflowDigest: loaded.digest } });
-    });
-    return { exitCode: 0, payload: publicState(result.state) };
+    const selection = await resolveWorkflowSelection({ root, profileId: command.profile ?? null, workflowRef: command.workflow ?? null });
+    const loaded = await loadWorkflow(root, selection.workflowRef);
+    if (!loaded.report.valid) fail("E_WORKFLOW_INVALID", "workflow is structurally invalid", { facts: loaded.report });
+    const readiness = await inspectSkillsReadiness({ root, workflow: loaded.workflow, catalog: loaded.catalog });
+    if (!readiness.valid) {
+      const first = readiness.issues[0];
+      fail(first.code, first.message, { facts: { issues: readiness.issues } });
+    }
+    if (!readiness.ready) {
+      fail("E_SKILLS_NOT_READY", "required skills are not ready", { exitCode: 1, facts: { issues: readiness.issues }, repair: readiness.issues[0]?.repair ?? null });
+    }
+    const binding = await computeBinding({ root, selection, workflow: loaded.workflow, catalog: loaded.catalog });
+    if (binding.issues.length > 0) {
+      const first = binding.issues[0];
+      fail(first.code, first.message, { facts: { issues: binding.issues } });
+    }
+    const result = await mutateState(root, state.revision, async (current) => applyControl({
+      state: current,
+      workflow: loaded.workflow,
+      command: {
+        kind: "start",
+        intent: command.intent,
+        workflowRef: selection.workflowRef,
+        workflowDigest: loaded.digest,
+        profileId: selection.profileId,
+        bindingDigest: binding.bindingDigest,
+        bindingLockDigest: binding.lockDigest,
+      },
+    }));
+    return { exitCode: 0, payload: { ...publicState(result.state), selection: { profileId: selection.profileId, workflowRef: selection.workflowRef }, warnings: readiness.warnings } };
   }
   if (command.kind === "signal") {
     const expectedRevision = command.revision;
@@ -187,7 +259,7 @@ async function execute({ runtimeRoot, cwd, command, context }) {
     context.state = state;
     if (state.revision !== expectedRevision) return signalRevisionMismatch(state, expectedRevision, await readRepoJson(root, command.file, "stage result"));
     if (!state.active) fail("E_IDLE", "there is no active work item");
-    const loaded = await assertCurrentWorkflow(root, state);
+    const loaded = await assertActiveBinding(root, state);
     const stageResult = await readRepoJson(root, command.file, "stage result");
     const validation = await validateStageResult(loaded.workflow, state.active.stage, stageResult, { root });
     if (!validation.valid) fail("E_RESULT_INVALID", "stage result is structurally invalid", { facts: validation });
@@ -210,7 +282,7 @@ async function execute({ runtimeRoot, cwd, command, context }) {
     if (!state.active) fail("E_IDLE", "there is no active work item");
     if (state.revision !== expectedRevision) fail("E_STALE_REVISION", `expected revision ${expectedRevision}, current revision is ${state.revision}`, { facts: { expectedRevision, currentRevision: state.revision } });
     let workflow = null;
-    if (command.action !== "abort") workflow = (await assertCurrentWorkflow(root, state)).workflow;
+    if (command.action !== "abort") workflow = (await assertActiveBinding(root, state)).workflow;
     const actor = command.actor ?? await readGitActor(root);
     if (!actor) fail("E_USAGE", "--actor is required when git user.name is unavailable");
     const human = { action: command.action, actor, reason: command.reason, target: command.target, acceptRisk: command.acceptRisk ?? [] };

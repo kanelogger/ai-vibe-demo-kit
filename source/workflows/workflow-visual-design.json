@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
-  "id": "risk-adaptive-skill-workflow",
-  "version": 2,
-  "description": "A lightweight control workflow for alignment, implementation and acceptance.",
+  "id": "visual-design-skill-workflow",
+  "version": 1,
+  "description": "A visual design control workflow with baoyu design guidance and an optional architecture diagram.",
   "skillsCatalogRef": "source/workflows/skills-list.json",
   "initialStage": "alignment",
   "stages": {
     "alignment": {
-      "goal": "Freeze intent, observable acceptance criteria, risk and the implementation shape.",
+      "goal": "Freeze intent, observable acceptance criteria, risk and the visual design shape.",
       "outcomes": [
         "ready",
         "blocked"
@@ -37,8 +37,8 @@
           "artifactIds": ["spec"]
         },
         {
-          "id": "alignment.to-spec",
-          "skill": "to-spec",
+          "id": "alignment.baoyu-design",
+          "skill": "baoyu-design",
           "required": true,
           "artifactIds": ["spec"]
         }
@@ -51,7 +51,7 @@
       ]
     },
     "implementation": {
-      "goal": "Implement only the confirmed scope and preserve current verification evidence.",
+      "goal": "Produce only the confirmed visual artifacts and preserve current verification evidence.",
       "outcomes": [
         "ready-for-acceptance",
         "blocked"
@@ -76,10 +76,16 @@
           "artifactIds": ["implementation-notes", "quick-evidence"]
         },
         {
-          "id": "implementation.implement",
-          "skill": "implement",
+          "id": "implementation.baoyu-design",
+          "skill": "baoyu-design",
           "required": true,
           "artifactIds": ["implementation-notes", "quick-evidence"]
+        },
+        {
+          "id": "implementation.architecture-diagram",
+          "skill": "architecture-diagram",
+          "required": false,
+          "artifactIds": ["quick-evidence"]
         }
       ],
       "requiredArtifacts": [
@@ -94,7 +100,7 @@
       ]
     },
     "acceptance": {
-      "goal": "Prove specification compliance, regression safety and cleanup before delivery.",
+      "goal": "Prove specification compliance, aesthetic quality and cleanup before delivery.",
       "outcomes": [
         "accepted",
         "changes-requested",
@@ -125,8 +131,8 @@
           "artifactIds": ["verification-report", "handoff"]
         },
         {
-          "id": "acceptance.code-review",
-          "skill": "code-review",
+          "id": "acceptance.baoyu-design",
+          "skill": "baoyu-design",
           "required": true,
           "artifactIds": ["verification-report"]
         }

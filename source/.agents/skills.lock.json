@@ -1,0 +1,133 @@
+{
+  "version": 2,
+  "skillsRoot": ".agents/skills",
+  "sources": [
+    {
+      "id": "architecture-diagram",
+      "repo": "https://github.com/Cocoon-AI/architecture-diagram-generator.git",
+      "path": ".",
+      "track": {
+        "kind": "branch",
+        "value": "main"
+      },
+      "resolved": "4b9087d55268c79a935105439dbcd37b630fc3f3",
+      "licenseFiles": [
+        {
+          "path": "LICENSE",
+          "sha256": "b9c8cd280ba143d733a73491e5bfa418f4b98a74d7700b81344a0981613126a1",
+          "localPath": ".agents/skills/.sources/architecture-diagram/licenses/LICENSE"
+        }
+      ],
+      "skills": [
+        {
+          "name": "architecture-diagram",
+          "sourcePath": "architecture-diagram",
+          "treeDigest": "ef210261930e6243c047b76d8e353416fca460966b196fb8535e7f87fb2796a0"
+        }
+      ]
+    },
+    {
+      "id": "baoyu-design",
+      "repo": "https://github.com/JimLiu/baoyu-design.git",
+      "path": "skills/baoyu-design",
+      "track": {
+        "kind": "branch",
+        "value": "main"
+      },
+      "resolved": "026d4ea012bdd5cada72ac8cc13f21ba4edf2245",
+      "licenseFiles": [
+        {
+          "path": "LICENSE",
+          "sha256": "50426a43964d21a284c1f248a2b86aa239274d6e7619947ff166e0c8842d5fef",
+          "localPath": ".agents/skills/.sources/baoyu-design/licenses/LICENSE"
+        }
+      ],
+      "skills": [
+        {
+          "name": "baoyu-design",
+          "sourcePath": ".",
+          "treeDigest": "2499ab87c3589235dd980903b753cc2d02fc890267ad2b5e2dc97c86e60360cf"
+        }
+      ]
+    },
+    {
+      "id": "mattpocock-skills",
+      "repo": "https://github.com/mattpocock/skills.git",
+      "path": "skills",
+      "track": {
+        "kind": "branch",
+        "value": "main"
+      },
+      "only": [
+        "code-review",
+        "diagnosing-bugs",
+        "implement",
+        "tdd",
+        "to-spec"
+      ],
+      "exclude": [
+        "deprecated/",
+        "in-progress/"
+      ],
+      "resolved": "84fdeffd12f2ee307994d1eb6feb48173b6e0502",
+      "licenseFiles": [
+        {
+          "path": "LICENSE",
+          "sha256": "0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+          "localPath": ".agents/skills/.sources/mattpocock-skills/licenses/LICENSE"
+        }
+      ],
+      "skills": [
+        {
+          "name": "code-review",
+          "sourcePath": "engineering/code-review",
+          "treeDigest": "3607cbf7e2eb1b9ba429835e9debdd64f6bb9776c3bd656c1a9f93e308ee844f"
+        },
+        {
+          "name": "diagnosing-bugs",
+          "sourcePath": "engineering/diagnosing-bugs",
+          "treeDigest": "14f5fae3677d577ec90688992c1f7d0f032a134b74798f073e341ee892b94528"
+        },
+        {
+          "name": "implement",
+          "sourcePath": "engineering/implement",
+          "treeDigest": "016bc70d1d89de77b9fbf2b3eb44cb5d5f075f6fc2b52f7959cb8e29d352f1df"
+        },
+        {
+          "name": "tdd",
+          "sourcePath": "engineering/tdd",
+          "treeDigest": "93a80c04561a27d047152ae1494f5ae9b0a91e3c03efb407fc951123ec4161cb"
+        },
+        {
+          "name": "to-spec",
+          "sourcePath": "engineering/to-spec",
+          "treeDigest": "46a39fa80c6d6613c860d6f8a4b8b25e4165bc94485e6334790c851fe18650a1"
+        }
+      ]
+    },
+    {
+      "id": "web-design",
+      "repo": "https://github.com/xiaopu-ai/web-design.git",
+      "path": ".",
+      "track": {
+        "kind": "branch",
+        "value": "main"
+      },
+      "resolved": "22a4f482cc4caa2394391c0c31ff0aefd1908774",
+      "licenseFiles": [
+        {
+          "path": "LICENSE",
+          "sha256": "accaa8b92e66bed9a85ac82db706d8d143a5f7540e34fed92f5eba88f147ae21",
+          "localPath": ".agents/skills/.sources/web-design/licenses/LICENSE"
+        }
+      ],
+      "skills": [
+        {
+          "name": "web-design",
+          "sourcePath": ".",
+          "treeDigest": "c73e6218e87366420cd4f44131fe0d2ec8001c9559efc90549902bac48c6d491"
+        }
+      ]
+    }
+  ]
+}

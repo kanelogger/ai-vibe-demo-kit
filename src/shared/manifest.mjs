@@ -4,7 +4,7 @@ import { HarnessError, fail } from "./errors.mjs";
 
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
 
-const COMMANDS = ["version", "check", "check-environment", "check-result", "start", "status", "signal", "decide"];
+const COMMANDS = ["version", "profiles", "check", "check-environment", "check-result", "start", "status", "signal", "decide"];
 
 function validateManifest(value, { allowLegacy = false } = {}) {
   if (!value || typeof value !== "object" || Array.isArray(value)) fail("E_MANIFEST_INVALID", "Harness manifest must be an object");

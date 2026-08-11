@@ -15,7 +15,10 @@ async function commitAll(root, subject) {
   return run("git", ["rev-parse", "HEAD"], root);
 }
 
-async function writeAcceptanceEvidence(root, workId, { skills = [{ id: "acceptance.harness-guide", status: "succeeded", artifactRefs: ["verification-report", "handoff"] }] } = {}) {
+async function writeAcceptanceEvidence(root, workId, { skills = [
+  { id: "acceptance.harness-guide", status: "succeeded", artifactRefs: ["verification-report", "handoff"] },
+  { id: "acceptance.code-review", status: "succeeded", artifactRefs: ["verification-report"] },
+] } = {}) {
   const relativeRoot = `work/requirements/${workId}`;
   const evidenceRoot = join(root, relativeRoot);
   await mkdir(evidenceRoot, { recursive: true });

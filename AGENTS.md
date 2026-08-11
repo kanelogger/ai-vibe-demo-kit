@@ -6,6 +6,7 @@
 - 架构总览与依赖方向：`ARCHITECTURE.md`
 - Source 分发清单：`source/manifest.json`
 - 默认 Skill 远程来源：`source/.agents/skills.sources.json`
+- 外部 Skill 锁定：`source/.agents/skills.lock.json`
 - 长期知识入口：`source/knowledge/INDEX.md`
 - 知识渐进加载：`source/knowledge/ROUTING.md`
 - Workflow 与 Evidence 契约：`source/workflows/`

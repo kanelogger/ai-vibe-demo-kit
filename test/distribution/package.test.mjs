@@ -35,10 +35,12 @@ test("local tarball initializes a Git repository and exposes Runtime lifecycle p
   assert.equal(result.code, 1);
   assert.equal(JSON.parse(result.stdout).readiness.runtimeReady, true);
   result = await runRaw(join(target, "harness"), ["version", "--json"], target);
-  assert.equal(JSON.parse(result.stdout).version, "0.5.0");
+  assert.equal(JSON.parse(result.stdout).version, "0.6.0");
   result = await runRaw(join(target, "harness"), ["check", "--json"], target);
-  assert.equal(result.code, 0, result.stderr);
-  const sources = JSON.parse(await readFile(join(target, "source", ".agents", "skills.sources.json"), "utf8"));
+  assert.equal(result.code, 1, result.stderr);
+  assert.equal(JSON.parse(result.stdout).valid, true);
+  assert.equal(JSON.parse(result.stdout).skillsReadiness.ready, false);
+  const sources = JSON.parse(await readFile(join(target, ".agents", "skills.sources.json"), "utf8"));
   assert.ok(sources.sources.every((entry) => typeof entry.repo === "string" && !Object.hasOwn(entry, "files")));
   assert.match(await readFile(join(target, "source", "knowledge", "INDEX.md"), "utf8"), /Knowledge Index/);
   assert.match(await readFile(join(target, "source", "rules", "security.md"), "utf8"), /Security/);

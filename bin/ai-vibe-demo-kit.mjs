@@ -3,6 +3,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { HarnessError } from "../src/shared/errors.mjs";
 import { exitCodeForStatus, runDistributionCommand } from "../src/distribution/lifecycle.mjs";
+import { runSkillsCommand } from "../src/distribution/skills-sync.mjs";
 import { loadHarnessManifest } from "../src/shared/manifest.mjs";
 
 const SOURCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -13,6 +14,9 @@ const HELP = `Usage:
   ai-vibe-demo-kit doctor [--target <path>] [--json]
   ai-vibe-demo-kit uninstall [--target <path>] [--apply] [--json]
   ai-vibe-demo-kit recover [--target <path>] --strategy <resume|rollback> [--apply] [--json]
+  ai-vibe-demo-kit skills status [--target <path>] [--json]
+  ai-vibe-demo-kit skills sync [--target <path>] [--force] [--json]
+  ai-vibe-demo-kit skills update [--target <path>] [--force] [--json]
   ai-vibe-demo-kit version [--json]`;
 
 const COMMANDS = {
@@ -22,9 +26,11 @@ const COMMANDS = {
   doctor: new Set(["target", "json"]),
   uninstall: new Set(["target", "apply", "json"]),
   recover: new Set(["target", "strategy", "apply", "json"]),
+  skills: new Set(["target", "force", "json"]),
   version: new Set(["json"]),
 };
-const BOOLEAN = new Set(["apply", "json", "help"]);
+const SKILLS_ACTIONS = new Set(["status", "sync", "update"]);
+const BOOLEAN = new Set(["apply", "force", "json", "help"]);
 
 function parse(argv) {
   const options = { _: [] };
@@ -53,7 +59,10 @@ function validate(options) {
   const command = options._[0];
   if (options.help || command === "help" || !command) return null;
   const allowed = COMMANDS[command];
-  if (!allowed || options._.length !== 1) throw new HarnessError("E_USAGE", `unknown or malformed command: ${command}`, { repair: HELP });
+  if (!allowed) throw new HarnessError("E_USAGE", `unknown or malformed command: ${command}`, { repair: HELP });
+  const arity = command === "skills" ? 2 : 1;
+  if (options._.length !== arity) throw new HarnessError("E_USAGE", `unknown or malformed command: ${options._.join(" ")}`, { repair: HELP });
+  if (command === "skills" && !SKILLS_ACTIONS.has(options._[1])) throw new HarnessError("E_USAGE", "skills requires an action: status, sync or update", { repair: HELP });
   for (const key of Object.keys(options)) if (key !== "_" && !allowed.has(key)) throw new HarnessError("E_USAGE", `unknown option for ${command}: --${key}`, { repair: HELP });
   if (command === "recover" && !new Set(["resume", "rollback"]).has(options.strategy)) throw new HarnessError("E_USAGE", "recover requires --strategy resume or rollback", { repair: HELP });
   return command;
@@ -97,6 +106,16 @@ async function main(argv) {
     if (!command) {
       process.stdout.write(`${HELP}\n`);
       return 0;
+    }
+    if (command === "skills") {
+      const payload = await runSkillsCommand({
+        root: options.target ?? process.cwd(),
+        action: options._[1],
+        force: options.force === true,
+        packageVersion: packageManifest.version,
+      });
+      print(options, payload);
+      return exitCodeForStatus(payload.status);
     }
     const payload = await runDistributionCommand({
       sourceRoot: SOURCE_ROOT,

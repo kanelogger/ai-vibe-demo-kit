@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "catalogId": "ai-vibe-demo-kit-skills",
-  "description": "Runtime Skill Catalog. Every default Stage uses the bundled Harness guide.",
+  "description": "Runtime Skill Catalog: the bundled Harness guide plus the eight lock-owned external Skills referenced by the built-in Profiles.",
   "skills": [
     {
       "id": "ai-vibe-demo-kit",
@@ -12,6 +12,86 @@
       "availability": "bundled",
       "sourceId": "ai-vibe-demo-kit",
       "skillRef": ".agents/skills/ai-vibe-demo-kit/SKILL.md"
+    },
+    {
+      "id": "to-spec",
+      "purpose": "Turn a raw request into an observable specification during alignment.",
+      "category": "engineering",
+      "workflowStages": ["alignment"],
+      "invocation": "auto-or-explicit",
+      "availability": "lock-owned",
+      "sourceId": "mattpocock-skills",
+      "skillRef": ".agents/skills/to-spec/SKILL.md"
+    },
+    {
+      "id": "diagnosing-bugs",
+      "purpose": "Drive a structured diagnosis loop before a bug fix is specified.",
+      "category": "engineering",
+      "workflowStages": ["alignment"],
+      "invocation": "auto-or-explicit",
+      "availability": "lock-owned",
+      "sourceId": "mattpocock-skills",
+      "skillRef": ".agents/skills/diagnosing-bugs/SKILL.md"
+    },
+    {
+      "id": "implement",
+      "purpose": "Implement the confirmed scope with disciplined, verifiable changes.",
+      "category": "engineering",
+      "workflowStages": ["implementation"],
+      "invocation": "auto-or-explicit",
+      "availability": "lock-owned",
+      "sourceId": "mattpocock-skills",
+      "skillRef": ".agents/skills/implement/SKILL.md"
+    },
+    {
+      "id": "tdd",
+      "purpose": "Drive implementation test-first with red-green-refactor receipts.",
+      "category": "engineering",
+      "workflowStages": ["implementation"],
+      "invocation": "auto-or-explicit",
+      "availability": "lock-owned",
+      "sourceId": "mattpocock-skills",
+      "skillRef": ".agents/skills/tdd/SKILL.md"
+    },
+    {
+      "id": "code-review",
+      "purpose": "Review the candidate against standards and the originating specification.",
+      "category": "engineering",
+      "workflowStages": ["acceptance"],
+      "invocation": "auto-or-explicit",
+      "availability": "lock-owned",
+      "sourceId": "mattpocock-skills",
+      "skillRef": ".agents/skills/code-review/SKILL.md"
+    },
+    {
+      "id": "web-design",
+      "purpose": "Design and review web UI surfaces with production-grade frontend taste.",
+      "category": "design",
+      "workflowStages": ["alignment", "implementation", "acceptance"],
+      "invocation": "auto-or-explicit",
+      "availability": "lock-owned",
+      "sourceId": "web-design",
+      "skillRef": ".agents/skills/web-design/SKILL.md"
+    },
+    {
+      "id": "baoyu-design",
+      "purpose": "Produce and review visual design artifacts with a distinctive aesthetic.",
+      "category": "design",
+      "workflowStages": ["alignment", "implementation", "acceptance"],
+      "invocation": "auto-or-explicit",
+      "availability": "lock-owned",
+      "sourceId": "baoyu-design",
+      "skillRef": ".agents/skills/baoyu-design/SKILL.md"
+    },
+    {
+      "id": "architecture-diagram",
+      "purpose": "Render system structure as polished architecture diagrams.",
+      "category": "design",
+      "workflowStages": ["implementation"],
+      "invocation": "explicit",
+      "availability": "lock-owned",
+      "sourceId": "architecture-diagram",
+      "skillRef": ".agents/skills/architecture-diagram/SKILL.md"
     }
   ]
 }

@@ -91,12 +91,14 @@ architecture_memory:
     - "**/vendor"
 
 capabilities:
-  skill_sources: "source/.agents/skills.sources.json"
+  skill_sources: ".agents/skills.sources.json"
+  skill_lock: ".agents/skills.lock.json"
   project_skills: "skills/"
   installed_skills: ".agents/skills/"
 
 workflow:
   definitions: "source/workflows/"
+  profiles: "source/workflows/profiles.json"
   default: "source/workflows/workflow-template.json"
   active_state: ".git/harness/control.json"
   stage_result_template: "source/workflows/stage-result-template.json"

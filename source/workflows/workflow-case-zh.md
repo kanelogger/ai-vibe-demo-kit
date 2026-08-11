@@ -1,7 +1,7 @@
 # 工作流案例中文翻译：异步取消预检修复（async-cancellation-precheck-fix）
 
 > 原文：`source/workflows/workflow-case.json`（caseVersion 1，caseKind `illustrative-completed-run`·示例性已完成运行）
-> 技能名称对照：`source/workflows/skills-list.json`（目录中 38 个可用技能）
+> 技能名称对照：`source/workflows/skills-list.json`（目录中 9 个可用技能）
 
 | 字段 | 值 |
 |---|---|

@@ -1,0 +1,75 @@
+{
+  "revision": 87,
+  "status": "active",
+  "stage": "alignment",
+  "pendingGate": null,
+  "allowedActions": [
+    "signal",
+    "pause",
+    "redirect",
+    "abort"
+  ],
+  "active": {
+    "id": "wi-msovsjvq-3df7f94a",
+    "intent": "v0.6 技能组编排改造：Profile、binding、Skills Module、分发与文档 (plan.md)",
+    "workflow": {
+      "id": "risk-adaptive-skill-workflow",
+      "version": 2,
+      "ref": "source/workflows/workflow-template.json",
+      "digest": "sha256:94320935e4fa9ddf96efcf2bca0389295013f25a96952a8f45640f25cd798b07"
+    },
+    "status": "active",
+    "stage": "alignment",
+    "pendingGate": null,
+    "pendingPolicy": null,
+    "paused": null,
+    "acceptedRisks": [],
+    "results": [],
+    "decisions": [],
+    "events": [
+      {
+        "sequence": 1,
+        "type": "work-started",
+        "at": "2026-08-11T16:35:03.974Z",
+        "stage": "alignment",
+        "profileId": "core",
+        "workflowRef": "source/workflows/workflow-template.json"
+      }
+    ],
+    "createdAt": "2026-08-11T16:35:03.974Z",
+    "updatedAt": "2026-08-11T16:35:03.974Z",
+    "profileId": "core",
+    "workflowRef": "source/workflows/workflow-template.json",
+    "bindingDigest": "sha256:17e85c6ffa03044e26f8aca1e34c2500f23f97680acd7227f76a05bee8e217d7",
+    "bindingLockDigest": "sha256:225435265bb3e46a1d388cfb3b3aa11e8de921c364ad16e9e3c4fa90f90250a8"
+  },
+  "last": {
+    "id": "wi-msoow40z-ec5df28b",
+    "outcome": "completed",
+    "closedAt": "2026-08-11T13:28:47.423Z",
+    "legacy": false
+  },
+  "nextActions": [
+    "./harness signal --revision 87 --file \"<stage-result.json>\"",
+    "./harness decide --revision 87 --action pause --reason \"<reason>\"",
+    "./harness decide --revision 87 --action redirect --target \"<stage>\" --reason \"<reason>\"",
+    "./harness decide --revision 87 --action abort --reason \"<reason>\""
+  ],
+  "valid": true,
+  "errors": [],
+  "warnings": [],
+  "workflow": {
+    "id": "risk-adaptive-skill-workflow",
+    "version": 2,
+    "digest": "sha256:94320935e4fa9ddf96efcf2bca0389295013f25a96952a8f45640f25cd798b07"
+  },
+  "selection": {
+    "profileId": "core",
+    "workflowRef": "source/workflows/workflow-template.json"
+  },
+  "skillsReadiness": {
+    "valid": true,
+    "ready": true,
+    "issues": []
+  }
+}

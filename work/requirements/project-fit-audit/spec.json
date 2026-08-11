@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "intent": "仅依据当前仓库实现代码与分发配置，判断项目是否符合 CLI 生命周期分发及 Coding Agent Source 控制层诉求。",
+  "constraints": {
+    "networkSearch": "not-used",
+    "externalSystems": "not-used",
+    "priorConversationOrLongTermMemory": "not-used-as-evidence",
+    "evidenceBasis": [
+      "bin/",
+      "src/",
+      "scripts/check-distribution.mjs",
+      "package.json",
+      "source/manifest.json",
+      "source/.agents/skills.sources.json",
+      "source/workflows/",
+      "source/agents_template.md",
+      "source/project-template.yml"
+    ],
+    "excludedAsVerdictEvidence": [
+      "README claims",
+      "test expectations",
+      "external documentation"
+    ]
+  },
+  "acceptanceCriteria": [
+    {
+      "id": "source-layout",
+      "observable": "逐项核对 .agents、knowledge、rules、specs、workflows 和四个模板是否存在且进入分发。"
+    },
+    {
+      "id": "cli-lifecycle",
+      "observable": "从入口和调用链确认 init、upgrade、uninstall 以及恢复边界。"
+    },
+    {
+      "id": "latest-sync",
+      "observable": "确认 CLI 是否自行发现最新版本并同步完整 Source。"
+    },
+    {
+      "id": "skill-routing",
+      "observable": "确认远程 Skill 源是否被安装或更新，并由 Workflow 映射到不同 Stage。"
+    },
+    {
+      "id": "progress-control",
+      "observable": "确认 Stage、Required Skill、Policy、Gate、Revision 和持久化推进是否由实现强制。"
+    },
+    {
+      "id": "fresh-init-readiness",
+      "observable": "确认 fresh init 后是否直接形成可被 Coding Agent 使用的有效治理入口。"
+    }
+  ],
+  "environment": {
+    "operatingSystem": "Darwin",
+    "architecture": "arm64",
+    "node": "v24.18.0",
+    "git": "2.55.0",
+    "npm": "11.16.0",
+    "docker": "29.4.0",
+    "requiredProbeDeviations": []
+  },
+  "risk": {
+    "class": "read-only-analysis",
+    "rollback": "No source or lifecycle apply was performed; only task-scoped Evidence and Harness private control state were created.",
+    "interpretationBoundaries": [
+      "If '调用技能' means declaring and requiring an Agent-produced receipt, the Runtime supports it; if it means executing a Skill, it does not.",
+      "If '同步最新' means applying the contents of an already-selected newest npm package, upgrade supports it; if it means discovering latest itself, it does not."
+    ]
+  },
+  "verdict": "partially-compliant",
+  "findings": [
+    {
+      "status": "met",
+      "claim": "The npm package exposes one zero-dependency Distribution CLI with init, upgrade, doctor, uninstall, recover and version commands.",
+      "evidence": [
+        "package.json:7-13",
+        "package.json:88-94",
+        "bin/ai-vibe-demo-kit.mjs:9-24",
+        "bin/ai-vibe-demo-kit.mjs:87-113"
+      ]
+    },
+    {
+      "status": "met",
+      "claim": "The requested Source paths exist and are projected by the Distribution Manifest; source/.agents contains only skills.sources.json and materialized Skill data is rejected by the distribution checker.",
+      "evidence": [
+        "source/manifest.json:24-57",
+        "scripts/check-distribution.mjs:41-60",
+        "source/.agents/skills.sources.json:1-32"
+      ]
+    },
+    {
+      "status": "met",
+      "claim": "Lifecycle apply is ownership-aware and recoverable: plans stage files and backups, commits a canonical journal, supports resume/rollback, blocks active Runtime work, and preserves modified uninstall targets.",
+      "evidence": [
+        "src/distribution/lifecycle.mjs:112-123",
+        "src/distribution/planning.mjs:103-198",
+        "src/distribution/planning.mjs:201-227",
+        "src/distribution/transaction.mjs:77-137",
+        "src/distribution/transaction.mjs:205-252"
+      ]
+    },
+    {
+      "status": "partial",
+      "claim": "upgrade applies Source embedded in the currently executing package but has no latest-version discovery, remote fetch, or sync command.",
+      "evidence": [
+        "src/distribution/lifecycle.mjs:238-283",
+        "src/shared/repository-guard.mjs:21-28",
+        "bin/ai-vibe-demo-kit.mjs:9-24"
+      ]
+    },
+    {
+      "status": "partial",
+      "claim": "Remote Skill sources are configuration-only. Production code never consumes skills.sources.json; the checker only validates and the lifecycle copies it.",
+      "evidence": [
+        "scripts/check-distribution.mjs:51-60",
+        "source/manifest.json:24",
+        "source/.agents/skills.sources.json:1-32"
+      ]
+    },
+    {
+      "status": "partial",
+      "claim": "Workflow supports per-Stage skill declarations and validates receipts, but the default catalog contains only the bundled ai-vibe-demo-kit guide and every default Stage requires that same Skill.",
+      "evidence": [
+        "source/workflows/skills-list.json:1-17",
+        "source/workflows/workflow-template.json:32-45",
+        "source/workflows/workflow-template.json:65-82",
+        "source/workflows/workflow-template.json:108-125",
+        "src/runtime/validation/result.mjs:196-223"
+      ]
+    },
+    {
+      "status": "met-with-boundary",
+      "claim": "The Harness controls progression through required Conditions and Skill receipts, revision checks, policy blocks, human gates, pause/redirect/abort decisions and persisted control state; it validates claimed Skill completion but does not execute Skills.",
+      "evidence": [
+        "src/runtime/kernel.mjs:53-64",
+        "src/runtime/kernel.mjs:113-127",
+        "src/runtime/kernel.mjs:163-194",
+        "src/runtime/kernel.mjs:235-262",
+        "src/runtime/store.mjs:62-73"
+      ]
+    },
+    {
+      "status": "partial",
+      "claim": "Fresh init installs templates under source/ but does not materialize effective AGENTS.md, AI_ENVIRONMENT.md, project.yml or Coding Agent rules; Doctor therefore requires manual governance setup.",
+      "evidence": [
+        "source/manifest.json:25-27",
+        "source/manifest.json:46",
+        "src/distribution/doctor.mjs:38-46"
+      ]
+    },
+    {
+      "status": "mismatch",
+      "claim": "source/manifest.json is package-only and absent from initialized targets although both distributed templates name it as authoritative context.",
+      "evidence": [
+        "source/manifest.json:23",
+        "source/agents_template.md:37-50",
+        "source/project-template.yml:73-81"
+      ]
+    },
+    {
+      "status": "partial",
+      "claim": "The four governance templates are seed-owned. Upgrade refreshes untouched seeds but preserves modified seeds, so literal full-Source synchronization is intentionally incomplete.",
+      "evidence": [
+        "source/manifest.json:25-27",
+        "source/manifest.json:46",
+        "src/distribution/planning.mjs:143-154"
+      ]
+    },
+    {
+      "status": "architectural-difference",
+      "claim": "The implementation is functionally three-layered: Distribution CLI, installed Harness Runtime, and Source data/templates. Source alone is not the progression controller.",
+      "evidence": [
+        "payload/harness:1-2",
+        "source/manifest.json:65-80",
+        "src/runtime/runtime.mjs:174-218"
+      ]
+    }
+  ],
+  "decision": "The project has a strong lifecycle and deterministic control kernel, but does not fully satisfy the stated product intent until latest-package discovery, remote Skill materialization/routing, fresh-init governance activation, and the missing installed source/manifest.json contract are resolved or explicitly declared out of scope."
+}

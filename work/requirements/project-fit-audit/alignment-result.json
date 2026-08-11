@@ -1,0 +1,42 @@
+{
+  "outcome": "ready",
+  "summary": "The redirected scope now includes an implementation-accurate root README, its observable content and command checks, environment, and documentation-only risk.",
+  "conditions": [
+    {
+      "id": "acceptance-observable",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/project-fit-audit/readme-spec.json"
+      ]
+    },
+    {
+      "id": "risk-classified",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/project-fit-audit/readme-spec.json"
+      ]
+    },
+    {
+      "id": "environment-confirmed",
+      "status": "passed",
+      "evidenceRefs": [
+        "work/requirements/project-fit-audit/readme-spec.json"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "id": "alignment.harness-guide",
+      "status": "succeeded",
+      "artifactRefs": [
+        "spec"
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "spec",
+      "uri": "work/requirements/project-fit-audit/readme-spec.json"
+    }
+  ]
+}

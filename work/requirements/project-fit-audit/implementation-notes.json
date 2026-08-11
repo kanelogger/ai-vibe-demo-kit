@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "scope": "Document the audited current implementation in the repository root README.md without changing production behavior.",
+  "changedFiles": [
+    {
+      "path": "README.md",
+      "change": "Filled the previously empty package README with current purpose, three-layer architecture, Source inventory, lifecycle and Harness commands, ownership and readiness semantics, safety guarantees, known boundaries, and development verification."
+    }
+  ],
+  "accuracyDecisions": [
+    "States that Source version follows the selected npm package and that npm/npx, not the CLI, resolves @latest.",
+    "States that skills.sources.json is declaration-only and external Skills are not materialized by the CLI.",
+    "States that Harness validates Skill receipts but does not execute Skills, tests, Shell, Git, business writes, or external systems.",
+    "Distinguishes Runtime-ready, Governance-ready, and Completion-evidence-ready.",
+    "Documents init as immediate apply and upgrade/uninstall as plan-first operations.",
+    "Records the current package-only source/manifest.json versus downstream-template reference mismatch as a known boundary."
+  ],
+  "architectureImpact": {
+    "impact": "none",
+    "reason": "Documentation-only change; no interface, invariant, dependency direction, module, workflow contract, or lifecycle behavior changed."
+  },
+  "outOfScope": [
+    "Production code and configuration",
+    "Automatic latest-version discovery",
+    "Remote Skill installation",
+    "Workflow or Manifest changes",
+    "Publishing"
+  ]
+}

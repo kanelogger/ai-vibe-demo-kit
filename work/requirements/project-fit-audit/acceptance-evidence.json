@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "candidate": {
+    "path": "README.md",
+    "lines": 322,
+    "workspaceStatus": [
+      " M README.md",
+      "?? work/requirements/project-fit-audit/"
+    ]
+  },
+  "checks": [
+    {
+      "id": "distribution-cli-help",
+      "command": "node bin/ai-vibe-demo-kit.mjs --help",
+      "exitCode": 0,
+      "result": "Usage exactly exposes init, upgrade, doctor, uninstall, recover, and version with the options documented in README.md."
+    },
+    {
+      "id": "harness-cli-help",
+      "command": "./harness help",
+      "exitCode": 0,
+      "result": "Usage exactly exposes version, check, check-environment, check-result, start, status, signal, and decide with the forms documented in README.md."
+    },
+    {
+      "id": "readme-nonempty",
+      "command": "wc -l README.md",
+      "exitCode": 0,
+      "result": "322 README.md"
+    },
+    {
+      "id": "distribution-version",
+      "command": "node bin/ai-vibe-demo-kit.mjs version --json",
+      "exitCode": 0,
+      "result": "status=ok, package.name=ai-vibe-demo-kit, package.version=0.4.0, applied=false, errors=[]"
+    },
+    {
+      "id": "bundled-skill",
+      "command": "npm run check:skill",
+      "exitCode": 0,
+      "result": "bundled Skill: valid"
+    },
+    {
+      "id": "distribution-integrity",
+      "command": "npm run check:distribution",
+      "exitCode": 0,
+      "result": "distribution: valid"
+    },
+    {
+      "id": "runtime-integrity",
+      "command": "./harness check --json",
+      "exitCode": 0,
+      "result": "valid=true, revision=60, status=active, stage=acceptance, errors=[], warnings=[]"
+    },
+    {
+      "id": "workspace-scope",
+      "command": "git status --short",
+      "exitCode": 0,
+      "result": "Only README.md and the task-scoped work/requirements/project-fit-audit Evidence directory are changed."
+    }
+  ],
+  "skipped": [
+    {
+      "check": "node --test test/runtime/*.test.mjs test/distribution/*.test.mjs",
+      "reason": "No executable code, contract, configuration, Source asset, or lifecycle behavior changed. CLI smoke checks and the distribution package consistency check directly cover the README command surface and packaged artifact."
+    }
+  ],
+  "cleanup": [
+    {
+      "resource": "isolated npm pack cache created by scripts/check-distribution.mjs",
+      "status": "removed",
+      "evidence": "scripts/check-distribution.mjs removes the mkdtemp cache in a finally block; the command exited 0."
+    },
+    {
+      "resource": "services, watchers, test repositories, accounts, registry publications, Git pushes, and external writes",
+      "status": "not-created",
+      "evidence": "Verification used finite local read/check commands only."
+    }
+  ],
+  "residualRisks": [
+    "README intentionally documents current implementation gaps; this documentation task does not implement latest-version discovery, remote Skill materialization, automatic Skill execution, governance template promotion, or Source Manifest projection."
+  ]
+}

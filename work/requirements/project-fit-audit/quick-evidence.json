@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "candidate": "README.md after implementation-accurate documentation fill",
+  "checks": [
+    {
+      "command": "node bin/ai-vibe-demo-kit.mjs --help",
+      "exitCode": 0,
+      "result": "Usage lists init, upgrade, doctor, uninstall, recover, and version with the same options documented in README.md."
+    },
+    {
+      "command": "./harness help",
+      "exitCode": 0,
+      "result": "Usage lists version, check, check-environment, check-result, start, status, signal, and decide with the same forms documented in README.md."
+    },
+    {
+      "command": "npm run check:distribution",
+      "exitCode": 0,
+      "result": "distribution: valid"
+    },
+    {
+      "command": "wc -l README.md",
+      "exitCode": 0,
+      "result": "322 README.md"
+    },
+    {
+      "command": "./harness check --json",
+      "exitCode": 0,
+      "result": "valid=true, revision=59, status=active, stage=implementation, errors=[], warnings=[]"
+    }
+  ],
+  "skipped": [
+    {
+      "check": "Runtime and Distribution test suites",
+      "reason": "README-only change introduced no executable contract or behavior; CLI help smoke checks and the package distribution consistency check directly cover the changed artifact and documented command surface."
+    }
+  ],
+  "cleanup": {
+    "temporaryFiles": [],
+    "processes": [],
+    "externalResources": []
+  }
+}

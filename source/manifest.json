@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "package": {
     "name": "ai-vibe-demo-kit",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "minimumNodeVersion": "22"
   },
   "files": [
@@ -61,6 +61,7 @@
     { "sourcePath": "src/distribution/lifecycle.mjs", "targetPath": null, "kind": "package-only", "mode": "0644" },
     { "sourcePath": "src/distribution/ownership.mjs", "targetPath": null, "kind": "package-only", "mode": "0644" },
     { "sourcePath": "src/distribution/planning.mjs", "targetPath": null, "kind": "package-only", "mode": "0644" },
+    { "sourcePath": "src/distribution/sync.mjs", "targetPath": null, "kind": "package-only", "mode": "0644" },
     { "sourcePath": "src/distribution/transaction.mjs", "targetPath": null, "kind": "package-only", "mode": "0644" },
     { "sourcePath": "src/runtime/ARCHITECTURE.md", "targetPath": ".harness/runtime/ARCHITECTURE.md", "kind": "managed", "mode": "0644" },
     { "sourcePath": "src/runtime/cli.mjs", "targetPath": ".harness/runtime/cli.mjs", "kind": "managed", "mode": "0755" },

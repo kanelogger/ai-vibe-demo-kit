@@ -12,6 +12,7 @@ import { inspectDoctorReadiness, runtimeLayoutOutdated } from "./doctor.mjs";
 import { fileFact, relation, safeRelative, sha256 } from "./ownership.mjs";
 import { conflictPlan, planOperation, publicChange, readLedger } from "./planning.mjs";
 import { assertRecoveryBinding, cleanupOrphans, prepareTransaction, resumeTransaction, rollbackTransaction, transactionView, validateTransaction } from "./transaction.mjs";
+import { createNpmSyncAdapter, runSync } from "./sync.mjs";
 
 const PACKAGE_NAME = "ai-vibe-demo-kit";
 const MANIFEST_PATH = "source/manifest.json";
@@ -102,6 +103,7 @@ function envelope(command, distribution, target, plan, transaction = null) {
     warnings: plan.warnings ?? [],
     errors: plan.errors ?? [],
     nextActions: plan.nextActions ?? [],
+    ...(plan.update ? { update: plan.update } : {}),
   };
 }
 
@@ -235,7 +237,7 @@ async function doctor(target, distribution) {
   return envelope("doctor", distribution, paths.root, { status, installedVersion: ledger?.package?.version ?? null, applied: false, changes: [], readiness, warnings, errors, nextActions: transactionNextActions }, transactionView(transaction));
 }
 
-export async function runDistributionCommand({ sourceRoot, command, target = process.cwd(), apply = false, strategy = null, fault = async () => {} }) {
+export async function runDistributionCommand({ sourceRoot, command, target = process.cwd(), apply = false, strategy = null, fault = async () => {}, syncAdapter = createNpmSyncAdapter() }) {
   const distribution = await loadDistributionManifest(sourceRoot);
   if (command === "version") return envelope(command, distribution, null, { status: "ok", installedVersion: null, applied: false, changes: [], warnings: [], errors: [] });
   try {
@@ -244,6 +246,19 @@ export async function runDistributionCommand({ sourceRoot, command, target = pro
     if (error.code !== "ENOENT") throw error;
   }
   const paths = await repositoryPaths(target);
+  if (command === "sync") {
+    try {
+      const plan = await runSync({ distribution, gitRoot: paths.root, apply, adapter: syncAdapter });
+      return envelope(command, distribution, paths.root, {
+        ...plan,
+        installedVersion: plan.installedVersion ?? plan.package?.installedVersion,
+      }, plan.transaction ?? null);
+    }
+    catch (error) {
+      const normalized = error instanceof HarnessError ? error : new HarnessError("E_IO", error instanceof Error ? error.message : String(error));
+      return envelope(command, distribution, paths.root, { status: "error", installedVersion: null, applied: false, changes: [], warnings: [], errors: [issue(normalized.code, null, normalized.message, normalized.facts, normalized.repair)], nextActions: [] });
+    }
+  }
   if (command === "doctor") return doctor(paths.root, distribution);
   if (command === "recover") {
     if (!new Set(["resume", "rollback"]).has(strategy)) fail("E_USAGE", "recover requires --strategy resume or rollback");

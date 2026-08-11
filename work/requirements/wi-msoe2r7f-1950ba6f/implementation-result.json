@@ -1,0 +1,15 @@
+{
+  "outcome": "ready-for-acceptance",
+  "summary": "The approved sync scope is implemented and focused checks pass on the current candidate.",
+  "conditions": [
+    { "id": "scope-complete", "status": "passed", "evidenceRefs": ["work/requirements/wi-msoe2r7f-1950ba6f/implementation-notes.md"] },
+    { "id": "quick-evidence-current", "status": "passed", "evidenceRefs": ["work/requirements/wi-msoe2r7f-1950ba6f/quick-evidence.md"] }
+  ],
+  "skills": [
+    { "id": "implementation.harness-guide", "status": "succeeded", "artifactRefs": ["implementation-notes", "quick-evidence"] }
+  ],
+  "artifacts": [
+    { "id": "implementation-notes", "uri": "work/requirements/wi-msoe2r7f-1950ba6f/implementation-notes.md" },
+    { "id": "quick-evidence", "uri": "work/requirements/wi-msoe2r7f-1950ba6f/quick-evidence.md" }
+  ]
+}

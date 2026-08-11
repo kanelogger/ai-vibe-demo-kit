@@ -1,0 +1,15 @@
+{
+  "outcome": "ready",
+  "summary": "Sync intent, observable acceptance criteria, environment alignment, downgrade prevention and transaction rollback expectations are fixed.",
+  "conditions": [
+    { "id": "acceptance-observable", "status": "passed", "evidenceRefs": ["work/requirements/wi-msoe2r7f-1950ba6f/spec.md"] },
+    { "id": "risk-classified", "status": "passed", "evidenceRefs": ["work/requirements/wi-msoe2r7f-1950ba6f/spec.md"] },
+    { "id": "environment-confirmed", "status": "passed", "evidenceRefs": ["work/requirements/wi-msoe2r7f-1950ba6f/spec.md"] }
+  ],
+  "skills": [
+    { "id": "alignment.harness-guide", "status": "succeeded", "artifactRefs": ["spec"] }
+  ],
+  "artifacts": [
+    { "id": "spec", "uri": "work/requirements/wi-msoe2r7f-1950ba6f/spec.md" }
+  ]
+}

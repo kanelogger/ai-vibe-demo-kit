@@ -21,7 +21,7 @@ Distribution Lifecycle 完成且 `./harness check --json` 通过只表示 **Runt
 
 Mutation 锁位于 `.git/harness/control.lock`，Runtime 和 Distribution Lifecycle 共用此锁。Harness 会自动回收能够确认其 PID 已死亡的锁；活 PID、权限不足、空锁或非法 PID 会保留并返回 `E_STATE_BUSY`。canonical maintenance 存在时只使用 `./harness status --json` 返回的精确 pinned recover 命令。
 
-发行身份位于 `.harness/manifest.json`，变更记录位于 `.harness/CHANGELOG.md`。升级使用目标 npm 版本的 `ai-vibe-demo-kit upgrade` 先计划再应用；不自动覆盖第三状态内容或合并治理文件。
+发行身份位于 `.harness/manifest.json`，变更记录位于 `.harness/CHANGELOG.md`。指定版本升级使用 `ai-vibe-demo-kit upgrade`；最新版同步使用 `ai-vibe-demo-kit sync`。两者都先计划再应用，不自动覆盖第三状态内容或合并治理文件。
 
 安装后的生产投影位于 `.harness/runtime/` 与 `.harness/shared/`，根目录 `harness` 只加载 `.harness/runtime/cli.mjs`。`.harness/manifest.json` schema v2 通过 `capabilities.commands` 和 `capabilities.contracts` 明确声明 Runtime 能力；Doctor 不读取 JavaScript 源码文本。
 

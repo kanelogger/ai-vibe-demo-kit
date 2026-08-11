@@ -37,7 +37,7 @@ async function distributionVariant(version, mutate = async () => {}) {
 }
 
 async function legacyLayoutSource() {
-  return distributionVariant("0.4.0", async ({ root, manifest }) => {
+  return distributionVariant("0.5.0", async ({ root, manifest }) => {
     const legacyTargets = new Map([
       ["src/runtime/cli.mjs", "bin/harness.mjs"],
       ["src/runtime/kernel.mjs", "scripts/harness/lib/kernel.mjs"],
@@ -76,7 +76,7 @@ async function legacyLayoutSource() {
 }
 
 async function preSourceLayout() {
-  return distributionVariant("0.4.0", async ({ manifest }) => {
+  return distributionVariant("0.5.0", async ({ manifest }) => {
     const legacyTargets = new Map([
       ["source/agents_template.md", ["AGENTS_template.md", "seed"]],
       ["source/ai_environment_template.md", ["AI_ENVIRONMENT_template.md", "seed"]],
@@ -118,7 +118,7 @@ test("fresh init installs a ledger-driven Runtime and is idempotent", async () =
   let result = await command(target, "init");
   assert.equal(result.status, "applied");
   assert.equal(result.applied, true);
-  assert.equal(result.package.version, "0.4.0");
+  assert.equal(result.package.version, "0.5.0");
   assert.equal((await lstat(join(target, "harness"))).mode & 0o111, 0o111);
   assert.equal((await lstat(join(target, ".agents", "skills", "ai-vibe-demo-kit", "SKILL.md"))).isFile(), true);
   assert.equal((await lstat(join(target, "source", ".agents", "skills.sources.json"))).isFile(), true);
@@ -131,7 +131,7 @@ test("fresh init installs a ledger-driven Runtime and is idempotent", async () =
   assert.equal(checked.code, 0, checked.stderr);
   const ledger = JSON.parse(await readFile(join(target, ".harness", "install-lock.json"), "utf8"));
   assert.equal(ledger.package.name, "ai-vibe-demo-kit");
-  assert.equal(ledger.package.version, "0.4.0");
+  assert.equal(ledger.package.version, "0.5.0");
   assert.equal(ledger.installationState, "installed");
   assert.ok(ledger.files.some((entry) => entry.path === "harness" && entry.kind === "managed"));
 
@@ -263,7 +263,7 @@ test("prepared transactions can roll back and committed transactions only resume
   assert.equal(status.code, 0, status.stderr);
   const statusPayload = JSON.parse(status.stdout);
   assert.equal(statusPayload.status, "maintenance");
-  assert.match(statusPayload.nextActions[0], /'ai-vibe-demo-kit@0\.4\.0' recover/);
+  assert.match(statusPayload.nextActions[0], /'ai-vibe-demo-kit@0\.5\.0' recover/);
   const mutation = await runRaw(join(committedTarget, "harness"), ["start", "--workflow", "source/workflows/workflow-template.json", "--intent", "must block", "--json"], committedTarget);
   assert.equal(mutation.code, 2);
   assert.equal(JSON.parse(mutation.stdout).error.code, "E_MAINTENANCE_PENDING");
@@ -328,7 +328,7 @@ test("recover binds schema, package version, Manifest digest and rejects third-s
   const journalPath = join(paths.maintenancePath, "transaction.json");
   const original = await readCanonicalMaintenance(target);
 
-  await writeFile(journalPath, `${JSON.stringify({ ...original, createdByPackageVersion: "0.5.0" }, null, 2)}\n`);
+  await writeFile(journalPath, `${JSON.stringify({ ...original, createdByPackageVersion: "0.4.0" }, null, 2)}\n`);
   let result = await command(target, "recover", { strategy: "resume" });
   assert.equal(result.status, "conflict");
   assert.equal(result.errors[0].code, "E_RECOVERY_VERSION_MISMATCH");
@@ -359,7 +359,7 @@ test("recover binds schema, package version, Manifest digest and rejects third-s
 test("recovery nextActions shell-quote target paths and reject executable journal versions", async () => {
   const target = await namedGitRepo("kit-review-$(printf PWNED)-repository");
   const diagnosis = await command(target, "doctor");
-  assert.equal(diagnosis.warnings[0].repair, `npx --yes 'ai-vibe-demo-kit@0.4.0' init --target '${target}' --json`);
+  assert.equal(diagnosis.warnings[0].repair, `npx --yes 'ai-vibe-demo-kit@0.5.0' init --target '${target}' --json`);
   await command(target, "init");
   let injected = false;
   const interrupted = await command(target, "uninstall", {
@@ -371,7 +371,7 @@ test("recovery nextActions shell-quote target paths and reject executable journa
       }
     },
   });
-  const expected = `npx --yes 'ai-vibe-demo-kit@0.4.0' recover --target '${target}' --strategy resume --apply --json`;
+  const expected = `npx --yes 'ai-vibe-demo-kit@0.5.0' recover --target '${target}' --strategy resume --apply --json`;
   assert.equal(interrupted.nextActions[0], expected);
 
   let runtimeStatus = await runRaw(join(target, "harness"), ["status", "--json"], target);
@@ -381,7 +381,7 @@ test("recovery nextActions shell-quote target paths and reject executable journa
   const paths = await repositoryPaths(target);
   const journalPath = join(paths.maintenancePath, "transaction.json");
   const transaction = await readCanonicalMaintenance(target);
-  await writeFile(journalPath, `${JSON.stringify({ ...transaction, createdByPackageVersion: "0.4.0;printf VERSION_INJECTION" }, null, 2)}\n`);
+  await writeFile(journalPath, `${JSON.stringify({ ...transaction, createdByPackageVersion: "0.5.0;printf VERSION_INJECTION" }, null, 2)}\n`);
   const recovery = await command(target, "recover", { strategy: "resume" });
   assert.equal(recovery.status, "conflict");
   assert.equal(recovery.errors[0].code, "E_TRANSACTION_VERSION");
@@ -455,17 +455,17 @@ test("upgrade applies managed changes while preserving modified seed ownership",
   const target = await makeGitRepo();
   await command(target, "init");
   await writeFile(join(target, "source", "agents_template.md"), "user-owned seed\n");
-  const nextSource = await distributionVariant("0.5.0", async ({ root }) => {
-    await writeFile(join(root, "payload", "harness"), "#!/usr/bin/env node\n// 0.5.0 managed runtime\n");
+  const nextSource = await distributionVariant("0.6.0", async ({ root }) => {
+    await writeFile(join(root, "payload", "harness"), "#!/usr/bin/env node\n// 0.6.0 managed runtime\n");
   });
 
   const result = await runDistributionCommand({ sourceRoot: nextSource, target, command: "upgrade", apply: true });
   assert.equal(result.status, "manual-action-required");
   assert.equal(result.applied, true);
-  assert.match(await readFile(join(target, "harness"), "utf8"), /0\.5\.0 managed runtime/);
+  assert.match(await readFile(join(target, "harness"), "utf8"), /0\.6\.0 managed runtime/);
   assert.equal(await readFile(join(target, "source", "agents_template.md"), "utf8"), "user-owned seed\n");
   const ledger = JSON.parse(await readFile(join(target, ".harness", "install-lock.json"), "utf8"));
-  assert.equal(ledger.package.version, "0.5.0");
+  assert.equal(ledger.package.version, "0.6.0");
   assert.equal(ledger.files.find((entry) => entry.path === "source/agents_template.md").state, "preserved");
 });
 
@@ -511,7 +511,7 @@ test("same-version upgrade migrates the legacy Runtime layout and abandons non-e
   await assert.rejects(lstat(join(target, "scripts", "harness")), { code: "ENOENT" });
   assert.equal(await readFile(join(target, "scripts", "user-owned.txt"), "utf8"), "preserve me\n");
   const ledger = JSON.parse(await readFile(join(target, ".harness", "install-lock.json"), "utf8"));
-  assert.equal(ledger.package.version, "0.4.0");
+  assert.equal(ledger.package.version, "0.5.0");
   assert.equal(ledger.createdDirectories.includes("bin"), false);
   assert.equal(ledger.createdDirectories.some((path) => path.startsWith("scripts/harness")), false);
   assert.equal(ledger.createdDirectories.includes("scripts"), false);
@@ -684,7 +684,7 @@ test("upgrade blocks kind changes and removed modified managed files atomically"
   let result = await runDistributionCommand({ sourceRoot: kindSource, target: kindTarget, command: "upgrade", apply: true });
   assert.equal(result.status, "conflict");
   assert.equal(result.errors[0].code, "E_OWNERSHIP_CHANGE");
-  assert.equal(JSON.parse(await readFile(join(kindTarget, ".harness", "install-lock.json"), "utf8")).package.version, "0.4.0");
+  assert.equal(JSON.parse(await readFile(join(kindTarget, ".harness", "install-lock.json"), "utf8")).package.version, "0.5.0");
 
   const removedTarget = await makeGitRepo();
   await command(removedTarget, "init");
@@ -695,7 +695,7 @@ test("upgrade blocks kind changes and removed modified managed files atomically"
   result = await runDistributionCommand({ sourceRoot: removedSource, target: removedTarget, command: "upgrade", apply: true });
   assert.equal(result.status, "conflict");
   assert.equal(await readFile(join(removedTarget, "harness"), "utf8"), "modified managed\n");
-  assert.equal(JSON.parse(await readFile(join(removedTarget, ".harness", "install-lock.json"), "utf8")).package.version, "0.4.0");
+  assert.equal(JSON.parse(await readFile(join(removedTarget, ".harness", "install-lock.json"), "utf8")).package.version, "0.5.0");
 });
 
 test("Runtime start and Lifecycle Apply serialize through the shared RepositoryGuard lock", async () => {
@@ -776,7 +776,7 @@ test("upgrade rechecks preserved seed facts before committing the new ledger", a
 
   assert.equal(result.status, "conflict");
   assert.equal(result.errors[0].code, "E_MAINTENANCE_CONFLICT");
-  assert.equal(JSON.parse(await readFile(join(target, ".harness", "install-lock.json"), "utf8")).package.version, "0.4.0");
+  assert.equal(JSON.parse(await readFile(join(target, ".harness", "install-lock.json"), "utf8")).package.version, "0.5.0");
   assert.equal((await readCanonicalMaintenance(target)).phase, "applying");
 });
 

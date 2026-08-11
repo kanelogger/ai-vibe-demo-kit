@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-`ai-vibe-demo-kit.mjs` 把公共 Lifecycle 命令适配为 Distribution Interface 调用，并输出稳定 JSON、文本和退出码。
+`ai-vibe-demo-kit.mjs` 把公共 Lifecycle 与 sync 命令适配为 Distribution Interface 调用，并输出稳定 JSON、文本和退出码。
 
 ## Invariants
 

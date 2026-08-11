@@ -70,7 +70,7 @@ environment:
       required: false
 
 commands:
-  install_runtime: "npx --yes ai-vibe-demo-kit@0.4.0 init --target <git-root> --json"
+  install_runtime: "npx --yes ai-vibe-demo-kit@0.5.0 init --target <git-root> --json"
   develop: "./harness help"
   test: "node --test test/runtime/*.test.mjs test/distribution/*.test.mjs"
   typecheck: null
@@ -97,7 +97,7 @@ release:
     - "node --test test/runtime/*.test.mjs test/distribution/*.test.mjs"
     - "npm pack --dry-run --json"
     - "npm publish --access public"
-    - "npm view ai-vibe-demo-kit@0.4.0"
+    - "npm view ai-vibe-demo-kit@0.5.0"
 
 authoritative_context:
   agent_entry: "AGENTS.md"

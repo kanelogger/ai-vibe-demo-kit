@@ -25,6 +25,9 @@ test("local tarball initializes a Git repository and exposes Runtime lifecycle p
   const distribution = join(installRoot, "node_modules", ".bin", "ai-vibe-demo-kit");
   const target = await makeGitRepo();
 
+  const help = await runRaw(distribution, ["help"], sourceRoot);
+  assert.match(help.stdout, /ai-vibe-demo-kit sync \[--target/);
+
   let result = await runRaw(distribution, ["init", "--target", target, "--json"], sourceRoot);
   assert.equal(result.code, 0, result.stderr);
   assert.equal(JSON.parse(result.stdout).status, "applied");
@@ -32,7 +35,7 @@ test("local tarball initializes a Git repository and exposes Runtime lifecycle p
   assert.equal(result.code, 1);
   assert.equal(JSON.parse(result.stdout).readiness.runtimeReady, true);
   result = await runRaw(join(target, "harness"), ["version", "--json"], target);
-  assert.equal(JSON.parse(result.stdout).version, "0.4.0");
+  assert.equal(JSON.parse(result.stdout).version, "0.5.0");
   result = await runRaw(join(target, "harness"), ["check", "--json"], target);
   assert.equal(result.code, 0, result.stderr);
   const sources = JSON.parse(await readFile(join(target, "source", ".agents", "skills.sources.json"), "utf8"));

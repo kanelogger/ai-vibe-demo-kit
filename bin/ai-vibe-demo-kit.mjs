@@ -9,6 +9,7 @@ const SOURCE_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const HELP = `Usage:
   ai-vibe-demo-kit init [--target <path>] [--json]
   ai-vibe-demo-kit upgrade [--target <path>] [--apply] [--json]
+  ai-vibe-demo-kit sync [--target <path>] [--apply] [--json]
   ai-vibe-demo-kit doctor [--target <path>] [--json]
   ai-vibe-demo-kit uninstall [--target <path>] [--apply] [--json]
   ai-vibe-demo-kit recover [--target <path>] --strategy <resume|rollback> [--apply] [--json]
@@ -17,6 +18,7 @@ const HELP = `Usage:
 const COMMANDS = {
   init: new Set(["target", "json"]),
   upgrade: new Set(["target", "apply", "json"]),
+  sync: new Set(["target", "apply", "json"]),
   doctor: new Set(["target", "json"]),
   uninstall: new Set(["target", "apply", "json"]),
   recover: new Set(["target", "strategy", "apply", "json"]),

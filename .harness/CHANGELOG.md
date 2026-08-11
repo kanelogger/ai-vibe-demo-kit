@@ -1,5 +1,10 @@
 # Harness Changelog
 
+## 0.5.0 - 2026-08-11
+
+- Add `sync` to resolve npm `latest`, pin the exact package version and delegate safe upgrade planning or apply.
+- Refuse automatic downgrades, distinguish missing and invalid ledgers, and validate delegated JSON against the canonical Git root.
+
 ## 0.4.0 - 2026-08-10
 
 - Rebrand the public package and project identity as `ai-vibe-demo-kit`.

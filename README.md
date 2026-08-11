@@ -2,7 +2,7 @@
 
 AI Vibe Demo Kit 是一个零 npm 依赖的 Node.js CLI，用于把版本化的 Coding Agent Source 与可恢复的 Harness Runtime 分发到现有 Git 仓库，并通过 Workflow、Stage Result、Policy 和 Human Gate 控制任务推进。
 
-当前版本已经实现安全的初始化、升级、卸载、恢复和确定性 Workflow 状态机。Source 的版本跟随当前执行的 npm 包版本；CLI 本身不查询 npm 最新版本、不拉取远程 Skill，也不执行 Skill 或测试。
+当前版本已经实现安全的初始化、指定版本升级、npm latest 同步、卸载、恢复和确定性 Workflow 状态机。Source 的版本跟随实际执行升级的 npm 包版本；CLI 不拉取远程 Skill，也不执行 Skill 或测试。
 
 ## 解决什么问题
 
@@ -18,7 +18,7 @@ Coding Agent 项目通常需要同时维护：
 ```text
 ai-vibe-demo-kit npm package
 ├── Distribution CLI
-│   ├── init / upgrade / doctor
+│   ├── init / upgrade / sync / doctor
 │   └── uninstall / recover / version
 ├── installed Harness Runtime
 │   ├── Workflow 与 Stage Result 校验
@@ -35,7 +35,7 @@ ai-vibe-demo-kit npm package
 | 能力 | 当前行为 |
 | --- | --- |
 | Source 分发 | 从当前 npm 包内的 `source/manifest.json` 安装完整版本化 Source |
-| 最新版本选择 | 由 npm、npx 或操作者选择包版本；CLI 不查询 registry |
+| 最新版本同步 | `sync` 查询 npm `latest`，固定精确版本后委派该版本执行 `upgrade` |
 | 外部 Skill 来源 | `source/.agents/skills.sources.json` 只保存远程仓库声明 |
 | Skill 安装与更新 | CLI 当前不 clone、resolve 或 materialize 外部 Skill |
 | Skill 调用 | Workflow 声明 Required Skill；Harness 校验 Agent 提交的 Skill 回执 |
@@ -62,7 +62,7 @@ Docker 不是 CLI 的运行依赖。npm 仅用于获取或安装包；生产代�
 npx --yes ai-vibe-demo-kit@latest version --json
 ```
 
-这里的 `@latest` 由 npm/npx 解析，可能访问网络。进入 CLI 后，Lifecycle 只读取该包内已经固定的 Manifest 和文件，不再发现远程最新版。
+这里的 `@latest` 由 npm/npx 解析。已安装的旧 CLI 也可以用 `sync` 查询并固定远程最新版。
 
 也可以全局安装：
 
@@ -147,6 +147,7 @@ Kit 不自动选择 Coding Agent 的全局规则目录，也不覆盖已有的 `
 ```text
 ai-vibe-demo-kit init [--target <path>] [--json]
 ai-vibe-demo-kit upgrade [--target <path>] [--apply] [--json]
+ai-vibe-demo-kit sync [--target <path>] [--apply] [--json]
 ai-vibe-demo-kit doctor [--target <path>] [--json]
 ai-vibe-demo-kit uninstall [--target <path>] [--apply] [--json]
 ai-vibe-demo-kit recover [--target <path>] --strategy <resume|rollback> [--apply] [--json]
@@ -157,6 +158,7 @@ ai-vibe-demo-kit version [--json]
 | --- | --- | --- |
 | `init` | 规划并立即初始化 | fresh init 无冲突 |
 | `upgrade` | 只输出计划 | 增加 `--apply` |
+| `sync` | 查询 npm latest 并委派该精确版本输出升级计划 | 增加 `--apply` |
 | `doctor` | 只读检查 | 从不写入 |
 | `uninstall` | 只输出计划 | 增加 `--apply` |
 | `recover` | 计划 resume 或 rollback | 使用 canonical transaction 指定的精确命令 |
@@ -173,7 +175,14 @@ npx --yes ai-vibe-demo-kit@<version> upgrade --target . --json
 npx --yes ai-vibe-demo-kit@<same-version> upgrade --target . --apply --json
 ```
 
-升级来源是命令中选择的 npm 包。CLI 不会在运行时把 `<version>` 自动替换为 registry 最新版本。
+升级来源是命令中选择的 npm 包。需要自动发现最新版时使用：
+
+```sh
+ai-vibe-demo-kit sync --target . --json
+ai-vibe-demo-kit sync --target . --apply --json
+```
+
+`sync` 以 npm `latest` 为权威来源，拒绝自动降级和隐式初始化。默认只计划；Apply 仍由固定版本的 `upgrade` canonical transaction 执行。
 
 ### 卸载
 
@@ -290,11 +299,10 @@ Human Gate 的 approve、reject、pause、redirect、override 和 abort 必须�
 
 以下行为当前需要显式外部流程：
 
-1. 发现 npm 最新版本，并保证 plan 与 apply 使用同一固定版本；
-2. 根据 `skills.sources.json` 解析、下载和更新外部 Skill；
-3. 把外部 Skill 注册到 `skills-list.json` 并绑定 Workflow Stage；
-4. 实际执行 Skill、测试、业务命令和清理动作；
-5. 将 Source 模板提升为项目根级有效治理文件。
+1. 根据 `skills.sources.json` 解析、下载和更新外部 Skill；
+2. 把外部 Skill 注册到 `skills-list.json` 并绑定 Workflow Stage；
+3. 实际执行 Skill、测试、业务命令和清理动作；
+4. 将 Source 模板提升为项目根级有效治理文件。
 
 另有一个已知分发契约差异：下游模板引用 `source/manifest.json`，当前 Distribution Manifest 将自身标记为 `package-only`，所以该文件不会被初始化到目标仓库。目标项目不应假定该路径已经存在；后续应拆分 Package Distribution Manifest 与可下发的 Source Manifest，或移除模板中的该引用。
 

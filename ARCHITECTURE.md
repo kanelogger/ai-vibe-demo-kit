@@ -35,7 +35,8 @@
 ## Dependency Direction
 
 ```text
-bin/ai-vibe-demo-kit.mjs -> src/distribution/lifecycle.mjs -> src/shared/
+bin/ai-vibe-demo-kit.mjs -> src/distribution/lifecycle.mjs -> src/distribution/sync.mjs -> npm/npx
+                                                \-------> src/shared/
 source/manifest.json ----> src/distribution/lifecycle.mjs -> target/source/
 harness -> src/runtime/cli.mjs -> src/runtime/runtime.mjs -> runtime internals + src/shared/
 payload/harness -> .harness/runtime/cli.mjs -> installed runtime/shared projection

@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "summary": "The 0.5.1 candidate satisfies the approved release, architecture, test-governance, distribution and Orchestrator-boundary specification; both supported Node matrices pass and verification resources are cleaned.",
+  "conditions": [
+    {
+      "id": "spec-compliant",
+      "status": "passed",
+      "checkRefs": [
+        "architecture",
+        "distribution",
+        "default-workflow",
+        "package-projection",
+        "release-metadata"
+      ],
+      "cleanupRefs": [],
+      "evidenceRefs": [
+        "work/requirements/wi-msq7k7rh-10f96691/alignment-spec.json",
+        "source/specs/multi-agent-orchestrator-rfc.md"
+      ]
+    },
+    {
+      "id": "regression-safe",
+      "status": "passed",
+      "checkRefs": [
+        "node-24-full",
+        "node-22-full",
+        "bundled-skill",
+        "distribution",
+        "active-workflow"
+      ],
+      "cleanupRefs": [],
+      "evidenceRefs": [
+        "work/requirements/wi-msq7k7rh-10f96691/test-impact.json"
+      ]
+    },
+    {
+      "id": "cleanup-complete",
+      "status": "passed",
+      "checkRefs": [],
+      "cleanupRefs": [
+        "pack-cache",
+        "dry-run-tarball",
+        "test-temporaries"
+      ],
+      "evidenceRefs": []
+    }
+  ],
+  "checks": [
+    {
+      "id": "node-24-full",
+      "kind": "automated",
+      "command": "node --test test/runtime/*.test.mjs test/distribution/*.test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/wi-msq7k7rh-10f96691/verification-log.md"
+      ]
+    },
+    {
+      "id": "node-22-full",
+      "kind": "automated",
+      "command": "/Users/kanehua/.volta/tools/image/node/22.23.1/bin/node --test test/runtime/*.test.mjs test/distribution/*.test.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/wi-msq7k7rh-10f96691/verification-log.md"
+      ]
+    },
+    {
+      "id": "bundled-skill",
+      "kind": "automated",
+      "command": "node scripts/validate-bundled-skill.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/wi-msq7k7rh-10f96691/verification-log.md"
+      ]
+    },
+    {
+      "id": "distribution",
+      "kind": "automated",
+      "command": "node scripts/check-distribution.mjs",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/wi-msq7k7rh-10f96691/verification-log.md"
+      ]
+    },
+    {
+      "id": "architecture",
+      "kind": "automated",
+      "command": "./harness check-architecture --file project.yml --json",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/wi-msq7k7rh-10f96691/verification-log.md"
+      ]
+    },
+    {
+      "id": "active-workflow",
+      "kind": "automated",
+      "command": "./harness check --json",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/wi-msq7k7rh-10f96691/verification-log.md"
+      ]
+    },
+    {
+      "id": "default-workflow",
+      "kind": "automated",
+      "command": "node --input-type=module -e <stateless validateWorkflow for source/workflows/workflow-default.json>",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/wi-msq7k7rh-10f96691/verification-log.md"
+      ]
+    },
+    {
+      "id": "package-projection",
+      "kind": "automated",
+      "command": "npm pack --dry-run --json --ignore-scripts",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/wi-msq7k7rh-10f96691/verification-log.md"
+      ]
+    },
+    {
+      "id": "release-metadata",
+      "kind": "automated",
+      "command": "./harness version --json",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/wi-msq7k7rh-10f96691/verification-log.md"
+      ]
+    }
+  ],
+  "cleanup": [
+    {
+      "id": "pack-cache",
+      "resource": "/private/tmp/ai-vibe-demo-kit-final-pack.P4k5zS",
+      "action": "Removed the isolated npm cache and verified the exact path is absent",
+      "status": "removed",
+      "evidenceRefs": [
+        "work/requirements/wi-msq7k7rh-10f96691/verification-log.md"
+      ]
+    },
+    {
+      "id": "dry-run-tarball",
+      "resource": "ai-vibe-demo-kit-0.5.1.tgz",
+      "action": "Verified npm pack dry-run did not create a tarball",
+      "status": "not-created",
+      "reason": "The pack command used --dry-run and the candidate tarball path is absent"
+    },
+    {
+      "id": "test-temporaries",
+      "resource": "temporary repositories, files and child processes created by the test suite",
+      "action": "Test cleanup hooks removed registered resources; the cleanup regression test passed in both matrices",
+      "status": "removed",
+      "evidenceRefs": [
+        "work/requirements/wi-msq7k7rh-10f96691/verification-log.md"
+      ]
+    }
+  ]
+}

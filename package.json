@@ -54,6 +54,7 @@
     "source/rules/git.md",
     "source/rules/security.md",
     "source/rules/testing.md",
+    "source/specs/multi-agent-orchestrator-rfc.md",
     "source/specs/template.md",
     "source/tools/README.md",
     "source/tools/check-change-tests.mjs",

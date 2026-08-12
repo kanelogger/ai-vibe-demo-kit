@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-08-12T15:25:57Z",
+  "summary": "The frozen 0.5.1 candidate passed focused governance checks, the full Node 22/24 matrix, distribution projection, architecture closure, Workflow validation, and dry-run package projection.",
+  "checks": [
+    {
+      "command": "node --test test/runtime/*.test.mjs test/distribution/*.test.mjs",
+      "runtime": "Node.js 24.18.0",
+      "exitCode": 0,
+      "keyOutput": "tests 167; pass 167; fail 0; skipped 0; cancelled 0"
+    },
+    {
+      "command": "/Users/kanehua/.volta/tools/image/node/22.23.1/bin/node --test test/runtime/*.test.mjs test/distribution/*.test.mjs",
+      "runtime": "Node.js 22.23.1",
+      "exitCode": 0,
+      "keyOutput": "tests 167; pass 167; fail 0; skipped 0; cancelled 0"
+    },
+    {
+      "command": "node scripts/validate-bundled-skill.mjs",
+      "exitCode": 0,
+      "keyOutput": "bundled Skill: valid"
+    },
+    {
+      "command": "node scripts/check-distribution.mjs",
+      "exitCode": 0,
+      "keyOutput": "distribution: valid"
+    },
+    {
+      "command": "./harness check-architecture --file project.yml --json",
+      "exitCode": 0,
+      "keyOutput": "valid=true; configurationValid=true; errors=[]; warnings=[]"
+    },
+    {
+      "command": "./harness check --json",
+      "exitCode": 0,
+      "keyOutput": "active Workflow version 2 valid at revision 105"
+    },
+    {
+      "command": "npm pack --dry-run --json --ignore-scripts",
+      "exitCode": 0,
+      "keyOutput": "ai-vibe-demo-kit@0.5.1; entryCount 82; no tarball written"
+    }
+  ],
+  "cleanup": {
+    "npmCache": "/private/tmp/ai-vibe-demo-kit-final-pack.P4k5zS removed and absence verified",
+    "tarball": "ai-vibe-demo-kit-0.5.1.tgz was not created",
+    "testResources": "the full matrix included and passed the registered temporary-directory cleanup check"
+  }
+}

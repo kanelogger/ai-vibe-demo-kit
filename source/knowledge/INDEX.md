@@ -10,6 +10,7 @@
 | 架构与 Module 索引 | `ARCHITECTURE.md` | official | Project maintainers | `bin/`、`src/`、`scripts/`、`source/workflows/` |
 | Runtime | `src/runtime/ARCHITECTURE.md` | official | Project maintainers | `src/runtime/` |
 | Distribution | `src/distribution/ARCHITECTURE.md` | official | Project maintainers | `src/distribution/` |
+| 严格多 Agent Orchestrator 边界 | `source/specs/multi-agent-orchestrator-rfc.md` | proposed | Project maintainers | context-package/v1、handoff/v1、OCI prototype gate |
 | 架构决策 | `main/adr/README.md` | draft | Project maintainers | Accepted ADRs |
 
 ## 应用知识

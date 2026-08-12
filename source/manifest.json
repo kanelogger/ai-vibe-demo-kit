@@ -48,6 +48,7 @@
     { "sourcePath": "source/rules/git.md", "targetPath": "source/rules/git.md", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/rules/security.md", "targetPath": "source/rules/security.md", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/rules/testing.md", "targetPath": "source/rules/testing.md", "kind": "managed", "mode": "0644" },
+    { "sourcePath": "source/specs/multi-agent-orchestrator-rfc.md", "targetPath": "source/specs/multi-agent-orchestrator-rfc.md", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/specs/template.md", "targetPath": "source/specs/template.md", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/tools/README.md", "targetPath": "source/tools/README.md", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/tools/check-change-tests.mjs", "targetPath": "source/tools/check-change-tests.mjs", "kind": "managed", "mode": "0644" },

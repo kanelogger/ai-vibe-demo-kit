@@ -1,5 +1,11 @@
 # Harness Changelog
 
+## 0.5.1 - 2026-08-12
+
+- Add executable architecture-index validation and a distributed feature-test synchronization check.
+- Require structured `test-impact/v1` implementation evidence.
+- Make the release script fail closed when a package version already exists instead of mutating release metadata.
+
 ## 0.5.0 - 2026-08-11
 
 - Add `sync` to resolve npm `latest`, pin the exact package version and delegate safe upgrade planning or apply.

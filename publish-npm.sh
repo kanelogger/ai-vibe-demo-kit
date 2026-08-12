@@ -129,8 +129,22 @@ fi
 
 npm publish --access public --registry="$REGISTRY"
 
-published_version="$(npm view "${package_name}@${package_version}" version --registry="$REGISTRY")"
-published_version="${published_version//\"/}"
+printf 'Verifying registry...\n'
+verify_attempt=0
+max_verify_attempts=5
+while (( verify_attempt < max_verify_attempts )); do
+  if published_version="$(npm view "${package_name}@${package_version}" version --registry="$REGISTRY" 2>/dev/null)"; then
+    published_version="${published_version//\"/}"
+    break
+  fi
+  ((verify_attempt++))
+  if (( verify_attempt >= max_verify_attempts )); then
+    fail "Registry verification failed after ${max_verify_attempts} attempts."
+  fi
+  wait_sec=$(( 2 ** verify_attempt ))
+  printf 'Registry not yet indexed; retrying in %ds (attempt %d/%d)...\n' "$wait_sec" "$verify_attempt" "$max_verify_attempts"
+  sleep "$wait_sec"
+done
 [[ "$published_version" == "$package_version" ]] || \
   fail "Registry verification returned ${published_version:-no version}."
 

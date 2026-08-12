@@ -17,6 +17,9 @@ Final candidate checks:
 | `npm pack --dry-run --json --ignore-scripts` with isolated npm cache | 0 | `ai-vibe-demo-kit@0.5.1`, 82 entries, no tarball written |
 | `git diff --check` | 0 | no whitespace errors |
 | `rg` stale version/tool paths outside `work/` | 0 | no `0.5.0` or removed `scripts/check-*` path; legacy Workflow references are documented compatibility fixtures |
+| `node source/tools/check-commit-messages.mjs 2964ddeb5d39819a369c7e8445e69b7d6755198c HEAD` | 0 | `commit messages: valid (4)` |
+| `node source/tools/check-change-tests.mjs 2964ddeb5d39819a369c7e8445e69b7d6755198c HEAD --behavior-path bin --behavior-path src --behavior-path scripts --behavior-path source/tools --behavior-path source/workflows --behavior-path publish-npm.sh --test-root test` | 0 | `change tests: valid (4 commit(s))` |
+| `node source/tools/check-completion-evidence.mjs 2964ddeb5d39819a369c7e8445e69b7d6755198c HEAD` | 0 | `completion evidence: valid (1)` |
 | implementation Stage Result against active Workflow version 2 | 0 | valid and policy satisfied |
 | implementation Stage Result against default Workflow version 3 | 0 | valid, policy satisfied, `test-impact/v1` accepted |
 

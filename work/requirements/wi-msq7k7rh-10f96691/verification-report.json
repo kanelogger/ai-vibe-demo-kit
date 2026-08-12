@@ -26,7 +26,10 @@
         "node-22-full",
         "bundled-skill",
         "distribution",
-        "active-workflow"
+        "active-workflow",
+        "commit-messages",
+        "change-tests",
+        "completion-evidence"
       ],
       "cleanupRefs": [],
       "evidenceRefs": [
@@ -130,6 +133,36 @@
       "id": "release-metadata",
       "kind": "automated",
       "command": "./harness version --json",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/wi-msq7k7rh-10f96691/verification-log.md"
+      ]
+    },
+    {
+      "id": "commit-messages",
+      "kind": "automated",
+      "command": "node source/tools/check-commit-messages.mjs 2964ddeb5d39819a369c7e8445e69b7d6755198c HEAD",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/wi-msq7k7rh-10f96691/verification-log.md"
+      ]
+    },
+    {
+      "id": "change-tests",
+      "kind": "automated",
+      "command": "node source/tools/check-change-tests.mjs 2964ddeb5d39819a369c7e8445e69b7d6755198c HEAD --behavior-path bin --behavior-path src --behavior-path scripts --behavior-path source/tools --behavior-path source/workflows --behavior-path publish-npm.sh --test-root test",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "work/requirements/wi-msq7k7rh-10f96691/verification-log.md"
+      ]
+    },
+    {
+      "id": "completion-evidence",
+      "kind": "automated",
+      "command": "node source/tools/check-completion-evidence.mjs 2964ddeb5d39819a369c7e8445e69b7d6755198c HEAD",
       "status": "passed",
       "exitCode": 0,
       "evidenceRefs": [

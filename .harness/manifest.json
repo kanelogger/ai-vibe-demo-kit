@@ -4,7 +4,7 @@
   "version": "0.5.1",
   "minimumNodeVersion": "22",
   "capabilities": {
-    "commands": ["version", "check", "check-environment", "check-result", "start", "status", "signal", "decide"],
-    "contracts": ["verification-report/v1"]
+    "commands": ["version", "check", "check-architecture", "check-environment", "check-result", "start", "status", "signal", "decide"],
+    "contracts": ["verification-report/v1", "test-impact/v1"]
   }
 }

@@ -10,6 +10,7 @@
 - 知识渐进加载：`source/knowledge/ROUTING.md`
 - Workflow 与 Evidence 契约：`source/workflows/`
 - 当前任务与 Gate：`./harness status --json`
+- 架构索引校验：`./harness check-architecture --file project.yml --json`
 - 测试、安全和 Git 规则：`source/rules/`
 
 ## 开始前

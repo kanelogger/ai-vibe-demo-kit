@@ -8,6 +8,7 @@ const RUNTIME_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const HELP = `Usage:
   harness version [--json]
   harness check [--workflow <path>] [--json]
+  harness check-architecture --file <project.yml> [--json]
   harness check-environment --file <AI_ENVIRONMENT.md> [--json]
   harness check-result --workflow <path> --stage <stage> --file <stage-result.json>
       [--require-complete] [--json]
@@ -25,6 +26,7 @@ const REPEATED = new Set(["accept-risk"]);
 const COMMAND_OPTIONS = {
   version: new Set(["json"]),
   check: new Set(["workflow", "json"]),
+  "check-architecture": new Set(["file", "json"]),
   "check-environment": new Set(["file", "json"]),
   "check-result": new Set(["workflow", "stage", "file", "require-complete", "json"]),
   start: new Set(["workflow", "intent", "json"]),
@@ -68,7 +70,7 @@ function normalize(options) {
   const allowed = COMMAND_OPTIONS[kind];
   if (!allowed || options._.length !== 1) fail("E_USAGE", `unknown or malformed command: ${kind ?? ""}`.trim(), { repair: HELP });
   for (const key of Object.keys(options)) if (key !== "_" && !allowed.has(key)) fail("E_USAGE", `unknown option for ${kind}: --${key}`, { repair: HELP });
-  if (kind === "check-environment" && !options.file) fail("E_USAGE", "check-environment requires --file", { repair: HELP });
+  if (new Set(["check-architecture", "check-environment"]).has(kind) && !options.file) fail("E_USAGE", `${kind} requires --file`, { repair: HELP });
   if (kind === "check-result" && (!options.workflow || !options.stage || !options.file)) fail("E_USAGE", "check-result requires --workflow, --stage and --file", { repair: HELP });
   if (kind === "start" && (!options.workflow || !options.intent)) fail("E_USAGE", "start requires --workflow and --intent", { repair: HELP });
   if (kind === "signal" && !options.file) fail("E_USAGE", "signal requires --file", { repair: HELP });

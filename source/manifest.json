@@ -69,6 +69,8 @@
     { "sourcePath": "src/runtime/readiness.mjs", "targetPath": ".harness/runtime/readiness.mjs", "kind": "managed", "mode": "0644" },
     { "sourcePath": "src/runtime/runtime.mjs", "targetPath": ".harness/runtime/runtime.mjs", "kind": "managed", "mode": "0644" },
     { "sourcePath": "src/runtime/store.mjs", "targetPath": ".harness/runtime/store.mjs", "kind": "managed", "mode": "0644" },
+    { "sourcePath": "src/runtime/validation/ARCHITECTURE.md", "targetPath": ".harness/runtime/validation/ARCHITECTURE.md", "kind": "managed", "mode": "0644" },
+    { "sourcePath": "src/runtime/validation/architecture.mjs", "targetPath": ".harness/runtime/validation/architecture.mjs", "kind": "managed", "mode": "0644" },
     { "sourcePath": "src/runtime/validation/control-state.mjs", "targetPath": ".harness/runtime/validation/control-state.mjs", "kind": "managed", "mode": "0644" },
     { "sourcePath": "src/runtime/validation/environment.mjs", "targetPath": ".harness/runtime/validation/environment.mjs", "kind": "managed", "mode": "0644" },
     { "sourcePath": "src/runtime/validation/index.mjs", "targetPath": ".harness/runtime/validation/index.mjs", "kind": "managed", "mode": "0644" },

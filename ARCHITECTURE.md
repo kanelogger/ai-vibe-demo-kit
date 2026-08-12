@@ -25,7 +25,7 @@
 
 | Module | Entry | Responsibility | Dependencies |
 | --- | --- | --- | --- |
-| Distribution CLI Adapter | `bin/ai-vibe-demo-kit.mjs` | 参数、JSON/文本格式、退出码 | Distribution |
+| Distribution CLI Adapter | `bin/ARCHITECTURE.md` | 参数、JSON/文本格式、退出码；入口为 `bin/ai-vibe-demo-kit.mjs` | Distribution |
 | Source Runtime shim | `harness` | 加载 `src/runtime/cli.mjs` | Runtime |
 | Install projection shim | `payload/harness` | 加载 `.harness/runtime/cli.mjs` | Installed Runtime |
 | Coding Agent Source | `source/manifest.json` | 知识、规则、规格、Workflow 与项目模板的唯一分发树 | Distribution、Agent 与人工调用方 |

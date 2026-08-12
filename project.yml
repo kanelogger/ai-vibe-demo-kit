@@ -77,7 +77,8 @@ commands:
   typecheck: null
   lint: null
   build: null
-  harness_check: "./harness check --workflow source/workflows/workflow-template.json --json"
+  harness_check: "./harness check --workflow source/workflows/workflow-default.json --json"
+  architecture_check: "./harness check-architecture --file project.yml --json"
   version: "./harness version --json"
   commit_check: "node scripts/check-commit-messages.mjs <base-ref> HEAD"
   completion_check: "node scripts/check-completion-evidence.mjs <base-ref> HEAD"

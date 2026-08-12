@@ -6,7 +6,7 @@ import { loadHarnessManifest } from "../shared/manifest.mjs";
 import { firstSymlinkInPath, isInside, resolveInside } from "../shared/path-safety.mjs";
 import { formatRecoveryCommand, readCanonicalMaintenance, repositoryPaths } from "../shared/repository-guard.mjs";
 import { loadState, mutateState, readGitActor } from "./store.mjs";
-import { validateEnvironmentManifest, validateStageResult, validateStateAgainstWorkflow, validateWorkflow } from "./validation/index.mjs";
+import { validateArchitectureIndex, validateEnvironmentManifest, validateStageResult, validateStateAgainstWorkflow, validateWorkflow } from "./validation/index.mjs";
 
 const DEFAULT_WORKFLOW = "source/workflows/workflow-template.json";
 
@@ -109,6 +109,10 @@ async function execute({ runtimeRoot, cwd, command, context }) {
     return { exitCode: 0, payload: { schemaVersion: 1, name: manifest.name, version: manifest.version, minimumNodeVersion: manifest.minimumNodeVersion } };
   }
   const root = (await repositoryPaths(await realpath(cwd))).root;
+  if (command.kind === "check-architecture") {
+    const payload = await validateArchitectureIndex(root, await readRepoText(root, command.file, "project manifest"));
+    return { exitCode: payload.valid ? 0 : payload.configurationValid ? 1 : 2, payload };
+  }
   if (command.kind === "check-environment") {
     const payload = validateEnvironmentManifest(await readRepoText(root, command.file, "AI environment manifest"));
     return { exitCode: payload.valid ? 0 : 1, payload };

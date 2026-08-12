@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-通过单一 command Interface 从 `source/workflows/` 加载默认 Workflow、投影状态、计算 Next Actions、处理幂等 Signal、漂移、完成资格和领域错误。
+通过单一 command Interface 从 `source/workflows/` 加载默认 Workflow、校验项目架构索引、投影状态、计算 Next Actions、处理幂等 Signal、漂移、完成资格和领域错误。
 
 ## Interface
 
@@ -13,7 +13,7 @@ runRuntimeCommand({ runtimeRoot, cwd, command })
 
 Interface 不读取 argv、不写 stdout/stderr、不设置进程退出码。`cli.mjs` 是薄 Adapter。
 
-## Modules
+## Entry Points
 
 | Module | Responsibility |
 | --- | --- |
@@ -22,11 +22,12 @@ Interface 不读取 argv、不写 stdout/stderr、不设置进程退出码。`cl
 | `kernel.mjs` | 纯 Control 状态转换、Gate 和人工决策 |
 | `store.mjs` | Revision、原子持久化与归档 |
 | `readiness.mjs` | Manifest 能力和 contract readiness |
-| `validation/index.mjs` | 唯一 Validator facade |
-| `validation/environment.mjs` | Environment Manifest |
-| `validation/workflow.mjs` | Workflow 与 Skill entity |
-| `validation/result.mjs` | Stage Result 与 verification-report/v1 |
-| `validation/control-state.mjs` | Control State 与 Workflow binding |
+
+## Modules
+
+| Directory | Responsibility |
+| --- | --- |
+| `validation/` | Validator facade、Workflow、Stage Result、环境、架构和 Control State contract |
 
 ## Invariants
 

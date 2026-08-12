@@ -8,9 +8,9 @@
 
 | Module | Architecture | Public Interface |
 | --- | --- | --- |
-| Runtime | `runtime/ARCHITECTURE.md` | `runRuntimeCommand`、Validator facade |
-| Distribution | `distribution/ARCHITECTURE.md` | `runDistributionCommand`、Manifest loader、status mapping |
-| Shared | `shared/ARCHITECTURE.md` | Errors、PathSafety、RepositoryGuard、Manifest |
+| `runtime/` | `runtime/ARCHITECTURE.md` | `runRuntimeCommand`、Validator facade |
+| `distribution/` | `distribution/ARCHITECTURE.md` | `runDistributionCommand`、Manifest loader、status mapping |
+| `shared/` | `shared/ARCHITECTURE.md` | Errors、PathSafety、RepositoryGuard、Manifest |
 
 ## Dependency Direction
 

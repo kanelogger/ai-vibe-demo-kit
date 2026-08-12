@@ -47,6 +47,7 @@
 - 可复用工作流：`source/workflows/`
 - 当前活动任务及 Gate：`./harness status --json`
 - Workflow 契约校验：`./harness check --json`
+- 架构索引校验：`./harness check-architecture --file project.yml --json`
 - 测试、安全和 Git 规则：`source/rules/`
 
 ## 开始前
@@ -72,7 +73,7 @@
 4. 删除或移动文件夹时，同步更新原父模块和新父模块的子模块索引。
 5. 完成实现后，根据最终代码刷新受影响模块的职责、接口、不变量、依赖、入口和验证方式。回填只描述当前事实，不追加需求流水账。
 6. 纯内部实现没有改变架构索引时，在当前需求的 `architecture-impact.yml` 中记录 `impact: none`、原因和代码证据。
-7. 若项目配置了专用架构检查，完成前运行它。目录缺少索引、父级没有登记子模块或回填证据缺失时，不得声称完成。
+7. 完成前运行 `./harness check-architecture --file project.yml --json`。目录缺少索引、父级没有登记子模块、直接源码未登记或回填证据缺失时，不得声称完成。
 
 ## 高风险边界
 

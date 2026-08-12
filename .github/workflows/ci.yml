@@ -37,6 +37,8 @@ jobs:
         run: node --test test/runtime/*.test.mjs test/distribution/*.test.mjs
       - name: Validate the default workflow
         run: ./harness check --json
+      - name: Validate architecture indexes
+        run: ./harness check-architecture --file project.yml --json
       - name: Read release metadata
         run: ./harness version --json
       - name: Validate completion evidence

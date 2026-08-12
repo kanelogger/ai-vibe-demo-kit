@@ -4,7 +4,7 @@ import { HarnessError, fail } from "./errors.mjs";
 
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
 
-const COMMANDS = ["version", "check", "check-environment", "check-result", "start", "status", "signal", "decide"];
+const COMMANDS = ["version", "check", "check-architecture", "check-environment", "check-result", "start", "status", "signal", "decide"];
 
 function validateManifest(value, { allowLegacy = false } = {}) {
   if (!value || typeof value !== "object" || Array.isArray(value)) fail("E_MANIFEST_INVALID", "Harness manifest must be an object");
@@ -19,7 +19,7 @@ function validateManifest(value, { allowLegacy = false } = {}) {
     if (!Array.isArray(value.capabilities.commands) || new Set(value.capabilities.commands).size !== value.capabilities.commands.length || COMMANDS.some((command) => !value.capabilities.commands.includes(command))) {
       fail("E_MANIFEST_INVALID", "Harness manifest commands are incomplete or duplicated");
     }
-    if (!Array.isArray(value.capabilities.contracts) || new Set(value.capabilities.contracts).size !== value.capabilities.contracts.length || !value.capabilities.contracts.includes("verification-report/v1")) {
+    if (!Array.isArray(value.capabilities.contracts) || new Set(value.capabilities.contracts).size !== value.capabilities.contracts.length || !value.capabilities.contracts.includes("verification-report/v1") || !value.capabilities.contracts.includes("test-impact/v1")) {
       fail("E_MANIFEST_INVALID", "Harness manifest contracts are incomplete or duplicated");
     }
   }

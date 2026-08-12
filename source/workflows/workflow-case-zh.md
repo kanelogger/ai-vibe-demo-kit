@@ -6,7 +6,7 @@
 | 字段 | 值 |
 |---|---|
 | 案例 ID | `async-cancellation-precheck-fix` |
-| 模板引用 | `source/workflows/workflow-template.json` |
+| 模板引用 | `source/workflows/workflow-default.json` |
 | 技能目录 | `source/workflows/skills-list.json` |
 | 关闭时间 | 2026-08-08T12:05:00Z |
 

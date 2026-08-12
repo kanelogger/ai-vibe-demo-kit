@@ -80,8 +80,9 @@ commands:
   harness_check: "./harness check --workflow source/workflows/workflow-default.json --json"
   architecture_check: "./harness check-architecture --file project.yml --json"
   version: "./harness version --json"
-  commit_check: "node scripts/check-commit-messages.mjs <base-ref> HEAD"
-  completion_check: "node scripts/check-completion-evidence.mjs <base-ref> HEAD"
+  commit_check: "node source/tools/check-commit-messages.mjs <base-ref> HEAD"
+  change_test_check: "node source/tools/check-change-tests.mjs <base-ref> HEAD --behavior-path bin --behavior-path src --behavior-path scripts --behavior-path source/tools --behavior-path source/workflows --behavior-path publish-npm.sh --test-root test"
+  completion_check: "node source/tools/check-completion-evidence.mjs <base-ref> HEAD"
   skill_validation: "node scripts/validate-bundled-skill.mjs"
   distribution_check: "node scripts/check-distribution.mjs"
   pack: "npm pack --dry-run --json"
@@ -130,7 +131,7 @@ capabilities:
 
 workflow:
   definitions: "source/workflows/"
-  default: "source/workflows/workflow-template.json"
+  default: "source/workflows/workflow-default.json"
   active_state: ".git/harness/control.json"
   stage_result_template: "source/workflows/stage-result-template.json"
   verification_report_template: "source/workflows/verification-report-template.json"

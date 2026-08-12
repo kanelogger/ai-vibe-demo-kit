@@ -143,6 +143,74 @@ test("workflow validation rejects unknown artifact contracts", async () => {
   assert.ok(report.errors.some((issue) => issue.code === "E_ARTIFACT_CONTRACT"));
 });
 
+test("workflow validation accepts test-impact/v1 artifacts", async () => {
+  const value = workflow();
+  value.stages.align.requiredArtifacts = [{ id: "impact", required: true, contract: "test-impact/v1" }];
+  const report = await validateWorkflow(value, { root: await makeGitRepo() });
+  assert.equal(report.valid, true, JSON.stringify(report.errors));
+});
+
+test("test-impact/v1 accepts behavioral changes with synchronized tests and evidence", async () => {
+  const root = await makeGitRepo();
+  const value = workflow();
+  value.stages.align.requiredArtifacts = [{ id: "impact", required: true, contract: "test-impact/v1" }];
+  await writeFile(join(root, "test.log"), "passed\n");
+  await writeFile(join(root, "impact.json"), JSON.stringify({
+    schemaVersion: 1,
+    classification: "behavioral",
+    summary: "Behavior and tests changed together",
+    sourceChanges: [{ path: "src/feature.mjs", change: "modified" }],
+    testChanges: [{ path: "test/feature.test.mjs", change: "modified" }],
+    checks: [{ kind: "automated", command: "node --test", status: "passed", exitCode: 0, evidenceRefs: ["test.log"] }],
+  }));
+  const report = await validateStageResult(value, "align", stageResult({ artifacts: [{ id: "impact", uri: "impact.json" }] }), { root });
+  assert.equal(report.valid, true, JSON.stringify(report.errors));
+});
+
+test("test-impact/v1 rejects behavioral omissions and unexplained non-behavioral changes", async () => {
+  const root = await makeGitRepo();
+  const value = workflow();
+  value.stages.align.requiredArtifacts = [{ id: "impact", required: true, contract: "test-impact/v1" }];
+  await writeFile(join(root, "impact.json"), JSON.stringify({
+    schemaVersion: 1,
+    classification: "behavioral",
+    summary: "Missing test coverage",
+    sourceChanges: [{ path: "src/feature.mjs", change: "modified" }],
+    testChanges: [],
+    checks: [],
+  }));
+  let report = await validateStageResult(value, "align", stageResult({ artifacts: [{ id: "impact", uri: "impact.json" }] }), { root });
+  assert.ok(report.errors.some((entry) => entry.code === "E_TEST_IMPACT_BEHAVIORAL"));
+
+  await writeFile(join(root, "impact.json"), JSON.stringify({
+    schemaVersion: 1,
+    classification: "non-behavioral",
+    summary: "Documentation-only change",
+    sourceChanges: [],
+    testChanges: [],
+    checks: [],
+  }));
+  report = await validateStageResult(value, "align", stageResult({ artifacts: [{ id: "impact", uri: "impact.json" }] }), { root });
+  assert.ok(report.errors.some((entry) => entry.code === "E_TEST_IMPACT_REASON"));
+});
+
+test("test-impact/v1 rejects checks that are not explicitly automated", async () => {
+  const root = await makeGitRepo();
+  const value = workflow();
+  value.stages.align.requiredArtifacts = [{ id: "impact", required: true, contract: "test-impact/v1" }];
+  await writeFile(join(root, "test.log"), "passed\n");
+  await writeFile(join(root, "impact.json"), JSON.stringify({
+    schemaVersion: 1,
+    classification: "behavioral",
+    summary: "Behavior and tests changed together",
+    sourceChanges: [{ path: "src/feature.mjs", change: "modified" }],
+    testChanges: [{ path: "test/feature.test.mjs", change: "modified" }],
+    checks: [{ kind: "manual", command: "node --test", status: "passed", exitCode: 0, evidenceRefs: ["test.log"] }],
+  }));
+  const report = await validateStageResult(value, "align", stageResult({ artifacts: [{ id: "impact", uri: "impact.json" }] }), { root });
+  assert.ok(report.errors.some((entry) => entry.code === "E_TEST_IMPACT_CHECK"));
+});
+
 test("stage result rejects missing local artifacts and accepts external references", async () => {
   const root = await makeGitRepo();
   const value = workflow();

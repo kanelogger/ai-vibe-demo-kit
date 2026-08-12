@@ -2,6 +2,9 @@
 
 ## Required Checks
 
+- 每个改变可观察行为的功能或修复必须在同一 commit 新增或更新自动化测试；`feat`、`fix` 由 `source/tools/check-change-tests.mjs` 强制检查。
+- implementation Stage 必须提交 `test-impact/v1`。`behavioral` 记录源码、测试和实际通过的检查；`non-behavioral` 明确记录无需修改测试的原因。
+
 | Change type | Required verification |
 | --- | --- |
 | 核心逻辑或状态转换 | `node --test test/runtime/control.test.mjs test/runtime/store.test.mjs` |

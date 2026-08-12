@@ -2,7 +2,7 @@ import { lstat, readFile, realpath } from "node:fs/promises";
 import { firstSymlinkInPath, resolveInside } from "../../shared/path-safety.mjs";
 
 const TERMINALS = new Set(["complete", "blocked", "aborted"]);
-const ARTIFACT_CONTRACTS = new Set(["verification-report/v1"]);
+const ARTIFACT_CONTRACTS = new Set(["test-impact/v1", "verification-report/v1"]);
 const ID = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
 
 const issue = (code, path, message) => ({ code, path, message });

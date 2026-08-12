@@ -4,9 +4,10 @@
 
 ```sh
 ./harness check
+./harness check-architecture --file project.yml --json
 ./harness check-environment --file AI_ENVIRONMENT.md --json
 ./harness version --json
-./harness start --workflow source/workflows/workflow-template.json --intent "<goal>"
+./harness start --workflow source/workflows/workflow-default.json --intent "<goal>"
 ./harness status --json
 ./harness check-result --workflow <workflow.json> --stage <stage> --file <stage-result.json> --require-complete --json
 ./harness signal --revision <n> --file <stage-result.json>
@@ -27,4 +28,4 @@ Mutation 锁位于 `.git/harness/control.lock`，Runtime 和 Distribution Lifecy
 
 `check-result` 是无状态检查：它不读取本地控制历史，也不证明 Human Gate 已批准。`completionEligible: true` 表示结果结构、Policy 和完成 Transition 均满足；`requiresHumanApproval` 表示仍需外部人工决策。
 
-Distribution Lifecycle 安装 Runtime、内置控制 Skill 和完整 `source/`。Source 由 `source/manifest.json` 与安装账本管理；项目生效治理文件和用户 Workflow 位于 Source 外，不由 Lifecycle 接管。
+Distribution Lifecycle 安装 Runtime、内置控制 Skill 和完整 `source/`。Source 包含可分发的只读治理检查器、`test-impact/v1` 模板和默认 Workflow，由 `source/manifest.json` 与安装账本管理；项目生效治理文件和用户 Workflow 位于 Source 外，不由 Lifecycle 接管。

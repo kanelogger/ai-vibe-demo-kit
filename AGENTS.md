@@ -45,7 +45,7 @@
 - Validator、Workflow 或 contract：运行 validator 测试和 `./harness check --json`。
 - CLI、Lifecycle 或公共行为：运行 CLI/Lifecycle 测试。
 - 关键路径或发布候选：运行 `node --test test/runtime/*.test.mjs test/distribution/*.test.mjs`。
-- 完成证据：运行 `./harness check-result --workflow source/workflows/workflow-template.json --stage acceptance --file <acceptance-result.json> --require-complete --json`。
+- 完成证据：运行 `./harness check-result --workflow <work/requirements/work-id/workflow.json> --stage acceptance --file <acceptance-result.json> --require-complete --json`。
 
 实际命令、退出码、关键输出、跳过项、测试资源清理和残留风险必须进入 `verification-report/v1`。失败与环境限制必须显式报告。
 

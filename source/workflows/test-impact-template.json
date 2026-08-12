@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "classification": "behavioral",
+  "summary": "<what behavior changed and how tests cover it>",
+  "sourceChanges": [
+    {
+      "path": "<repository-relative-source-path>",
+      "change": "modified"
+    }
+  ],
+  "testChanges": [
+    {
+      "path": "<repository-relative-test-path>",
+      "change": "modified"
+    }
+  ],
+  "checks": [
+    {
+      "kind": "automated",
+      "command": "<actual-test-command>",
+      "status": "passed",
+      "exitCode": 0,
+      "evidenceRefs": [
+        "<repository-relative-evidence-path>"
+      ]
+    }
+  ]
+}

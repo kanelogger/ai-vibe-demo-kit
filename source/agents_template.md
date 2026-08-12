@@ -87,7 +87,7 @@
 
 {填写：改动后必须运行的命令，以及需要检查的真实界面或返回值。}
 
-验证结果必须形成 Workflow 声明的 Evidence。跳过的检查、失败输出和环境限制必须明确记录。
+验证结果必须形成 Workflow 声明的 Evidence。implementation 使用 `test-impact/v1` 记录功能与测试同步；跳过的检查、失败输出和环境限制必须明确记录。
 
 Acceptance 使用 `verification-report/v1` 记录实际命令、退出码、关键路径、跳过项、清理动作和残留资源。完成前运行 `./harness check-result --workflow <workflow.json> --stage <stage> --file <stage-result.json> --require-complete --json`。
 

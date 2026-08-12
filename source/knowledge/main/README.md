@@ -27,7 +27,7 @@ evidence:
 | --- | --- | --- | --- |
 | Runtime-ready | Harness Runtime 已安装，默认 Workflow 可校验和运行。 | Distribution Lifecycle | `README.md` |
 | Governance-ready | 项目已填写 Agent、环境、架构、知识与规则入口。 | Repository governance | `README.md`、`AGENTS.md` |
-| Completion-evidence-ready | Agent 和 CI 可以对 acceptance Stage Result 与验证报告执行同一无状态检查。 | Delivery workflow | `source/workflows/workflow-template.json` |
+| Completion-evidence-ready | Agent 和 CI 可以对 acceptance Stage Result 与验证报告执行同一无状态检查。 | Delivery workflow | `source/workflows/workflow-default.json` |
 | Gate | Transition 上的自动或人工推进许可。 | ControlKernel | `src/runtime/kernel.mjs` |
 | Policy Failure | 必需 Condition 或 Skill 未满足形成的可人工精确接管状态。 | Workflow policy | `src/runtime/kernel.mjs` |
 

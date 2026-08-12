@@ -66,8 +66,11 @@ commands:
   typecheck: "<command>"
   lint: "<command>"
   build: "<command>"
-  harness_check: "./harness check --workflow source/workflows/workflow-template.json"
+  harness_check: "./harness check --workflow source/workflows/workflow-default.json --json"
+  architecture_check: "./harness check-architecture --file project.yml --json"
   environment_check: "./harness check-environment --file AI_ENVIRONMENT.md --json"
+  commit_check: "node source/tools/check-commit-messages.mjs <base-ref> HEAD"
+  change_test_check: "node source/tools/check-change-tests.mjs <base-ref> HEAD --behavior-path <code-root> --test-root <test-root>"
   completion_check: "./harness check-result --workflow <workflow.json> --stage <stage> --file <stage-result.json> --require-complete --json"
 
 authoritative_context:
@@ -95,7 +98,7 @@ capabilities:
 
 workflow:
   definitions: "source/workflows/"
-  default: "source/workflows/workflow-template.json"
+  default: "source/workflows/workflow-default.json"
   active_state: ".git/harness/control.json"
   stage_result_template: "source/workflows/stage-result-template.json"
   verification_report_template: "source/workflows/verification-report-template.json"

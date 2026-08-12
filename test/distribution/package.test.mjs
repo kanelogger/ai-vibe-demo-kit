@@ -46,6 +46,10 @@ test("local tarball initializes a Git repository and exposes Runtime lifecycle p
   await assert.rejects(readFile(join(target, "source", ".agents", "skills.lock.json")), { code: "ENOENT" });
   assert.match(await readFile(join(target, "source", "knowledge", "INDEX.md"), "utf8"), /Knowledge Index/);
   assert.match(await readFile(join(target, "source", "rules", "security.md"), "utf8"), /Security/);
+  assert.match(await readFile(join(target, "source", "tools", "README.md"), "utf8"), /Governance Tools/);
+  assert.match(await readFile(join(target, "source", "tools", "check-change-tests.mjs"), "utf8"), /checkChangeTests/);
+  assert.equal(JSON.parse(await readFile(join(target, "source", "workflows", "test-impact-template.json"), "utf8")).schemaVersion, 1);
+  assert.equal(JSON.parse(await readFile(join(target, "source", "workflows", "workflow-default.json"), "utf8")).version, 3);
   await assert.rejects(readFile(join(target, "workflows", "workflow-template.json")), { code: "ENOENT" });
   result = await runRaw(join(target, "harness"), ["status", "--json"], target);
   assert.equal(JSON.parse(result.stdout).status, "idle");

@@ -4,10 +4,10 @@ import { writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { makeGitRepo, run, runRaw } from "../helpers.mjs";
-import { validCommitSubject } from "../../scripts/check-commit-messages.mjs";
+import { validCommitSubject } from "../../source/tools/check-commit-messages.mjs";
 
 const sourceRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
-const checker = join(sourceRoot, "scripts", "check-commit-messages.mjs");
+const checker = join(sourceRoot, "source", "tools", "check-commit-messages.mjs");
 
 test("semantic commit subjects accept the documented forms", () => {
   for (const subject of [

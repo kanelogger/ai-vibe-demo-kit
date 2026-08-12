@@ -263,8 +263,9 @@ Workflow
 ```sh
 ./harness version --json
 ./harness check --json
+./harness check-architecture --file project.yml --json
 ./harness check-environment --file AI_ENVIRONMENT.md --json
-./harness start --workflow source/workflows/workflow-template.json --intent "<goal>" --json
+./harness start --workflow source/workflows/workflow-default.json --intent "<goal>" --json
 ./harness status --json
 ./harness check-result --workflow <workflow.json> --stage <stage> --file <stage-result.json> --json
 ./harness signal --revision <revision> --file <stage-result.json> --json
@@ -287,10 +288,10 @@ Human Gate 的 approve、reject、pause、redirect、override 和 abort 必须�
 
 ## 默认 Workflow
 
-默认 Workflow 位于 `source/workflows/workflow-template.json`，包含：
+0.5.1 默认 Workflow 位于 `source/workflows/workflow-default.json`；旧 `workflow-template.json` 仅作为在途 Work Item 兼容定义保留。默认流程包含：
 
 1. `alignment`：冻结意图、验收标准、风险和环境事实；
-2. `implementation`：只实现已确认范围并保留验证证据；
+2. `implementation`：只实现已确认范围，并强制提交 `test-impact/v1` 与当前验证证据；
 3. `acceptance`：验证结果、清理状态、风险和交接证据。
 
 当前默认 Skill Catalog 只内置本包自己的 `ai-vibe-demo-kit` 控制 Skill，三个 Stage 都通过 Required Skill 回执引用它。`skills.sources.json` 中的外部 Skill 只是推荐，不会自动进入 Catalog、绑定 Stage 或参与 Runtime 就绪判断。
@@ -312,6 +313,7 @@ Human Gate 的 approve、reject、pause、redirect、override 和 abort 必须�
 
 ```sh
 npm test
+npm run check:architecture
 npm run check:skill
 npm run check:distribution
 npm run pack:dry

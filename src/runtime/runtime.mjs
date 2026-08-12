@@ -8,7 +8,7 @@ import { formatRecoveryCommand, readCanonicalMaintenance, repositoryPaths } from
 import { loadState, mutateState, readGitActor } from "./store.mjs";
 import { validateArchitectureIndex, validateEnvironmentManifest, validateStageResult, validateStateAgainstWorkflow, validateWorkflow } from "./validation/index.mjs";
 
-const DEFAULT_WORKFLOW = "source/workflows/workflow-template.json";
+const DEFAULT_WORKFLOW = "source/workflows/workflow-default.json";
 
 async function readRepoText(root, path, label) {
   if (typeof path !== "string" || path.trim() === "" || isAbsolute(path)) fail("E_PATH_OUTSIDE", `${label} path must be repository-relative`);

@@ -4,8 +4,9 @@ import { loadHarnessManifest } from "../shared/manifest.mjs";
 import { validateWorkflow } from "./validation/index.mjs";
 
 const issue = (code, path, message, facts = null) => ({ code, path, message, facts });
-const DEFAULT_WORKFLOW = "source/workflows/workflow-template.json";
+const DEFAULT_WORKFLOW = "source/workflows/workflow-default.json";
 const STAGE_RESULT_TEMPLATE = "source/workflows/stage-result-template.json";
+const TEST_IMPACT_TEMPLATE = "source/workflows/test-impact-template.json";
 const VERIFICATION_REPORT_TEMPLATE = "source/workflows/verification-report-template.json";
 
 async function readJson(root, path) {
@@ -34,13 +35,19 @@ export async function inspectRuntimeReadiness({ root, allowLegacy = false }) {
 
     try {
       const stageTemplate = await readJson(root, STAGE_RESULT_TEMPLATE);
+      const impactTemplate = await readJson(root, TEST_IMPACT_TEMPLATE);
       const reportTemplate = await readJson(root, VERIFICATION_REPORT_TEMPLATE);
       completionEvidenceToolingReady = manifest.schemaVersion === 2
         && manifest.capabilities.commands.includes("check-result")
         && manifest.capabilities.contracts.includes("verification-report/v1")
+        && manifest.capabilities.contracts.includes("test-impact/v1")
         && Array.isArray(stageTemplate.conditions)
         && Array.isArray(stageTemplate.skills)
         && Array.isArray(stageTemplate.artifacts)
+        && impactTemplate.schemaVersion === 1
+        && Array.isArray(impactTemplate.sourceChanges)
+        && Array.isArray(impactTemplate.testChanges)
+        && Array.isArray(impactTemplate.checks)
         && reportTemplate.schemaVersion === 1
         && Array.isArray(reportTemplate.conditions)
         && Array.isArray(reportTemplate.checks)

@@ -7,7 +7,7 @@ import { makeGitRepo, run, runRaw } from "../helpers.mjs";
 
 const sourceRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const distributionCli = join(sourceRoot, "bin", "ai-vibe-demo-kit.mjs");
-const sourceChecker = join(sourceRoot, "scripts", "check-completion-evidence.mjs");
+const sourceChecker = join(sourceRoot, "source", "tools", "check-completion-evidence.mjs");
 
 async function commitAll(root, subject) {
   await run("git", ["add", "."], root);

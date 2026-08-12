@@ -41,12 +41,15 @@ jobs:
         run: ./harness check-architecture --file project.yml --json
       - name: Read release metadata
         run: ./harness version --json
+      - name: Validate distribution projection
+        if: matrix.node == 24
+        run: node scripts/check-distribution.mjs
       - name: Validate completion evidence
         if: github.event_name != 'workflow_dispatch'
         env:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        run: node scripts/check-completion-evidence.mjs "$BASE_SHA" "$HEAD_SHA"
+        run: node source/tools/check-completion-evidence.mjs "$BASE_SHA" "$HEAD_SHA"
 
   commit-messages:
     name: Commit messages
@@ -68,4 +71,14 @@ jobs:
         env:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-        run: node scripts/check-commit-messages.mjs "$BASE_SHA" "$HEAD_SHA"
+        run: node source/tools/check-commit-messages.mjs "$BASE_SHA" "$HEAD_SHA"
+      - name: Require tests with feature and fix commits
+        env:
+          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: >-
+          node source/tools/check-change-tests.mjs "$BASE_SHA" "$HEAD_SHA"
+          --behavior-path bin --behavior-path src --behavior-path scripts
+          --behavior-path source/tools --behavior-path source/workflows
+          --behavior-path publish-npm.sh
+          --test-root test

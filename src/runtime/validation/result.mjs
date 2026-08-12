@@ -6,6 +6,8 @@ const SKILL_STATUSES = new Set(["succeeded", "failed", "skipped"]);
 const CHECK_STATUSES = new Set(["passed", "failed", "skipped"]);
 const CHECK_KINDS = new Set(["automated", "critical-path", "manual"]);
 const CLEANUP_STATUSES = new Set(["removed", "not-created", "retained"]);
+const CHANGE_KINDS = new Set(["added", "modified", "deleted"]);
+const TEST_IMPACT_CLASSIFICATIONS = new Set(["behavioral", "non-behavioral"]);
 const ID = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
 
 const issue = (code, path, message) => ({ code, path, message });
@@ -165,6 +167,44 @@ async function validateVerificationReport(root, path, stageConditions, errors) {
   return report;
 }
 
+function safeChangePath(value) {
+  return nonEmpty(value) && !value.startsWith("/") && !value.includes("\\") && !value.split("/").includes("..");
+}
+
+async function validateTestImpact(root, path, errors) {
+  const impact = await readJsonPath(root, path, errors, "E_TEST_IMPACT");
+  if (!impact) return null;
+  if (impact.schemaVersion !== 1 || !nonEmpty(impact.summary) || !TEST_IMPACT_CLASSIFICATIONS.has(impact.classification) || !Array.isArray(impact.sourceChanges) || !Array.isArray(impact.testChanges) || !Array.isArray(impact.checks)) {
+    errors.push(issue("E_TEST_IMPACT", path, "test-impact/v1 requires schemaVersion 1, summary, classification, sourceChanges, testChanges and checks"));
+    return null;
+  }
+  for (const [group, changes] of [["sourceChanges", impact.sourceChanges], ["testChanges", impact.testChanges]]) {
+    for (const [index, change] of changes.entries()) {
+      if (!object(change) || !safeChangePath(change.path) || !CHANGE_KINDS.has(change.change)) errors.push(issue("E_TEST_IMPACT_CHANGE", `${path}.${group}.${index}`, "change requires a safe repository-relative path and added, modified or deleted change kind"));
+    }
+  }
+  let passedChecks = 0;
+  for (const [index, check] of impact.checks.entries()) {
+    const checkPath = `${path}.checks.${index}`;
+    const evidenceRefs = Array.isArray(check?.evidenceRefs) ? check.evidenceRefs : [];
+    if (!object(check) || check.kind !== "automated" || !nonEmpty(check.command) || !CHECK_STATUSES.has(check.status) || !Array.isArray(check.evidenceRefs)) {
+      errors.push(issue("E_TEST_IMPACT_CHECK", checkPath, "check requires kind automated, command, status and evidenceRefs"));
+      continue;
+    }
+    if (check.status !== "skipped" && !Number.isInteger(check.exitCode)) errors.push(issue("E_TEST_IMPACT_CHECK", checkPath, "executed check requires an integer exitCode"));
+    if (check.status === "passed") {
+      passedChecks += 1;
+      if (check.exitCode !== 0 || evidenceRefs.length === 0) errors.push(issue("E_TEST_IMPACT_CHECK", checkPath, "passed check requires exitCode 0 and evidenceRefs"));
+    } else if (!nonEmpty(check.reason)) errors.push(issue("E_TEST_IMPACT_CHECK", checkPath, "failed or skipped check requires a reason"));
+    for (const [evidenceIndex, ref] of evidenceRefs.entries()) await validateFileOrUri(root, ref, errors, { path: `${checkPath}.evidenceRefs.${evidenceIndex}`, missingCode: "E_EVIDENCE_MISSING", uriCode: "E_EVIDENCE_URI" });
+  }
+  if (impact.classification === "behavioral") {
+    if (impact.sourceChanges.length === 0 || impact.testChanges.length === 0) errors.push(issue("E_TEST_IMPACT_BEHAVIORAL", path, "behavioral impact requires non-empty sourceChanges and testChanges"));
+    if (passedChecks === 0) errors.push(issue("E_TEST_IMPACT_BEHAVIORAL", path, "behavioral impact requires at least one passed automated check"));
+  } else if (!nonEmpty(impact.reason)) errors.push(issue("E_TEST_IMPACT_REASON", path, "non-behavioral impact requires a reason"));
+  return impact;
+}
+
 export async function validateStageResult(workflow, stageId, result, { root } = {}) {
   const errors = [];
   const warnings = [];
@@ -235,6 +275,10 @@ export async function validateStageResult(workflow, stageId, result, { root } = 
     }
     if (declaration?.contract === "verification-report/v1") {
       await validateVerificationReport(root, artifact.uri, conditionEntries, errors);
+      continue;
+    }
+    if (declaration?.contract === "test-impact/v1") {
+      await validateTestImpact(root, artifact.uri, errors);
       continue;
     }
     await validateFileOrUri(root, artifact.uri, errors, { path: `artifacts.${artifact.id}`, missingCode: "E_ARTIFACT_MISSING", uriCode: "E_ARTIFACT_URI" });

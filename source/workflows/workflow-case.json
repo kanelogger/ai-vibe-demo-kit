@@ -11,7 +11,7 @@
       "workflow": {
         "id": "risk-adaptive-skill-workflow",
         "version": 1,
-        "ref": "source/workflows/workflow-template.json",
+        "ref": "source/workflows/workflow-default.json",
         "digest": "example://workflow-digest"
       },
       "status": "completed-with-override",

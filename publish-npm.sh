@@ -22,7 +22,7 @@ Options:
   --yes, -y  Skip the interactive "publish" confirmation
   --help, -h Show this help
 
-This script does not change the version, commit, tag or push Git changes.
+This script auto-bumps the patch version when the current version is already published.
 EOF
 }
 
@@ -101,7 +101,22 @@ npm whoami --registry="$REGISTRY" >/dev/null
 
 view_output=""
 if view_output="$(npm view "${package_name}@${package_version}" version --registry="$REGISTRY" 2>&1)"; then
-  fail "${package_name}@${package_version} is already published."
+  printf '%s@%s is already published. Auto-bumping patch version...\n' "$package_name" "$package_version"
+  max_attempts=50
+  attempt=0
+  while (( attempt < max_attempts )); do
+    npm version patch --no-git-tag-version >/dev/null 2>&1 || fail "Failed to bump version."
+    package_version="$(node -e 'console.log(require("./package.json").version)')"
+    ((attempt++))
+    if ! npm view "${package_name}@${package_version}" version --registry="$REGISTRY" >/dev/null 2>&1; then
+      printf 'Auto-bumped to %s@%s (attempt %d).\n' "$package_name" "$package_version" "$attempt"
+      break
+    fi
+    printf '%s@%s still taken; bumping again...\n' "$package_name" "$package_version"
+  done
+  if (( attempt >= max_attempts )); then
+    fail "Could not find an unpublished patch version after ${max_attempts} attempts."
+  fi
 elif ! grep -Eqi 'E404|404 Not Found' <<<"$view_output"; then
   fail "Could not check npm version availability: ${view_output}"
 fi

@@ -15,7 +15,7 @@ async function commitAll(root, subject) {
   return run("git", ["rev-parse", "HEAD"], root);
 }
 
-async function writeAcceptanceEvidence(root, workId, { skills = [{ id: "acceptance.harness-guide", status: "succeeded", artifactRefs: ["verification-report", "handoff"] }] } = {}) {
+async function writeAcceptanceEvidence(root, workId, { skills = [{ id: "acceptance.workflow-runner", status: "succeeded", artifactRefs: ["verification-report", "handoff", "execution-trace"] }] } = {}) {
   const relativeRoot = `work/requirements/${workId}`;
   const evidenceRoot = join(root, relativeRoot);
   await mkdir(evidenceRoot, { recursive: true });
@@ -32,6 +32,15 @@ async function writeAcceptanceEvidence(root, workId, { skills = [{ id: "acceptan
     checks: [{ id: "full-suite", kind: "automated", command: "node --test test/runtime/*.test.mjs test/distribution/*.test.mjs", status: "passed", exitCode: 0, evidenceRefs: [`${relativeRoot}/full-suite.log`] }],
     cleanup: [{ id: "temporary-resources", resource: "temporary test repositories and processes", action: "test helpers removed temporary resources", status: "not-created", reason: "No persistent repository resource was created" }],
   }, null, 2)}\n`);
+  await writeFile(join(evidenceRoot, "execution-trace.json"), `${JSON.stringify({
+    schemaVersion: 1,
+    stage: "acceptance",
+    summary: "The Agent ran the complete verification and cleanup checks.",
+    requirements: [{ id: "verify-candidate", description: "Verify the candidate and cleanup state." }],
+    selections: [{ id: "node-test", capability: "node-test", kind: "tool", requirementRefs: ["verify-candidate"], reason: "The repository test runner covers the acceptance requirement." }],
+    executions: [{ id: "full-suite", selectionRef: "node-test", status: "succeeded", summary: "The full suite passed.", artifactRefs: ["verification-report"], evidenceRefs: [`${relativeRoot}/full-suite.log`] }],
+    residualRisks: [],
+  }, null, 2)}\n`);
   await writeFile(join(evidenceRoot, "acceptance-result.json"), `${JSON.stringify({
     outcome: "accepted",
     summary: "Candidate is ready for the final human gate",
@@ -44,6 +53,7 @@ async function writeAcceptanceEvidence(root, workId, { skills = [{ id: "acceptan
     artifacts: [
       { id: "verification-report", uri: `${relativeRoot}/verification-report.json` },
       { id: "handoff", uri: `${relativeRoot}/handoff.md` },
+      { id: "execution-trace", uri: `${relativeRoot}/execution-trace.json` },
     ],
   }, null, 2)}\n`);
 }
@@ -68,6 +78,7 @@ async function writeWorkSpecificWorkflow(root, workId) {
         requiredArtifacts: [
           { id: "verification-report", required: true, contract: "verification-report/v1" },
           { id: "handoff", required: true },
+          { id: "execution-trace", required: true, contract: "execution-trace/v1" },
         ],
       },
     },

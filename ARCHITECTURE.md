@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-提供可安装、零依赖、可恢复的 Agent Workflow 控制层。Runtime 负责确定性校验、状态投影和人工 Gate；Distribution 负责完整 Source 与 Runtime 的 Manifest 驱动安装生命周期。
+提供可安装、零依赖、可恢复的 Agent Workflow 控制层。Runtime 负责确定性校验、状态投影和人工 Gate；`workflow-runner` 指引单 Agent 执行 Stage 并记录动态能力证据；Distribution 负责完整 Source 与 Runtime 的 Manifest 驱动安装生命周期。
 
 ## Public Interfaces
 
@@ -14,6 +14,8 @@
 ## Invariants
 
 - Runtime 不执行 Stage、测试、Skill、Git 提交或外部系统写入。
+- Workflow 声明 What，Workflow Runner 驱动 How，Harness 判断当前 Evidence、Policy、Revision 与 Gate 是否允许推进。
+- 动态领域能力只记录在 `execution-trace/v1`；Stage Result 的 Skill 回执必须来自 Workflow Catalog。
 - 项目只把 `source/.agents/skills.sources.json` 作为外部 Skill 推荐声明分发；不解析、锁定、安装、更新、物化或判断外部 Skill 就绪状态。
 - CLI Adapter 只解析参数、格式化输出并转交退出码；领域决策位于 Runtime 或 Distribution Module。
 - Runtime Mutation 与 Lifecycle Apply 共用 RepositoryGuard 的单一 PID 锁。

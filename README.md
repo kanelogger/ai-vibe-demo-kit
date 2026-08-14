@@ -13,7 +13,7 @@ Coding Agent 项目通常需要同时维护：
 - 不覆盖项目本地修改的安装与升级机制；
 - 中断后可以继续或回滚的文件事务。
 
-本项目把这些职责拆成三个可独立理解的层：
+本项目把这些职责拆成控制面、执行指引和分发层：
 
 ```text
 ai-vibe-demo-kit npm package
@@ -25,7 +25,8 @@ ai-vibe-demo-kit npm package
 │   ├── Revision、Policy、Gate 与人工决策
 │   └── Git 私有控制状态
 └── installed Source
-    ├── Skill 远程源声明
+    ├── workflow-runner / kit-lifecycle Skills
+    ├── Skill 推荐来源声明
     ├── knowledge / rules / specs / workflows
     └── Agent、环境、编码规则与项目模板
 ```
@@ -38,19 +39,58 @@ ai-vibe-demo-kit npm package
 | 最新版本同步 | `sync` 查询 npm `latest`，固定精确版本后委派该版本执行 `upgrade` |
 | 外部 Skill 推荐 | `source/.agents/skills.sources.json` 只保存推荐仓库、路径和跟踪意图，不是安装清单或版本锁 |
 | Skill 安装与更新 | CLI 不解析、锁定、安装、更新、物化或检查外部 Skill；这些能力不属于本项目 |
-| Skill 调用 | Workflow 声明 Required Skill；Harness 校验 Agent 提交的 Skill 回执 |
+| Stage 执行 | `workflow-runner` 指引 Agent 完成 Observe → Understand → Discover → Decide → Execute → Advance |
+| 动态能力选择 | Runner 只从当前会话已暴露的 Skills、Tools 和 Agent 原生能力中选择最小组合，并写入 `execution-trace/v1` |
+| Skill 管理 | 消费者自行管理本地领域 Skills；CLI 不安装、不更新、不检查失效或鉴权 |
+| Skill 回执 | 默认 Workflow 只声明 Runner；Harness 校验 Runner 回执、Evidence 和 Trace 引用，不探测领域能力健康状态 |
 | Workflow 推进 | Harness 强制 Required Condition、Skill 回执、Policy、Revision 和 Gate |
 | 测试与业务操作 | Harness 不执行测试、Shell、Git 提交、业务写入或外部系统操作 |
 | 治理文件启用 | 模板安装到 `source/`；有效根级治理文件由维护者提升和填写 |
 | Source 本地修改 | `managed` 内容要求保持上游一致；修改会阻止安全升级 |
+
+## 内置 Skills
+
+0.6.0 安装两个单一职责 Skill。两者都允许 Agent Host 根据对话隐式触发，但不会替用户作出 Human Gate 或写入授权决定。
+
+| Skill | 使用时机 | 唯一职责 |
+| --- | --- | --- |
+| `workflow-runner`（Workflow Runner） | Harness 存在 active Stage，需要完成 alignment、implementation、acceptance 或返工循环 | 把当前 Stage 从 active 推进到一个真实、可校验、可提交的 Stage Result |
+| `kit-lifecycle`（Kit Lifecycle） | 需要 doctor、init、upgrade、sync、recover 或 uninstall Kit | 安全规划和执行 Kit 安装生命周期 |
+
+### Workflow Runner
+
+Workflow Runner 按固定闭环驱动一个 Stage：
+
+```text
+Observe → Understand → Discover → Decide → Execute → Advance
+```
+
+- **Observe**：读取环境探测、Harness revision、当前 Stage、`allowedActions` 和 Pending Gate。
+- **Understand**：理解当前 Stage 的 goal、outcomes、exit conditions、required artifacts 和权限边界。
+- **Discover**：只使用当前 Agent 会话已经暴露的 Skills、Tools 和原生能力；不扫描来源声明或远程仓库。
+- **Decide**：选择覆盖当前 Stage 的最小能力组合；没有合适领域 Skill 时显式使用具体 Tool 或 `agent-native`。
+- **Execute**：执行编码、测试、修复和 Evidence 收集；失败尝试与替代能力都如实保留。
+- **Advance**：生成 Stage artifacts、`execution-trace/v1` 和 Stage Result，通过 `check-result` 后以当前 revision `signal`，再读取最新状态。
+
+Stage Result 的 `skills[]` 只包含 Workflow 声明的 Runner 回执。动态选择的领域 Skill 或 Tool、选择理由、执行状态和证据全部进入 `execution-trace/v1`。遇到 Human Gate、publish、生产写入或破坏性操作时，Runner 停止并等待用户对具体动作明确授权。
+
+### Kit Lifecycle
+
+Kit Lifecycle 只管理本包安装到仓库的文件和生命周期状态：
+
+- `doctor`、版本与账本检查始终只读；
+- `upgrade`、`sync`、`recover` 和 `uninstall` 先给出计划，只有用户明确授权具体操作和目标后才 Apply；
+- 保留 PID lock、canonical recovery、managed/seed ownership 和冲突时原子停止；
+- 存在 active Work Item 时拒绝 Lifecycle Apply；
+- 不推进 Workflow Stage，不选择领域能力，不编码、测试或生成 Stage Evidence。
+
+消费者仍使用自己的 Skill Manager 管理本地领域 Skills。CLI、Workflow Runner 和 Harness 都不负责安装、更新、失效检查、鉴权或远程健康探测；Agent Host 只需把消费者已具备的能力暴露给当前会话。
 
 ## 运行要求
 
 - Node.js 22 或更高版本；
 - Git；
 - 位于现有 Git 仓库中的目标目录；
-- macOS 或 Linux；
-- `arm64` 或 `x86_64`。
 
 Docker 不是 CLI 的运行依赖。npm 仅用于获取或安装包；生产代码只使用 Node.js 内置模块。
 
@@ -94,7 +134,8 @@ harness
 └── ...
 .agents/
 └── skills/
-    └── ai-vibe-demo-kit/
+    ├── workflow-runner/
+    └── kit-lifecycle/
 source/
 ├── .agents/skills.sources.json
 ├── knowledge/
@@ -235,7 +276,7 @@ Lifecycle 还有以下保护：
 | `source/knowledge/` | 知识索引、渐进路由、应用模板、ADR 和知识模板 | `managed` |
 | `source/rules/` | 测试、安全和 Git 规则 | `managed` |
 | `source/specs/` | Specification 模板 | `managed` |
-| `source/workflows/` | 默认 Workflow、Skill Catalog、Stage Result 和 verification report 契约 | `managed` |
+| `source/workflows/` | 默认 Workflow、Runner Catalog、Stage Result、execution trace 和 verification report 契约 | `managed` |
 | `source/agents_template.md` | 根级 `AGENTS.md` 模板 | `seed` |
 | `source/ai_environment_template.md` | 根级环境清单模板 | `seed` |
 | `source/coding_agent_rules_template.md` | Coding Agent 通用编码规则模板 | `seed` |
@@ -250,12 +291,16 @@ Lifecycle 还有以下保护：
 Harness 是安装到目标仓库的确定性控制层：
 
 ```text
-Workflow
+Workflow (What)
   -> Stage Result validation
-  -> Required Condition / Skill receipt checks
-  -> Policy evaluation
+  -> Evidence / Policy / Revision checks
   -> Automatic transition or Human Gate
   -> Revisioned control state
+
+Workflow Runner (How)
+  -> Agent selects exposed domain Skills / Tools
+  -> Agent executes coding and tests
+  -> execution-trace/v1 records decisions and evidence
 ```
 
 常用命令：
@@ -272,7 +317,7 @@ Workflow
 ./harness decide --revision <revision> --action <action> --reason "<reason>" --json
 ```
 
-Harness 只校验 Workflow 和 Agent 提交的 Evidence。Skill、测试、Shell、Git 操作、业务写入和外部系统调用由 Agent、CI 或人工执行，结果再通过 Stage Result 回传。
+Harness 只校验 Workflow 和 Agent 提交的 Evidence。Workflow Runner 指引 Agent 执行当前 Stage；领域 Skill、测试、Shell、Git 操作、业务写入和外部系统调用仍由 Agent、CI 或人工实际执行，结果通过 Stage Result 和 `execution-trace/v1` 回传。
 
 Human Gate 的 approve、reject、pause、redirect、override 和 abort 必须由被授权的人明确决定。进入 Gate 或 Policy Block 时，`signal --json` 可能已经持久化结果，同时返回退出码 `1`；应以响应中的 `applied`、`requiresHumanAction` 和新 Revision 为准。
 
@@ -288,22 +333,26 @@ Human Gate 的 approve、reject、pause、redirect、override 和 abort 必须�
 
 ## 默认 Workflow
 
-0.5.1 默认 Workflow 位于 `source/workflows/workflow-default.json`；旧 `workflow-template.json` 仅作为在途 Work Item 兼容定义保留。默认流程包含：
+0.6.0 默认 Workflow v4 位于 `source/workflows/workflow-default.json`，`workflow-template.json` 是相同契约的兼容镜像。Runtime 同时接受 Workflow schema v2 和 v3；v3 允许 Exit Condition 通过 `requiredForOutcomes` 只约束指定 outcome。默认流程包含：
 
 1. `alignment`：冻结意图、验收标准、风险和环境事实；
 2. `implementation`：只实现已确认范围，并强制提交 `test-impact/v1` 与当前验证证据；
 3. `acceptance`：验证结果、清理状态、风险和交接证据。
 
-当前默认 Skill Catalog 只内置本包自己的 `ai-vibe-demo-kit` 控制 Skill，三个 Stage 都通过 Required Skill 回执引用它。`skills.sources.json` 中的外部 Skill 只是推荐，不会自动进入 Catalog、绑定 Stage 或参与 Runtime 就绪判断。
+三个 Stage 都只声明一个 required `workflow-runner` 回执和一个 required `execution-trace` Artifact。implementation 负责编码、focused tests 与 `test-impact/v1`，不增加独立 Test Stage；acceptance 负责完整验证与 cleanup。动态领域能力只记录在 execution trace，不能作为未声明回执写入 Stage Result。
+
+`skills.sources.json` 中的外部 Skill 只是消费者可采用的推荐来源。Agent Host 负责把消费者本地 Skills 与 Tools 暴露给会话；Runner 不扫描来源文件，Harness 也不判断这些能力是否安装、失效、已鉴权或远程可用。
 
 ## 已知实现边界
 
 以下行为明确属于消费方或独立工具：
 
-1. 根据 `skills.sources.json` 解析、下载和更新外部 Skill；
-2. 把外部 Skill 注册到 `skills-list.json` 并绑定 Workflow Stage；
-3. 实际执行 Skill、测试、业务命令和清理动作；
+1. 根据 `skills.sources.json` 解析、下载、更新或鉴权外部 Skill；
+2. 由 Agent Host 向会话暴露消费者本地 Skills 与 Tools；
+3. 实际执行测试、业务命令和清理动作；
 4. 将 Source 模板提升为项目根级有效治理文件。
+
+Phase 2 的 planner / implementer / reviewer Orchestrator、OCI 隔离和跨 Agent handoff 仍只保留在 RFC 中。
 
 另有一个已知分发契约差异：下游模板引用 `source/manifest.json`，当前 Distribution Manifest 将自身标记为 `package-only`，所以该文件不会被初始化到目标仓库。目标项目不应假定该路径已经存在；后续应拆分 Package Distribution Manifest 与可下发的 Source Manifest，或移除模板中的该引用。
 

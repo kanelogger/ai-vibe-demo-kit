@@ -101,6 +101,7 @@ workflow:
   default: "source/workflows/workflow-default.json"
   active_state: ".git/harness/control.json"
   stage_result_template: "source/workflows/stage-result-template.json"
+  execution_trace_template: "source/workflows/execution-trace-template.json"
   verification_report_template: "source/workflows/verification-report-template.json"
   evidence_root: "work/requirements/"
 

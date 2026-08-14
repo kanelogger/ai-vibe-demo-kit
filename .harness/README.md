@@ -14,7 +14,7 @@
 ./harness decide --revision <n> --action <action> --reason "<reason>"
 ```
 
-运行 `./harness help` 查看完整参数。Harness 只控制和校验 Workflow，不执行 Skill、测试、Shell、Git 提交或外部写入。
+运行 `./harness help` 查看完整参数。Harness 只控制和校验 Workflow，不执行 Skill、测试、Shell、Git 提交或外部写入。安装的 `workflow-runner` 指引 Agent 推进当前 Stage；`kit-lifecycle` 只处理 Kit 安装生命周期。
 
 Distribution Lifecycle 完成且 `./harness check --json` 通过只表示 **Runtime-ready**。达到 **Governance-ready** 还需要：在不覆盖现有文件的前提下将 `source/agents_template.md`、`source/project-template.yml`、`source/ai_environment_template.md` 分别提升为 `AGENTS.md`、`project.yml`、`AI_ENVIRONMENT.md`，填写全部占位符，通过 `check-environment`，并用代码、配置、实际探测或负责人确认每条项目事实。`source/knowledge/`、`source/rules/`、`source/specs/` 和 `source/workflows/` 是 Lifecycle 管理的上游资料，项目专属内容不得直接写入 Source。达到 **Completion-evidence-ready** 还需要提交 acceptance Stage Result 与 `verification-report/v1`，并由 Agent 或 CI 调用 `check-result --require-complete`。
 
@@ -28,4 +28,4 @@ Mutation 锁位于 `.git/harness/control.lock`，Runtime 和 Distribution Lifecy
 
 `check-result` 是无状态检查：它不读取本地控制历史，也不证明 Human Gate 已批准。`completionEligible: true` 表示结果结构、Policy 和完成 Transition 均满足；`requiresHumanApproval` 表示仍需外部人工决策。
 
-Distribution Lifecycle 安装 Runtime、内置控制 Skill 和完整 `source/`。Source 包含可分发的只读治理检查器、`test-impact/v1` 模板和默认 Workflow，由 `source/manifest.json` 与安装账本管理；项目生效治理文件和用户 Workflow 位于 Source 外，不由 Lifecycle 接管。
+Distribution Lifecycle 安装 Runtime、`workflow-runner`、`kit-lifecycle` 和完整 `source/`。Source 包含可分发的只读治理检查器、`execution-trace/v1`、`test-impact/v1` 模板和默认 Workflow，由 `source/manifest.json` 与安装账本管理；项目生效治理文件和用户 Workflow 位于 Source 外，不由 Lifecycle 接管。

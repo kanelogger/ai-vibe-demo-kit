@@ -1,6 +1,0 @@
-interface:
-  display_name: "AI Vibe Demo Kit"
-  short_description: "Guide agents through Harness workflow and evidence controls"
-  default_prompt: "Use $ai-vibe-demo-kit to inspect this repository and follow its Harness workflow safely."
-policy:
-  allow_implicit_invocation: true

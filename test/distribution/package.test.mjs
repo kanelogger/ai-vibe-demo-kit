@@ -35,7 +35,7 @@ test("local tarball initializes a Git repository and exposes Runtime lifecycle p
   assert.equal(result.code, 1);
   assert.equal(JSON.parse(result.stdout).readiness.runtimeReady, true);
   result = await runRaw(join(target, "harness"), ["version", "--json"], target);
-  assert.equal(JSON.parse(result.stdout).version, "0.5.1");
+  assert.equal(JSON.parse(result.stdout).version, "0.6.0");
   result = await runRaw(join(target, "harness"), ["check", "--json"], target);
   assert.equal(result.code, 0, result.stderr);
   const sources = JSON.parse(await readFile(join(target, "source", ".agents", "skills.sources.json"), "utf8"));
@@ -49,7 +49,8 @@ test("local tarball initializes a Git repository and exposes Runtime lifecycle p
   assert.match(await readFile(join(target, "source", "tools", "README.md"), "utf8"), /Governance Tools/);
   assert.match(await readFile(join(target, "source", "tools", "check-change-tests.mjs"), "utf8"), /checkChangeTests/);
   assert.equal(JSON.parse(await readFile(join(target, "source", "workflows", "test-impact-template.json"), "utf8")).schemaVersion, 1);
-  assert.equal(JSON.parse(await readFile(join(target, "source", "workflows", "workflow-default.json"), "utf8")).version, 3);
+  assert.equal(JSON.parse(await readFile(join(target, "source", "workflows", "workflow-default.json"), "utf8")).version, 4);
+  assert.equal(JSON.parse(await readFile(join(target, "source", "workflows", "execution-trace-template.json"), "utf8")).schemaVersion, 1);
   await assert.rejects(readFile(join(target, "workflows", "workflow-template.json")), { code: "ENOENT" });
   result = await runRaw(join(target, "harness"), ["status", "--json"], target);
   assert.equal(JSON.parse(result.stdout).status, "idle");

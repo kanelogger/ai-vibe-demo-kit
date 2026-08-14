@@ -1,0 +1,6 @@
+interface:
+  display_name: "Kit Lifecycle"
+  short_description: "Manage AI Vibe Demo Kit installation lifecycle safely"
+  default_prompt: "Use $kit-lifecycle to inspect and safely manage this repository's AI Vibe Demo Kit installation."
+policy:
+  allow_implicit_invocation: true

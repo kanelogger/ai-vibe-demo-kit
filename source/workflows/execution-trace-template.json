@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "stage": "implementation",
+  "summary": "<selection and execution conclusion>",
+  "requirements": [
+    {
+      "id": "implement-scope",
+      "description": "<capability required by the current Stage>"
+    }
+  ],
+  "selections": [
+    {
+      "id": "selection-1",
+      "capability": "tdd",
+      "kind": "skill",
+      "requirementRefs": ["implement-scope"],
+      "reason": "<why this is the minimum suitable capability>"
+    }
+  ],
+  "executions": [
+    {
+      "id": "execution-1",
+      "selectionRef": "selection-1",
+      "status": "succeeded",
+      "summary": "<observable result>",
+      "artifactRefs": ["implementation-notes", "quick-evidence"],
+      "evidenceRefs": ["work/requirements/<work-id>/evidence/test.log"]
+    }
+  ],
+  "residualRisks": []
+}

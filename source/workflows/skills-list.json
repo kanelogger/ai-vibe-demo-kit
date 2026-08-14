@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
   "catalogId": "ai-vibe-demo-kit-skills",
-  "description": "Runtime Skill Catalog. Every default Stage uses the bundled Harness guide.",
+  "description": "Runtime Skill Catalog. Every default Stage uses the bundled Workflow Runner; domain capabilities are recorded in execution-trace/v1.",
   "skills": [
     {
-      "id": "ai-vibe-demo-kit",
-      "purpose": "Guide environment checks, Harness state, Stage Results, Evidence and lifecycle safety.",
-      "category": "workflow-control",
+      "id": "workflow-runner",
+      "purpose": "Drive one current Workflow Stage through capability selection, execution, Evidence and state advancement.",
+      "category": "workflow-execution",
       "workflowStages": ["alignment", "implementation", "acceptance"],
       "invocation": "auto-or-explicit",
       "availability": "bundled",
-      "sourceId": "ai-vibe-demo-kit",
-      "skillRef": ".agents/skills/ai-vibe-demo-kit/SKILL.md"
+      "sourceId": "workflow-runner",
+      "skillRef": ".agents/skills/workflow-runner/SKILL.md"
     }
   ]
 }

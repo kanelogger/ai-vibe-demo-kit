@@ -5,8 +5,21 @@ import { fileURLToPath } from "node:url";
 import { parseSkillDocument } from "../src/runtime/validation/index.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const skillRoot = join(root, ".agents", "skills", "ai-vibe-demo-kit");
 const errors = [];
+const skills = [
+  {
+    id: "workflow-runner",
+    displayName: "Workflow Runner",
+    shortDescription: "Run Harness stages with dynamic capability selection",
+    requiredBody: ["## Run the Stage", "## Permission boundaries", "execution-trace/v1", "skills.sources.json"],
+  },
+  {
+    id: "kit-lifecycle",
+    displayName: "Kit Lifecycle",
+    shortDescription: "Manage AI Vibe Demo Kit installation lifecycle safely",
+    requiredBody: ["## Plan before apply", "## Permission boundaries", "explicitly authorizes", "Work Item is active"],
+  },
+];
 
 async function regular(path, label) {
   try {
@@ -17,30 +30,39 @@ async function regular(path, label) {
   }
 }
 
-await regular(join(skillRoot, "SKILL.md"), "SKILL.md");
-await regular(join(skillRoot, "agents", "openai.yaml"), "agents/openai.yaml");
+for (const skill of skills) {
+  const skillRoot = join(root, ".agents", "skills", skill.id);
+  const skillFile = join(skillRoot, "SKILL.md");
+  const metadataFile = join(skillRoot, "agents", "openai.yaml");
+  const label = `.agents/skills/${skill.id}`;
+  const before = errors.length;
+  await regular(skillFile, `${label}/SKILL.md`);
+  await regular(metadataFile, `${label}/agents/openai.yaml`);
+  if (errors.length !== before) continue;
 
-if (errors.length === 0) {
-  const content = await readFile(join(skillRoot, "SKILL.md"), "utf8");
+  const content = await readFile(skillFile, "utf8");
   const document = parseSkillDocument(content);
-  if (!document) errors.push("SKILL.md requires YAML frontmatter and a body");
+  if (!document) errors.push(`${label}/SKILL.md requires YAML frontmatter and a body`);
   else {
-    if (Object.keys(document.metadata).sort().join(",") !== "description,name") errors.push("SKILL.md frontmatter may contain only name and description");
-    if (document.metadata.name !== "ai-vibe-demo-kit") errors.push("SKILL.md name must be ai-vibe-demo-kit");
-    if (!document.metadata.description) errors.push("SKILL.md description must be non-empty");
-    if (document.body.trim().length < 200) errors.push("SKILL.md body is unexpectedly empty");
-    if (!document.body.includes("## Permission boundaries")) errors.push("SKILL.md must declare its permission boundaries");
+    if (Object.keys(document.metadata).sort().join(",") !== "description,name") errors.push(`${label}/SKILL.md frontmatter may contain only name and description`);
+    if (document.metadata.name !== skill.id) errors.push(`${label}/SKILL.md name must be ${skill.id}`);
+    if (!document.metadata.description) errors.push(`${label}/SKILL.md description must be non-empty`);
+    if (document.body.trim().length < 200) errors.push(`${label}/SKILL.md body is unexpectedly empty`);
+    for (const required of skill.requiredBody) {
+      if (!document.body.includes(required)) errors.push(`${label}/SKILL.md is missing: ${required}`);
+    }
   }
-  const openai = await readFile(join(skillRoot, "agents", "openai.yaml"), "utf8");
+
+  const openai = await readFile(metadataFile, "utf8");
   for (const required of [
-    'display_name: "AI Vibe Demo Kit"',
-    'short_description: "Guide agents through Harness workflow and evidence controls"',
-    'default_prompt: "Use $ai-vibe-demo-kit',
+    `display_name: "${skill.displayName}"`,
+    `short_description: "${skill.shortDescription}"`,
+    `default_prompt: "Use $${skill.id}`,
     "allow_implicit_invocation: true",
-  ]) if (!openai.includes(required)) errors.push(`agents/openai.yaml is missing: ${required}`);
+  ]) if (!openai.includes(required)) errors.push(`${label}/agents/openai.yaml is missing: ${required}`);
 }
 
 if (errors.length) {
   process.stderr.write(`${errors.map((entry) => `ERROR ${entry}`).join("\n")}\n`);
   process.exitCode = 1;
-} else process.stdout.write("bundled Skill: valid\n");
+} else process.stdout.write(`bundled Skills: valid (${skills.map(({ id }) => id).join(", ")})\n`);

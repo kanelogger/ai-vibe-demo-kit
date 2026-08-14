@@ -2,12 +2,14 @@
   "schemaVersion": 1,
   "package": {
     "name": "ai-vibe-demo-kit",
-    "version": "0.5.1",
+    "version": "0.6.0",
     "minimumNodeVersion": "22"
   },
   "files": [
-    { "sourcePath": ".agents/skills/ai-vibe-demo-kit/SKILL.md", "targetPath": ".agents/skills/ai-vibe-demo-kit/SKILL.md", "kind": "managed", "mode": "0644" },
-    { "sourcePath": ".agents/skills/ai-vibe-demo-kit/agents/openai.yaml", "targetPath": ".agents/skills/ai-vibe-demo-kit/agents/openai.yaml", "kind": "managed", "mode": "0644" },
+    { "sourcePath": ".agents/skills/workflow-runner/SKILL.md", "targetPath": ".agents/skills/workflow-runner/SKILL.md", "kind": "managed", "mode": "0644" },
+    { "sourcePath": ".agents/skills/workflow-runner/agents/openai.yaml", "targetPath": ".agents/skills/workflow-runner/agents/openai.yaml", "kind": "managed", "mode": "0644" },
+    { "sourcePath": ".agents/skills/kit-lifecycle/SKILL.md", "targetPath": ".agents/skills/kit-lifecycle/SKILL.md", "kind": "managed", "mode": "0644" },
+    { "sourcePath": ".agents/skills/kit-lifecycle/agents/openai.yaml", "targetPath": ".agents/skills/kit-lifecycle/agents/openai.yaml", "kind": "managed", "mode": "0644" },
     { "sourcePath": ".harness/ARCHITECTURE.md", "targetPath": ".harness/ARCHITECTURE.md", "kind": "managed", "mode": "0644" },
     { "sourcePath": ".harness/CHANGELOG.md", "targetPath": ".harness/CHANGELOG.md", "kind": "managed", "mode": "0644" },
     { "sourcePath": ".harness/LICENSE", "targetPath": ".harness/LICENSE", "kind": "managed", "mode": "0644" },
@@ -55,6 +57,7 @@
     { "sourcePath": "source/tools/check-commit-messages.mjs", "targetPath": "source/tools/check-commit-messages.mjs", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/tools/check-completion-evidence.mjs", "targetPath": "source/tools/check-completion-evidence.mjs", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/workflows/skills-list.json", "targetPath": "source/workflows/skills-list.json", "kind": "managed", "mode": "0644" },
+    { "sourcePath": "source/workflows/execution-trace-template.json", "targetPath": "source/workflows/execution-trace-template.json", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/workflows/stage-result-template.json", "targetPath": "source/workflows/stage-result-template.json", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/workflows/test-impact-template.json", "targetPath": "source/workflows/test-impact-template.json", "kind": "managed", "mode": "0644" },
     { "sourcePath": "source/workflows/verification-report-template.json", "targetPath": "source/workflows/verification-report-template.json", "kind": "managed", "mode": "0644" },
@@ -73,6 +76,7 @@
     { "sourcePath": "src/runtime/ARCHITECTURE.md", "targetPath": ".harness/runtime/ARCHITECTURE.md", "kind": "managed", "mode": "0644" },
     { "sourcePath": "src/runtime/cli.mjs", "targetPath": ".harness/runtime/cli.mjs", "kind": "managed", "mode": "0755" },
     { "sourcePath": "src/runtime/kernel.mjs", "targetPath": ".harness/runtime/kernel.mjs", "kind": "managed", "mode": "0644" },
+    { "sourcePath": "src/runtime/policy.mjs", "targetPath": ".harness/runtime/policy.mjs", "kind": "managed", "mode": "0644" },
     { "sourcePath": "src/runtime/readiness.mjs", "targetPath": ".harness/runtime/readiness.mjs", "kind": "managed", "mode": "0644" },
     { "sourcePath": "src/runtime/runtime.mjs", "targetPath": ".harness/runtime/runtime.mjs", "kind": "managed", "mode": "0644" },
     { "sourcePath": "src/runtime/store.mjs", "targetPath": ".harness/runtime/store.mjs", "kind": "managed", "mode": "0644" },

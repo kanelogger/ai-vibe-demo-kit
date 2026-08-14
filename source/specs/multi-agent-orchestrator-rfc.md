@@ -1,6 +1,6 @@
 # Strict Multi-Agent Orchestrator RFC
 
-Status: proposed for an isolated prototype; not implemented by AI Vibe Demo Kit 0.5.1.
+Status: proposed for an isolated prototype; not implemented by AI Vibe Demo Kit 0.6.0.
 
 ## Decision
 

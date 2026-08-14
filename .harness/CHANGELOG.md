@@ -1,5 +1,12 @@
 # Harness Changelog
 
+## 0.6.0 - 2026-08-13
+
+- Add the single-Agent Workflow Runner execution loop and split Kit lifecycle operations into a dedicated Skill.
+- Add `execution-trace/v1` for dynamic capability selection and observable execution evidence.
+- Add Workflow schema v3 outcome-aware exit conditions while preserving Workflow v2 semantics.
+- Replace the legacy bundled Skill during safe upgrades and keep consumer Skill management outside the CLI.
+
 ## 0.5.1 - 2026-08-12
 
 - Add executable architecture-index validation and a distributed feature-test synchronization check.

@@ -1,10 +1,10 @@
 {
   "schemaVersion": 2,
   "name": "ai-vibe-demo-kit",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "minimumNodeVersion": "22",
   "capabilities": {
     "commands": ["version", "check", "check-architecture", "check-environment", "check-result", "start", "status", "signal", "decide"],
-    "contracts": ["verification-report/v1", "test-impact/v1"]
+    "contracts": ["verification-report/v1", "test-impact/v1", "execution-trace/v1"]
   }
 }

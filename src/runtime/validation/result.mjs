@@ -1,5 +1,6 @@
 import { lstat, readFile } from "node:fs/promises";
 import { firstSymlinkInPath, resolveInside } from "../../shared/path-safety.mjs";
+import { conditionRequiredForOutcome } from "../policy.mjs";
 
 const CONDITION_STATUSES = new Set(["passed", "failed", "not-applicable"]);
 const SKILL_STATUSES = new Set(["succeeded", "failed", "skipped"]);
@@ -8,6 +9,8 @@ const CHECK_KINDS = new Set(["automated", "critical-path", "manual"]);
 const CLEANUP_STATUSES = new Set(["removed", "not-created", "retained"]);
 const CHANGE_KINDS = new Set(["added", "modified", "deleted"]);
 const TEST_IMPACT_CLASSIFICATIONS = new Set(["behavioral", "non-behavioral"]);
+const EXECUTION_KINDS = new Set(["skill", "tool", "agent"]);
+const EXECUTION_STATUSES = new Set(["succeeded", "failed", "skipped"]);
 const ID = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
 
 const issue = (code, path, message) => ({ code, path, message });
@@ -205,6 +208,85 @@ async function validateTestImpact(root, path, errors) {
   return impact;
 }
 
+async function validateExecutionTrace(root, path, stageId, artifactIds, traceArtifactId, errors) {
+  const trace = await readJsonPath(root, path, errors, "E_EXECUTION_TRACE");
+  if (!trace) return null;
+  if (trace.schemaVersion !== 1 || !nonEmpty(trace.stage) || !nonEmpty(trace.summary)
+    || !Array.isArray(trace.requirements) || trace.requirements.length === 0
+    || !Array.isArray(trace.selections) || trace.selections.length === 0
+    || !Array.isArray(trace.executions) || trace.executions.length === 0
+    || !Array.isArray(trace.residualRisks)) {
+    errors.push(issue("E_EXECUTION_TRACE", path, "execution-trace/v1 requires schemaVersion 1, stage, summary, non-empty requirements, selections and executions, and residualRisks"));
+  }
+  if (trace.stage !== stageId) errors.push(issue("E_TRACE_STAGE", `${path}.stage`, `execution trace stage must match current Stage: ${stageId}`));
+  for (const [index, risk] of (Array.isArray(trace.residualRisks) ? trace.residualRisks : []).entries()) {
+    if (!nonEmpty(risk)) errors.push(issue("E_EXECUTION_TRACE", `${path}.residualRisks.${index}`, "residual risk must be a non-empty string"));
+  }
+
+  const requirements = Array.isArray(trace.requirements) ? trace.requirements : [];
+  const requirementIds = new Set();
+  for (const duplicate of duplicates(requirements.map((entry) => entry?.id))) errors.push(issue("E_TRACE_REQUIREMENT_DUPLICATE", `${path}.requirements`, `duplicate execution requirement: ${duplicate}`));
+  for (const [index, requirement] of requirements.entries()) {
+    if (!object(requirement) || !nonEmpty(requirement.id) || !ID.test(requirement.id) || !nonEmpty(requirement.description)) {
+      errors.push(issue("E_TRACE_REQUIREMENT", `${path}.requirements.${index}`, "execution requirement requires id and description"));
+      continue;
+    }
+    requirementIds.add(requirement.id);
+  }
+
+  const selections = Array.isArray(trace.selections) ? trace.selections : [];
+  const selectionIds = new Set();
+  const coveredRequirements = new Set();
+  for (const duplicate of duplicates(selections.map((entry) => entry?.id))) errors.push(issue("E_TRACE_SELECTION_DUPLICATE", `${path}.selections`, `duplicate capability selection: ${duplicate}`));
+  for (const [index, selection] of selections.entries()) {
+    const selectionPath = `${path}.selections.${index}`;
+    if (!object(selection) || !nonEmpty(selection.id) || !ID.test(selection.id) || !nonEmpty(selection.capability)
+      || !EXECUTION_KINDS.has(selection.kind) || !Array.isArray(selection.requirementRefs) || selection.requirementRefs.length === 0
+      || !nonEmpty(selection.reason)) {
+      errors.push(issue("E_TRACE_SELECTION", selectionPath, "capability selection requires id, capability, skill|tool|agent kind, non-empty requirementRefs and reason"));
+      continue;
+    }
+    selectionIds.add(selection.id);
+    for (const duplicate of duplicates(selection.requirementRefs)) errors.push(issue("E_TRACE_REQUIREMENT_REF", `${selectionPath}.requirementRefs`, `duplicate execution requirement reference: ${duplicate}`));
+    for (const ref of selection.requirementRefs) {
+      if (!requirementIds.has(ref)) errors.push(issue("E_TRACE_REQUIREMENT_REF", `${selectionPath}.requirementRefs`, `unknown execution requirement: ${ref}`));
+      else coveredRequirements.add(ref);
+    }
+  }
+
+  const executions = Array.isArray(trace.executions) ? trace.executions : [];
+  const executedSelections = new Set();
+  for (const duplicate of duplicates(executions.map((entry) => entry?.id))) errors.push(issue("E_TRACE_EXECUTION_DUPLICATE", `${path}.executions`, `duplicate capability execution: ${duplicate}`));
+  for (const [index, execution] of executions.entries()) {
+    const executionPath = `${path}.executions.${index}`;
+    const artifactRefs = Array.isArray(execution?.artifactRefs) ? execution.artifactRefs : [];
+    const evidenceRefs = Array.isArray(execution?.evidenceRefs) ? execution.evidenceRefs : [];
+    if (!object(execution) || !nonEmpty(execution.id) || !ID.test(execution.id) || !nonEmpty(execution.selectionRef)
+      || !EXECUTION_STATUSES.has(execution.status) || !nonEmpty(execution.summary)
+      || (execution.artifactRefs !== undefined && !Array.isArray(execution.artifactRefs))
+      || (execution.evidenceRefs !== undefined && !Array.isArray(execution.evidenceRefs))) {
+      errors.push(issue("E_TRACE_EXECUTION", executionPath, "capability execution requires id, selectionRef, succeeded|failed|skipped status and summary; artifactRefs and evidenceRefs must be arrays when present"));
+      continue;
+    }
+    if (!selectionIds.has(execution.selectionRef)) errors.push(issue("E_TRACE_SELECTION_REF", `${executionPath}.selectionRef`, `unknown capability selection: ${execution.selectionRef}`));
+    else executedSelections.add(execution.selectionRef);
+    if (execution.status === "succeeded" && artifactRefs.length + evidenceRefs.length === 0) errors.push(issue("E_TRACE_EXECUTION", executionPath, "succeeded capability execution requires Artifact or Evidence references"));
+    if (execution.status !== "succeeded" && !nonEmpty(execution.reason)) errors.push(issue("E_TRACE_EXECUTION", executionPath, "failed or skipped capability execution requires a reason"));
+    for (const duplicate of duplicates(artifactRefs)) errors.push(issue("E_TRACE_ARTIFACT_REF", `${executionPath}.artifactRefs`, `duplicate Stage Artifact reference: ${duplicate}`));
+    for (const ref of artifactRefs) {
+      if (ref === traceArtifactId) errors.push(issue("E_TRACE_SELF_REFERENCE", `${executionPath}.artifactRefs`, "execution trace cannot reference itself as an execution output"));
+      else if (!artifactIds.has(ref)) errors.push(issue("E_TRACE_ARTIFACT_REF", `${executionPath}.artifactRefs`, `unknown Stage Artifact: ${ref}`));
+    }
+    for (const [evidenceIndex, ref] of evidenceRefs.entries()) {
+      await validateFileOrUri(root, ref, errors, { path: `${executionPath}.evidenceRefs.${evidenceIndex}`, missingCode: "E_EVIDENCE_MISSING", uriCode: "E_EVIDENCE_URI" });
+    }
+  }
+
+  for (const id of requirementIds) if (!coveredRequirements.has(id)) errors.push(issue("E_TRACE_REQUIREMENT_REF", `${path}.selections`, `execution requirement is not covered by a selection: ${id}`));
+  for (const id of selectionIds) if (!executedSelections.has(id)) errors.push(issue("E_TRACE_SELECTION_REF", `${path}.executions`, `capability selection has no execution: ${id}`));
+  return trace;
+}
+
 export async function validateStageResult(workflow, stageId, result, { root } = {}) {
   const errors = [];
   const warnings = [];
@@ -230,7 +312,7 @@ export async function validateStageResult(workflow, stageId, result, { root } = 
   for (const condition of stage.exitConditions ?? []) {
     const entry = conditionMap.get(condition.id);
     if (!entry) errors.push(issue("E_RESULT_CONDITION_MISSING", `conditions.${condition.id}`, "condition result is required"));
-    else if (condition.required && entry.status !== "passed") policyFailures.push({ id: condition.id, kind: "condition", status: entry.status });
+    else if (conditionRequiredForOutcome(condition, result.outcome) && entry.status !== "passed") policyFailures.push({ id: condition.id, kind: "condition", status: entry.status });
   }
 
   const skillEntries = Array.isArray(result?.skills) ? result.skills : [];
@@ -279,6 +361,10 @@ export async function validateStageResult(workflow, stageId, result, { root } = 
     }
     if (declaration?.contract === "test-impact/v1") {
       await validateTestImpact(root, artifact.uri, errors);
+      continue;
+    }
+    if (declaration?.contract === "execution-trace/v1") {
+      await validateExecutionTrace(root, artifact.uri, stageId, new Set(artifactEntries.map((entry) => entry?.id)), artifact.id, errors);
       continue;
     }
     await validateFileOrUri(root, artifact.uri, errors, { path: `artifacts.${artifact.id}`, missingCode: "E_ARTIFACT_MISSING", uriCode: "E_ARTIFACT_URI" });

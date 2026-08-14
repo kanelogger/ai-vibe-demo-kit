@@ -9,7 +9,7 @@
 | Script | Responsibility |
 | --- | --- |
 | `check-distribution.mjs` | Source 完整性、Manifest 自举、package files 与 tarball 投影校验 |
-| `validate-bundled-skill.mjs` | 内置 Skill 和 metadata 校验 |
+| `validate-bundled-skill.mjs` | `workflow-runner` 与 `kit-lifecycle` 的 frontmatter、职责边界和 metadata 校验 |
 
 ## Invariants
 

@@ -2,7 +2,7 @@ import { lstat, readFile, realpath } from "node:fs/promises";
 import { firstSymlinkInPath, resolveInside } from "../../shared/path-safety.mjs";
 
 const TERMINALS = new Set(["complete", "blocked", "aborted"]);
-const ARTIFACT_CONTRACTS = new Set(["test-impact/v1", "verification-report/v1"]);
+const ARTIFACT_CONTRACTS = new Set(["execution-trace/v1", "test-impact/v1", "verification-report/v1"]);
 const ID = /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/;
 
 const issue = (code, path, message) => ({ code, path, message });
@@ -89,7 +89,7 @@ export async function validateWorkflow(workflow, { root, workflowPath = null } =
   const errors = [];
   const warnings = [];
   if (!object(workflow)) return { valid: false, errors: [issue("E_WORKFLOW_INVALID", "$", "workflow must be an object")], warnings };
-  if (workflow.schemaVersion !== 2) errors.push(issue("E_WORKFLOW_VERSION", "schemaVersion", "schemaVersion must be 2"));
+  if (!new Set([2, 3]).has(workflow.schemaVersion)) errors.push(issue("E_WORKFLOW_VERSION", "schemaVersion", "schemaVersion must be 2 or 3"));
   if (!nonEmpty(workflow.id) || !ID.test(workflow.id)) errors.push(issue("E_WORKFLOW_ID", "id", "workflow id is invalid"));
   if (!Number.isInteger(workflow.version) || workflow.version < 1) errors.push(issue("E_WORKFLOW_VERSION", "version", "version must be a positive integer"));
   if (!object(workflow.stages) || Object.keys(workflow.stages).length === 0) errors.push(issue("E_STAGES_REQUIRED", "stages", "at least one stage is required"));
@@ -117,6 +117,15 @@ export async function validateWorkflow(workflow, { root, workflowPath = null } =
     for (const duplicate of duplicates(Array.isArray(conditions) ? conditions.map((entry) => entry?.id) : [])) errors.push(issue("E_CONDITION_DUPLICATE", `${path}.exitConditions`, `duplicate condition: ${duplicate}`));
     for (const [index, condition] of (Array.isArray(conditions) ? conditions : []).entries()) {
       if (!object(condition) || !nonEmpty(condition.id) || !ID.test(condition.id) || !nonEmpty(condition.description) || typeof condition.required !== "boolean") errors.push(issue("E_CONDITION_INVALID", `${path}.exitConditions.${index}`, "condition requires id, description and boolean required"));
+      if (condition?.requiredForOutcomes !== undefined) {
+        const conditionPath = `${path}.exitConditions.${index}.requiredForOutcomes`;
+        if (workflow.schemaVersion !== 3) errors.push(issue("E_CONDITION_OUTCOMES", conditionPath, "requiredForOutcomes requires Workflow schemaVersion 3"));
+        if (!Array.isArray(condition.requiredForOutcomes)) errors.push(issue("E_CONDITION_OUTCOMES", conditionPath, "requiredForOutcomes must be an array"));
+        else {
+          for (const duplicate of duplicates(condition.requiredForOutcomes)) errors.push(issue("E_CONDITION_OUTCOME_DUPLICATE", conditionPath, `duplicate required outcome: ${duplicate}`));
+          for (const outcome of condition.requiredForOutcomes) if (!outcomes.includes(outcome)) errors.push(issue("E_CONDITION_OUTCOME_UNKNOWN", conditionPath, `required outcome is not declared by the Stage: ${String(outcome)}`));
+        }
+      }
     }
 
     const skills = stage?.skillCalls ?? [];

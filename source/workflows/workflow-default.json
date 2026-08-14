@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "risk-adaptive-skill-workflow",
-  "version": 3,
-  "description": "A lightweight control workflow with structured implementation test impact and acceptance evidence.",
+  "version": 4,
+  "description": "A lightweight control workflow with dynamic capability execution traces and outcome-aware acceptance policy.",
   "skillsCatalogRef": "source/workflows/skills-list.json",
   "initialStage": "alignment",
   "stages": {
@@ -15,42 +15,45 @@
         { "id": "environment-confirmed", "description": "Required environment probes match project.yml or every deviation is reported with evidence.", "required": true }
       ],
       "skillCalls": [
-        { "id": "alignment.harness-guide", "skill": "ai-vibe-demo-kit", "required": true, "artifactIds": ["spec"] }
+        { "id": "alignment.workflow-runner", "skill": "workflow-runner", "required": true, "artifactIds": ["spec", "execution-trace"] }
       ],
       "requiredArtifacts": [
-        { "id": "spec", "required": true }
+        { "id": "spec", "required": true },
+        { "id": "execution-trace", "required": true, "contract": "execution-trace/v1" }
       ]
     },
     "implementation": {
-      "goal": "Implement only the confirmed scope and preserve current verification and test-impact evidence.",
+      "goal": "Implement only the confirmed scope and preserve current verification, test-impact and capability execution evidence.",
       "outcomes": ["ready-for-acceptance", "blocked"],
       "exitConditions": [
         { "id": "scope-complete", "description": "The confirmed scope is implemented without unapproved expansion.", "required": true },
         { "id": "quick-evidence-current", "description": "Focused verification evidence matches the current candidate.", "required": true }
       ],
       "skillCalls": [
-        { "id": "implementation.harness-guide", "skill": "ai-vibe-demo-kit", "required": true, "artifactIds": ["implementation-notes", "quick-evidence", "test-impact"] }
+        { "id": "implementation.workflow-runner", "skill": "workflow-runner", "required": true, "artifactIds": ["implementation-notes", "quick-evidence", "test-impact", "execution-trace"] }
       ],
       "requiredArtifacts": [
         { "id": "implementation-notes", "required": true },
         { "id": "quick-evidence", "required": true },
-        { "id": "test-impact", "required": true, "contract": "test-impact/v1" }
+        { "id": "test-impact", "required": true, "contract": "test-impact/v1" },
+        { "id": "execution-trace", "required": true, "contract": "execution-trace/v1" }
       ]
     },
     "acceptance": {
-      "goal": "Prove specification compliance, regression safety and cleanup before delivery.",
+      "goal": "Prove specification compliance, regression safety and cleanup before delivery, or return evidence-backed changes to implementation.",
       "outcomes": ["accepted", "changes-requested", "blocked"],
       "exitConditions": [
-        { "id": "spec-compliant", "description": "The candidate satisfies the confirmed specification.", "required": true },
-        { "id": "regression-safe", "description": "Required regression checks and critical paths passed.", "required": true },
+        { "id": "spec-compliant", "description": "The candidate satisfies the confirmed specification.", "required": false, "requiredForOutcomes": ["accepted"] },
+        { "id": "regression-safe", "description": "Required regression checks and critical paths passed.", "required": false, "requiredForOutcomes": ["accepted"] },
         { "id": "cleanup-complete", "description": "Temporary data, files and processes created by verification were cleaned up.", "required": true }
       ],
       "skillCalls": [
-        { "id": "acceptance.harness-guide", "skill": "ai-vibe-demo-kit", "required": true, "artifactIds": ["verification-report", "handoff"] }
+        { "id": "acceptance.workflow-runner", "skill": "workflow-runner", "required": true, "artifactIds": ["verification-report", "handoff", "execution-trace"] }
       ],
       "requiredArtifacts": [
         { "id": "verification-report", "required": true, "contract": "verification-report/v1" },
-        { "id": "handoff", "required": true }
+        { "id": "handoff", "required": true },
+        { "id": "execution-trace", "required": true, "contract": "execution-trace/v1" }
       ]
     }
   },

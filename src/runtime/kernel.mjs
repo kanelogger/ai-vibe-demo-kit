@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { fail } from "../shared/errors.mjs";
+import { conditionRequiredForOutcome } from "./policy.mjs";
 
 const TERMINALS = new Set(["complete", "blocked", "aborted"]);
 
@@ -56,7 +57,7 @@ function policyFailuresFor(workflow, stageId, result) {
   const skills = new Map((result.skills ?? []).map((entry) => [entry.id, entry]));
   return [
     ...(stage.exitConditions ?? [])
-      .filter((entry) => entry.required && conditions.get(entry.id)?.status !== "passed")
+      .filter((entry) => conditionRequiredForOutcome(entry, result.outcome) && conditions.get(entry.id)?.status !== "passed")
       .map((entry) => ({ id: entry.id, kind: "condition", status: conditions.get(entry.id)?.status ?? "missing" })),
     ...(stage.skillCalls ?? [])
       .filter((entry) => entry.required && skills.get(entry.id)?.status !== "succeeded")

@@ -1,198 +1,69 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "risk-adaptive-skill-workflow",
-  "version": 2,
-  "description": "A lightweight control workflow for alignment, implementation and acceptance.",
+  "version": 4,
+  "description": "A lightweight control workflow with dynamic capability execution traces and outcome-aware acceptance policy.",
   "skillsCatalogRef": "source/workflows/skills-list.json",
   "initialStage": "alignment",
   "stages": {
     "alignment": {
       "goal": "Freeze intent, observable acceptance criteria, risk and the implementation shape.",
-      "outcomes": [
-        "ready",
-        "blocked"
-      ],
+      "outcomes": ["ready", "blocked"],
       "exitConditions": [
-        {
-          "id": "acceptance-observable",
-          "description": "Every acceptance criterion names an observable result and evidence path.",
-          "required": true
-        },
-        {
-          "id": "risk-classified",
-          "description": "Risk signals and rollback expectations have been recorded.",
-          "required": true
-        },
-        {
-          "id": "environment-confirmed",
-          "description": "Required environment probes match project.yml or every deviation is reported with evidence.",
-          "required": true
-        }
+        { "id": "acceptance-observable", "description": "Every acceptance criterion names an observable result and evidence path.", "required": true },
+        { "id": "risk-classified", "description": "Risk signals and rollback expectations have been recorded.", "required": true },
+        { "id": "environment-confirmed", "description": "Required environment probes match project.yml or every deviation is reported with evidence.", "required": true }
       ],
       "skillCalls": [
-        {
-          "id": "alignment.harness-guide",
-          "skill": "ai-vibe-demo-kit",
-          "required": true,
-          "artifactIds": ["spec"]
-        }
+        { "id": "alignment.workflow-runner", "skill": "workflow-runner", "required": true, "artifactIds": ["spec", "execution-trace"] }
       ],
       "requiredArtifacts": [
-        {
-          "id": "spec",
-          "required": true
-        }
+        { "id": "spec", "required": true },
+        { "id": "execution-trace", "required": true, "contract": "execution-trace/v1" }
       ]
     },
     "implementation": {
-      "goal": "Implement only the confirmed scope and preserve current verification evidence.",
-      "outcomes": [
-        "ready-for-acceptance",
-        "blocked"
-      ],
+      "goal": "Implement only the confirmed scope and preserve current verification, test-impact and capability execution evidence.",
+      "outcomes": ["ready-for-acceptance", "blocked"],
       "exitConditions": [
-        {
-          "id": "scope-complete",
-          "description": "The confirmed scope is implemented without unapproved expansion.",
-          "required": true
-        },
-        {
-          "id": "quick-evidence-current",
-          "description": "Focused verification evidence matches the current candidate.",
-          "required": true
-        }
+        { "id": "scope-complete", "description": "The confirmed scope is implemented without unapproved expansion.", "required": true },
+        { "id": "quick-evidence-current", "description": "Focused verification evidence matches the current candidate.", "required": true }
       ],
       "skillCalls": [
-        {
-          "id": "implementation.harness-guide",
-          "skill": "ai-vibe-demo-kit",
-          "required": true,
-          "artifactIds": ["implementation-notes", "quick-evidence"]
-        }
+        { "id": "implementation.workflow-runner", "skill": "workflow-runner", "required": true, "artifactIds": ["implementation-notes", "quick-evidence", "test-impact", "execution-trace"] }
       ],
       "requiredArtifacts": [
-        {
-          "id": "implementation-notes",
-          "required": true
-        },
-        {
-          "id": "quick-evidence",
-          "required": true
-        }
+        { "id": "implementation-notes", "required": true },
+        { "id": "quick-evidence", "required": true },
+        { "id": "test-impact", "required": true, "contract": "test-impact/v1" },
+        { "id": "execution-trace", "required": true, "contract": "execution-trace/v1" }
       ]
     },
     "acceptance": {
-      "goal": "Prove specification compliance, regression safety and cleanup before delivery.",
-      "outcomes": [
-        "accepted",
-        "changes-requested",
-        "blocked"
-      ],
+      "goal": "Prove specification compliance, regression safety and cleanup before delivery, or return evidence-backed changes to implementation.",
+      "outcomes": ["accepted", "changes-requested", "blocked"],
       "exitConditions": [
-        {
-          "id": "spec-compliant",
-          "description": "The candidate satisfies the confirmed specification.",
-          "required": true
-        },
-        {
-          "id": "regression-safe",
-          "description": "Required regression checks and critical paths passed.",
-          "required": true
-        },
-        {
-          "id": "cleanup-complete",
-          "description": "Temporary data, files and processes created by verification were cleaned up.",
-          "required": true
-        }
+        { "id": "spec-compliant", "description": "The candidate satisfies the confirmed specification.", "required": false, "requiredForOutcomes": ["accepted"] },
+        { "id": "regression-safe", "description": "Required regression checks and critical paths passed.", "required": false, "requiredForOutcomes": ["accepted"] },
+        { "id": "cleanup-complete", "description": "Temporary data, files and processes created by verification were cleaned up.", "required": true }
       ],
       "skillCalls": [
-        {
-          "id": "acceptance.harness-guide",
-          "skill": "ai-vibe-demo-kit",
-          "required": true,
-          "artifactIds": ["verification-report", "handoff"]
-        }
+        { "id": "acceptance.workflow-runner", "skill": "workflow-runner", "required": true, "artifactIds": ["verification-report", "handoff", "execution-trace"] }
       ],
       "requiredArtifacts": [
-        {
-          "id": "verification-report",
-          "required": true,
-          "contract": "verification-report/v1"
-        },
-        {
-          "id": "handoff",
-          "required": true
-        }
+        { "id": "verification-report", "required": true, "contract": "verification-report/v1" },
+        { "id": "handoff", "required": true },
+        { "id": "execution-trace", "required": true, "contract": "execution-trace/v1" }
       ]
     }
   },
   "transitions": [
-    {
-      "id": "alignment-ready",
-      "from": "alignment",
-      "on": "ready",
-      "to": "implementation",
-      "gate": {
-        "mode": "human",
-        "prompt": "Confirm intent, acceptance criteria and risk before implementation.",
-        "onReject": "alignment"
-      }
-    },
-    {
-      "id": "alignment-blocked",
-      "from": "alignment",
-      "on": "blocked",
-      "to": "blocked",
-      "gate": {
-        "mode": "auto"
-      }
-    },
-    {
-      "id": "implementation-ready",
-      "from": "implementation",
-      "on": "ready-for-acceptance",
-      "to": "acceptance",
-      "gate": {
-        "mode": "auto"
-      }
-    },
-    {
-      "id": "implementation-blocked",
-      "from": "implementation",
-      "on": "blocked",
-      "to": "blocked",
-      "gate": {
-        "mode": "auto"
-      }
-    },
-    {
-      "id": "acceptance-approved",
-      "from": "acceptance",
-      "on": "accepted",
-      "to": "complete",
-      "gate": {
-        "mode": "human",
-        "prompt": "Accept the verified candidate and recorded residual risks.",
-        "onReject": "acceptance"
-      }
-    },
-    {
-      "id": "acceptance-changes",
-      "from": "acceptance",
-      "on": "changes-requested",
-      "to": "implementation",
-      "gate": {
-        "mode": "auto"
-      }
-    },
-    {
-      "id": "acceptance-blocked",
-      "from": "acceptance",
-      "on": "blocked",
-      "to": "blocked",
-      "gate": {
-        "mode": "auto"
-      }
-    }
+    { "id": "alignment-ready", "from": "alignment", "on": "ready", "to": "implementation", "gate": { "mode": "human", "prompt": "Confirm intent, acceptance criteria and risk before implementation.", "onReject": "alignment" } },
+    { "id": "alignment-blocked", "from": "alignment", "on": "blocked", "to": "blocked", "gate": { "mode": "auto" } },
+    { "id": "implementation-ready", "from": "implementation", "on": "ready-for-acceptance", "to": "acceptance", "gate": { "mode": "auto" } },
+    { "id": "implementation-blocked", "from": "implementation", "on": "blocked", "to": "blocked", "gate": { "mode": "auto" } },
+    { "id": "acceptance-approved", "from": "acceptance", "on": "accepted", "to": "complete", "gate": { "mode": "human", "prompt": "Accept the verified candidate and recorded residual risks.", "onReject": "acceptance" } },
+    { "id": "acceptance-changes", "from": "acceptance", "on": "changes-requested", "to": "implementation", "gate": { "mode": "auto" } },
+    { "id": "acceptance-blocked", "from": "acceptance", "on": "blocked", "to": "blocked", "gate": { "mode": "auto" } }
   ]
 }

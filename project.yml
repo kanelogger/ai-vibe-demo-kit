@@ -71,7 +71,7 @@ environment:
       required: false
 
 commands:
-  install_runtime: "npx --yes ai-vibe-demo-kit@0.5.1 init --target <git-root> --json"
+  install_runtime: "npx --yes ai-vibe-demo-kit@0.6.0 init --target <git-root> --json"
   develop: "./harness help"
   test: "node --test test/runtime/*.test.mjs test/distribution/*.test.mjs"
   typecheck: null
@@ -95,7 +95,7 @@ release:
   manual_approval_required: true
   registry_network_required: true
   canonical_sequence:
-    - "npm view ai-vibe-demo-kit@0.5.1 must return not found before checks"
+    - "npm view ai-vibe-demo-kit@0.6.0 must return not found before checks"
     - "node scripts/validate-bundled-skill.mjs"
     - "./harness check-architecture --file project.yml --json"
     - "./harness check --workflow source/workflows/workflow-default.json --json"
@@ -103,7 +103,7 @@ release:
     - "node --test test/runtime/*.test.mjs test/distribution/*.test.mjs"
     - "npm pack --dry-run --json"
     - "npm publish --access public"
-    - "npm view ai-vibe-demo-kit@0.5.1"
+    - "npm view ai-vibe-demo-kit@0.6.0"
 
 authoritative_context:
   agent_entry: "AGENTS.md"
@@ -134,6 +134,7 @@ workflow:
   default: "source/workflows/workflow-default.json"
   active_state: ".git/harness/control.json"
   stage_result_template: "source/workflows/stage-result-template.json"
+  execution_trace_template: "source/workflows/execution-trace-template.json"
   verification_report_template: "source/workflows/verification-report-template.json"
   evidence_root: "work/requirements/"
 

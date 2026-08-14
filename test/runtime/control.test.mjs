@@ -165,6 +165,43 @@ test("failed policy conditions require an exact human override", () => {
   assert.deepEqual(result.state.active.acceptedRisks, ["intent-clear"]);
 });
 
+test("outcome-aware conditions allow automatic remediation without weakening acceptance", () => {
+  const value = workflow();
+  value.schemaVersion = 3;
+  value.stages.align.outcomes = ["accepted", "changes-requested"];
+  value.stages.align.exitConditions[0] = {
+    ...value.stages.align.exitConditions[0],
+    required: false,
+    requiredForOutcomes: ["accepted"],
+  };
+  value.transitions = [
+    { id: "align-accepted", from: "align", on: "accepted", to: "complete", gate: { mode: "human", prompt: "Accept" } },
+    { id: "align-changes", from: "align", on: "changes-requested", to: "build", gate: { mode: "auto" } },
+    { id: "build-done", from: "build", on: "done", to: "complete", gate: { mode: "human", prompt: "Accept" } },
+  ];
+  const failed = [{ id: "intent-clear", status: "failed", reason: "Candidate needs changes", evidenceRefs: [] }];
+
+  let state = start(value);
+  let result = applyControl({
+    state,
+    workflow: value,
+    command: { kind: "signal", expectedRevision: 1, result: stageResult({ outcome: "changes-requested", conditions: failed }) },
+    now,
+  });
+  assert.equal(result.decision.kind, "ready");
+  assert.equal(result.state.active.stage, "build");
+
+  state = start(value);
+  result = applyControl({
+    state,
+    workflow: value,
+    command: { kind: "signal", expectedRevision: 1, result: stageResult({ outcome: "accepted", conditions: failed }) },
+    now,
+  });
+  assert.equal(result.decision.kind, "policy-blocked");
+  assert.deepEqual(result.state.active.pendingPolicy.unmet, ["intent-clear"]);
+});
+
 test("approve completes with override history and archives a full last record", () => {
   const value = workflow();
   let state = start(value);

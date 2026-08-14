@@ -39,7 +39,7 @@ test("Distribution version uses the stable envelope outside a Git repository", a
     status: "ok",
     target: null,
     applied: false,
-    package: { name: "ai-vibe-demo-kit", version: "0.5.1", installedVersion: null },
+    package: { name: "ai-vibe-demo-kit", version: "0.6.0", installedVersion: null },
     transaction: null,
     changes: [],
     readiness: null,

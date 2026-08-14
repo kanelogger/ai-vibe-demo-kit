@@ -57,9 +57,12 @@
 3. 运行 `project.yml#environment.probes` 和 `AI_ENVIRONMENT.md` 中的必需能力检查。
 4. 将实际环境和偏差写入 alignment Evidence；不满足声明时将 `environment-confirmed` 报告为 `failed`，不得自行假定兼容。
 5. 运行 `./harness check --json` 和 `./harness status --json`。
-6. 根据 `source/knowledge/ROUTING.md` 读取与任务相关的最小知识集合。
-7. 阅读当前应用的 `requirement.md`、相关规格、代码入口和邻近测试。
-8. 检查已有工作区改动、允许动作和人工门禁。
+6. 使用 `workflow-runner` 推进当前 Stage；它只从当前会话已暴露的 Skills、Tools 与 Agent 原生能力中选择最小组合。
+7. 根据 `source/knowledge/ROUTING.md` 读取与任务相关的最小知识集合。
+8. 阅读当前应用的 `requirement.md`、相关规格、代码入口和邻近测试。
+9. 检查已有工作区改动、允许动作和人工门禁。
+
+`source/.agents/skills.sources.json` 只保存消费者可采用的推荐来源，不能作为能力可用性、安装状态、版本、鉴权或远程健康证据。消费者自己的 Skill Manager 与 Agent Host 负责本地领域 Skills。
 
 ## 代码架构记忆
 
@@ -87,7 +90,7 @@
 
 {填写：改动后必须运行的命令，以及需要检查的真实界面或返回值。}
 
-验证结果必须形成 Workflow 声明的 Evidence。implementation 使用 `test-impact/v1` 记录功能与测试同步；跳过的检查、失败输出和环境限制必须明确记录。
+验证结果必须形成 Workflow 声明的 Evidence。每个 Stage 使用 `execution-trace/v1` 记录能力选择、执行尝试和 Evidence；Stage Result 只提交 Workflow 声明的 Runner 回执。implementation 使用 `test-impact/v1` 记录功能与测试同步；跳过的检查、失败输出和环境限制必须明确记录。
 
 Acceptance 使用 `verification-report/v1` 记录实际命令、退出码、关键路径、跳过项、清理动作和残留资源。完成前运行 `./harness check-result --workflow <workflow.json> --stage <stage> --file <stage-result.json> --require-complete --json`。
 

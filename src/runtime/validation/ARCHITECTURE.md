@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-提供 Runtime 唯一 Validator facade 背后的纯校验模块；负责 Workflow、Stage Result、Control State、环境清单与代码架构索引，不执行任务、Git 或外部写入。
+提供 Runtime 唯一 Validator facade 背后的纯校验模块；负责 Workflow v2/v3、Stage Result、`execution-trace/v1`、Control State、环境清单与代码架构索引，不执行任务、Git 或外部写入。
 
 ## Interface
 
@@ -32,7 +32,7 @@
 | Architecture index | `architecture.mjs` |
 | Control state | `control-state.mjs` |
 | Environment manifest | `environment.mjs` |
-| Stage Result contracts | `result.mjs` |
+| Stage Result and execution trace contracts | `result.mjs` |
 | Workflow and Skill entities | `workflow.mjs` |
 
 ## Verification

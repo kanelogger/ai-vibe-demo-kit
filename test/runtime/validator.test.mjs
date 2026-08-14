@@ -143,6 +143,174 @@ test("workflow validation rejects unknown artifact contracts", async () => {
   assert.ok(report.errors.some((issue) => issue.code === "E_ARTIFACT_CONTRACT"));
 });
 
+test("Workflow schema v3 validates outcome-aware required conditions while v2 stays strict", async () => {
+  const value = workflow();
+  value.stages.align.outcomes.push("changes-requested");
+  value.transitions.push({ id: "align-changes", from: "align", on: "changes-requested", to: "build", gate: { mode: "auto" } });
+  value.stages.align.exitConditions[0] = {
+    ...value.stages.align.exitConditions[0],
+    required: false,
+    requiredForOutcomes: ["ready"],
+  };
+
+  let report = await validateWorkflow(value, { root: await makeGitRepo() });
+  assert.ok(report.errors.some((entry) => entry.code === "E_CONDITION_OUTCOMES"));
+
+  value.schemaVersion = 3;
+  report = await validateWorkflow(value, { root: await makeGitRepo() });
+  assert.equal(report.valid, true, JSON.stringify(report.errors));
+
+  value.stages.align.exitConditions[0].requiredForOutcomes = ["unknown", "unknown"];
+  report = await validateWorkflow(value, { root: await makeGitRepo() });
+  assert.ok(report.errors.some((entry) => entry.code === "E_CONDITION_OUTCOME_UNKNOWN"));
+  assert.ok(report.errors.some((entry) => entry.code === "E_CONDITION_OUTCOME_DUPLICATE"));
+});
+
+test("outcome-aware conditions permit remediation and still protect successful outcomes", async () => {
+  const value = workflow();
+  value.schemaVersion = 3;
+  value.stages.align.outcomes = ["accepted", "changes-requested"];
+  value.stages.align.exitConditions[0] = {
+    ...value.stages.align.exitConditions[0],
+    required: false,
+    requiredForOutcomes: ["accepted"],
+  };
+  value.transitions = [
+    { id: "align-accepted", from: "align", on: "accepted", to: "complete", gate: { mode: "human", prompt: "Accept" } },
+    { id: "align-changes", from: "align", on: "changes-requested", to: "build", gate: { mode: "auto" } },
+    { id: "build-done", from: "build", on: "done", to: "complete", gate: { mode: "human", prompt: "Accept" } },
+  ];
+  const failed = [{ id: "intent-clear", status: "failed", reason: "Candidate needs changes", evidenceRefs: [] }];
+
+  let report = await validateStageResult(value, "align", stageResult({ outcome: "changes-requested", conditions: failed }));
+  assert.deepEqual(report.policyFailures, []);
+
+  report = await validateStageResult(value, "align", stageResult({ outcome: "accepted", conditions: failed }));
+  assert.deepEqual(report.policyFailures, [{ id: "intent-clear", kind: "condition", status: "failed" }]);
+});
+
+function executionTrace(overrides = {}) {
+  return {
+    schemaVersion: 1,
+    stage: "align",
+    summary: "A failed specialist was replaced by a passing repository tool.",
+    requirements: [{ id: "confirm-intent", description: "Produce observable alignment evidence." }],
+    selections: [
+      { id: "specialist", capability: "to-spec", kind: "skill", requirementRefs: ["confirm-intent"], reason: "Use the focused specification workflow first." },
+      { id: "fallback", capability: "agent-native", kind: "agent", requirementRefs: ["confirm-intent"], reason: "Complete the evidence when the specialist fails." },
+    ],
+    executions: [
+      { id: "attempt-1", selectionRef: "specialist", status: "failed", summary: "The specialist could not complete.", reason: "The capability returned an execution error." },
+      { id: "attempt-2", selectionRef: "fallback", status: "succeeded", summary: "Alignment evidence was produced.", artifactRefs: ["spec"], evidenceRefs: ["evidence.log"] },
+    ],
+    residualRisks: [],
+    ...overrides,
+  };
+}
+
+async function validateTrace(root, trace) {
+  const value = workflow();
+  value.stages.align.requiredArtifacts = [
+    { id: "spec", required: true },
+    { id: "execution-trace", required: true, contract: "execution-trace/v1" },
+  ];
+  await writeFile(join(root, "spec.md"), "# Spec\n");
+  await writeFile(join(root, "evidence.log"), "passed\n");
+  await writeFile(join(root, "trace.json"), JSON.stringify(trace));
+  return validateStageResult(value, "align", stageResult({
+    artifacts: [
+      { id: "spec", uri: "spec.md" },
+      { id: "execution-trace", uri: "trace.json" },
+    ],
+  }), { root });
+}
+
+test("execution-trace/v1 accepts a failed capability followed by a successful fallback", async () => {
+  const report = await validateTrace(await makeGitRepo(), executionTrace());
+  assert.deepEqual(report.errors, []);
+});
+
+test("execution-trace/v1 rejects invalid stages, identifiers and references", async () => {
+  let root = await makeGitRepo();
+  let report = await validateTrace(root, executionTrace({ stage: "build" }));
+  assert.ok(report.errors.some((entry) => entry.code === "E_TRACE_STAGE"));
+
+  root = await makeGitRepo();
+  report = await validateTrace(root, executionTrace({
+    requirements: [
+      { id: "duplicate", description: "First" },
+      { id: "duplicate", description: "Second" },
+    ],
+    selections: [{ id: "selection", capability: "agent-native", kind: "agent", requirementRefs: ["missing"], reason: "Fallback" }],
+    executions: [{ id: "execution", selectionRef: "missing", status: "succeeded", summary: "Done", artifactRefs: ["missing"], evidenceRefs: [] }],
+  }));
+  assert.ok(report.errors.some((entry) => entry.code === "E_TRACE_REQUIREMENT_DUPLICATE"));
+  assert.ok(report.errors.some((entry) => entry.code === "E_TRACE_REQUIREMENT_REF"));
+  assert.ok(report.errors.some((entry) => entry.code === "E_TRACE_SELECTION_REF"));
+  assert.ok(report.errors.some((entry) => entry.code === "E_TRACE_ARTIFACT_REF"));
+});
+
+test("execution-trace/v1 rejects invalid execution semantics and self-reference", async () => {
+  let root = await makeGitRepo();
+  let report = await validateTrace(root, executionTrace({
+    selections: [{ id: "selection", capability: "agent-native", kind: "unknown", requirementRefs: ["confirm-intent"], reason: "Fallback" }],
+    executions: [{ id: "execution", selectionRef: "selection", status: "unknown", summary: "Done", artifactRefs: [], evidenceRefs: [] }],
+  }));
+  assert.ok(report.errors.some((entry) => entry.code === "E_TRACE_SELECTION"));
+  assert.ok(report.errors.some((entry) => entry.code === "E_TRACE_EXECUTION"));
+
+  root = await makeGitRepo();
+  report = await validateTrace(root, executionTrace({
+    selections: [{ id: "selection", capability: "agent-native", kind: "agent", requirementRefs: ["confirm-intent"], reason: "Fallback" }],
+    executions: [{ id: "execution", selectionRef: "selection", status: "succeeded", summary: "Done", artifactRefs: ["execution-trace"], evidenceRefs: [] }],
+  }));
+  assert.ok(report.errors.some((entry) => entry.code === "E_TRACE_SELF_REFERENCE"));
+
+  root = await makeGitRepo();
+  report = await validateTrace(root, executionTrace({
+    selections: [{ id: "selection", capability: "agent-native", kind: "agent", requirementRefs: ["confirm-intent"], reason: "Fallback" }],
+    executions: [{ id: "execution", selectionRef: "selection", status: "failed", summary: "Failed", artifactRefs: [], evidenceRefs: [] }],
+  }));
+  assert.ok(report.errors.some((entry) => entry.code === "E_TRACE_EXECUTION" && /reason/.test(entry.message)));
+});
+
+test("execution-trace/v1 applies repository path safety to nested evidence", async () => {
+  const root = await makeGitRepo();
+  const report = await validateTrace(root, executionTrace({
+    selections: [{ id: "selection", capability: "agent-native", kind: "agent", requirementRefs: ["confirm-intent"], reason: "Fallback" }],
+    executions: [{ id: "execution", selectionRef: "selection", status: "succeeded", summary: "Done", artifactRefs: [], evidenceRefs: ["../outside.log"] }],
+  }));
+  assert.ok(report.errors.some((entry) => entry.code === "E_PATH_OUTSIDE"));
+});
+
+test("execution-trace/v1 rejects symlinks in nested evidence", async () => {
+  const root = await makeGitRepo();
+  const { symlink } = await import("node:fs/promises");
+  await symlink("evidence.log", join(root, "linked-evidence.log"));
+  const report = await validateTrace(root, executionTrace({
+    selections: [{ id: "selection", capability: "agent-native", kind: "agent", requirementRefs: ["confirm-intent"], reason: "Fallback" }],
+    executions: [{ id: "execution", selectionRef: "selection", status: "succeeded", summary: "Done", artifactRefs: [], evidenceRefs: ["linked-evidence.log"] }],
+  }));
+  assert.ok(report.errors.some((entry) => entry.code === "E_PATH_SYMLINK"));
+});
+
+test("dynamic domain capabilities belong in execution traces, not Stage Result receipts", async () => {
+  const root = await makeGitRepo();
+  const value = workflow();
+  value.stages.align.requiredArtifacts = [{ id: "spec", required: true }];
+  let report = await validateStageResult(value, "align", stageResult({
+    skills: [{ id: "domain.tdd", status: "succeeded", artifactRefs: ["spec"] }],
+    artifacts: [{ id: "spec", uri: "note://spec" }],
+  }), { root });
+  assert.ok(report.errors.some((entry) => entry.code === "E_RESULT_SKILL_UNKNOWN"));
+
+  report = await validateTrace(root, executionTrace({
+    selections: [{ id: "selection", capability: "tdd", kind: "skill", requirementRefs: ["confirm-intent"], reason: "Focused domain capability" }],
+    executions: [{ id: "execution", selectionRef: "selection", status: "succeeded", summary: "Done", artifactRefs: ["spec"], evidenceRefs: [] }],
+  }));
+  assert.deepEqual(report.errors, []);
+});
+
 test("workflow validation accepts test-impact/v1 artifacts", async () => {
   const value = workflow();
   value.stages.align.requiredArtifacts = [{ id: "impact", required: true, contract: "test-impact/v1" }];

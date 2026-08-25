@@ -1,5 +1,10 @@
 # AI Coding Agent 实战操作手册
 
+更低成本 =
+更少重复上下文（RTK、Caveman、headroom、context-mode、会话管理）
++ 更合理模型路由（任务匹配、Skill 绑模型）
++ 更精准代码检索（Graphify、CodeGraph）
++ 更清晰 Agent 分工（subagent 隔离、worktree 并发、记忆外置）
 
 > 先安装 OMP，先改会话和任务说明习惯；确认瓶颈后再加 RTK、Herdr 或上下文工具。不要一次安装全部工具，也不要同时引入两套代码图谱。
 

@@ -210,3 +210,30 @@ project/
 核心就一句话：低频 Skill 按需启用，避免长期占用固定上下文；常用的技能才全局用。
 
 可以通过 skill-port cli 这个包进行管理。
+
+## tips
+
+### 引导自动化测试
+如果你的项目没有自动化测试：请帮我初始化自动化测试。如果你的项目已经有了，在 `AGENTS.md` 里面加上：实现功能的同时，要同步写自动化测试代码，并且完成后要用测试代码验证。 
+
+### 修改文件的实现任务必须以一次 Git 提交结束
+
+```md
+- 编辑前检查现有变更，并把已有或并发修改视为用户资产；
+- 完成后审查差异，运行与改动相称的验证；
+- 只提交当前任务相关的文件或代码块，不夹带无关修改；
+- 使用简洁、可描述本轮工作的提交信息，并向用户报告提交哈希；
+- 不擅自推送、变基、修改历史或打包无关修改；
+- 只读任务和没有文件变化的任务不创建空提交。
+```
+
+英文版：
+
+```md
+Every implementation task that changes files MUST end with a git commit before the final response.
+- Inspect `git status` before editing and treat pre-existing or concurrent changes as user-owned.
+- Review the final diff and run proportionate verification before committing.
+- Stage only files or hunks that belong to the current task. Never bundle unrelated changes unless the user explicitly asks.
+- Use a concise descriptive commit message on `main`, report the commit hash, and do not push, amend, or rewrite history unless asked.
+- Read-only tasks and tasks with no file changes do not create empty commits.
+```

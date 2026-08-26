@@ -275,7 +275,7 @@ cleanup:
 
 ## 15. Alignment Checklist
 
-- [ ] `source/ai_environment_template.md` 已提升为 `AI_ENVIRONMENT.md`。
+- [ ] `ai_environment_template.md` 已提升为 `AI_ENVIRONMENT.md`。
 - [ ] 全部花括号占位符已替换，未知项包含负责人和确认方式。
 - [ ] `project.yml` 与本文件之间没有未解释的冲突。
 - [ ] 必需机器探测已执行，实际值、路径、时间和偏差已记录。

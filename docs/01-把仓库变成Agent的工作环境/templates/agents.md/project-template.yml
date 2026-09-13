@@ -1,115 +1,86 @@
-schema_version: 1
+schema_version: 2
 
+# 仅填写已从仓库、CI 配置或安全探测中确认的事实。未知项使用 unknown，
+# 不适用项使用 not-applicable；不要把本模板中的值当作项目事实。
 project:
-  id: "<project-id>"
-  name: "<project-name>"
-  summary: "<one-sentence project description>"
-  in_scope:
-    - "<primary deliverable>"
-  out_of_scope:
-    - "<explicit non-goal>"
+  id: unknown
+  name: unknown
+  summary: unknown
+  in_scope: []
+  out_of_scope: []
 
 repositories:
   primary: "."
   related: []
 
 environment:
-  supported_os:
-    - "<macos-or-linux>"
-  supported_architectures:
-    - "<arm64-or-x86_64>"
-  toolchains:
-    node:
-      manager: "volta"
-      version_source: "package.json"
-    package_manager:
-      name: "pnpm"
-      version_source: "package.json#packageManager"
-    python:
-      manager: "<pyenv-or-miniconda-or-none>"
-      version_source: "<.python-version-or-environment.yml>"
-    java:
-      manager: "<jenv-or-none>"
-      version_source: "<.java-version-or-pom.xml>"
-    containers:
-      runtime: "<orbstack-or-docker-or-none>"
-  probes:
-    - tool: "operating-system"
-      command: "uname -s"
-      expected_source: "project.yml#environment.supported_os"
-      required: true
-    - tool: "architecture"
-      command: "uname -m"
-      expected_source: "project.yml#environment.supported_architectures"
-      required: true
-    - tool: "node"
-      command: "node --version"
-      expected_source: "<package.json-or-runtime-manifest>"
-      required: true
-    - tool: "git"
-      command: "git --version"
-      expected_source: "<project-policy>"
-      required: true
-    - tool: "package-manager"
-      command: "<package-manager> --version"
-      expected_source: "<package-manager-version-source>"
-      required: false
-    - tool: "container-runtime"
-      command: "<container-runtime> --version"
-      expected_source: "project.yml#environment.toolchains.containers"
-      required: false
+  supported_os: []
+  supported_architectures: []
+  toolchains: {}
+  probes: []
+  # 每项探测应记录 evidence、verified_at、refresh_when 和 status。
 
 commands:
-  install: "<command>"
-  develop: "<command>"
-  test: "<command>"
-  typecheck: "<command>"
-  lint: "<command>"
-  build: "<command>"
-  harness_check: "./harness check --workflow source/workflows/workflow-default.json --json"
-  architecture_check: "./harness check-architecture --file project.yml --json"
-  environment_check: "./harness check-environment --file AI_ENVIRONMENT.md --json"
-  commit_check: "node source/tools/check-commit-messages.mjs <base-ref> HEAD"
-  change_test_check: "node source/tools/check-change-tests.mjs <base-ref> HEAD --behavior-path <code-root> --test-root <test-root>"
-  completion_check: "./harness check-result --workflow <workflow.json> --stage <stage> --file <stage-result.json> --require-complete --json"
+  # 没有证据时保持 not-applicable；运行前必须验证命令存在、cwd、依赖和权限。
+  install: not-applicable
+  develop: not-applicable
+  test: not-applicable
+  typecheck: not-applicable
+  lint: not-applicable
+  build: not-applicable
+  e2e: not-applicable
+  browser_test: not-applicable
+  # 维护流程、harness、commit 检查和 completion 检查不是默认命令。
+  validation_policy: "按改动风险选择最小有效检查；未运行、跳过或失败的检查必须报告。"
 
 authoritative_context:
-  agent_entry: "AGENTS.md"
-  ai_environment: "AI_ENVIRONMENT.md"
-  architecture: "ARCHITECTURE.md"
-  source_manifest: "source/manifest.json"
-  knowledge_index: "source/knowledge/INDEX.md"
-  knowledge_routing: "source/knowledge/ROUTING.md"
-  rules: "source/rules/"
-  specs: "source/specs/"
+  agent_entry: AGENTS.md
+  ai_environment: AI_ENVIRONMENT.md
+  architecture: not-applicable
+  source_manifest: not-applicable
+  knowledge_index: not-applicable
+  knowledge_routing: not-applicable
+  rules: not-applicable
+  specs: not-applicable
 
 architecture_memory:
-  filename: "ARCHITECTURE.md"
-  code_roots:
-    - "<code-root>"
-  exclude:
-    - "**/__tests__"
-    - "**/fixtures"
-    - "**/generated"
-    - "**/vendor"
+  filename: not-applicable
+  code_roots: []
+  exclude: []
 
 capabilities:
-  skill_sources: "source/.agents/skills.sources.json"
+  skill_sources: .agents/skills.sources.json
 
 workflow:
-  definitions: "source/workflows/"
-  default: "source/workflows/workflow-default.json"
-  active_state: ".git/harness/control.json"
-  stage_result_template: "source/workflows/stage-result-template.json"
-  execution_trace_template: "source/workflows/execution-trace-template.json"
-  verification_report_template: "source/workflows/verification-report-template.json"
-  evidence_root: "work/requirements/"
+  definitions: not-applicable
+  default: not-applicable
+  active_state: not-applicable
+  stage_result_template: not-applicable
+  execution_trace_template: not-applicable
+  verification_report_template: not-applicable
+  evidence_root: work/requirements/
 
 permissions:
-  default: "read-only"
+  default: read-only
   write_roots:
     - "."
   require_human_approval:
-    - "publish"
-    - "production-write"
-    - "destructive-operation"
+    - publish
+    - production-write
+    - destructive-operation
+  local_reversible_edits: allowed-when-authorized
+  external_system_writes: approval-required
+
+freshness:
+  source: AI_ENVIRONMENT.md and referenced environment chapters
+  stale_facts_must_not_be_used: true
+  refresh_triggers:
+    - toolchain-change
+    - dependency-change
+    - ci-image-change
+    - permission-change
+    - network-policy-change
+    - service-configuration-change
+
+completion:
+  definition: "满足任务验收标准，运行必要的相关验证，处理由本次改动导致的失败，并报告未执行或失败的检查。"

@@ -1,32 +1,55 @@
 {
-  "version": 2,
-  "description": "Recommended external Skill sources only; consumers choose whether and how to resolve or install them.",
+  "version": 3,
+  "description": "按任务触发、延迟解析的外部 Skill 来源索引。安装前必须把 track 固定到已验证的 immutable tag、version 或 commit。",
   "skillsRoot": ".agents/skills",
+  "defaults": {
+    "resolve": "deferred",
+    "install": "on-demand",
+    "pinPolicy": "immutable-ref-required",
+    "verify": ["entry-exists", "track-resolves", "skill-manifest-valid"]
+  },
   "sources": [
     {
       "id": "web-design",
+      "purpose": "网页视觉设计与界面实现建议",
+      "when": ["网页设计", "界面视觉实现", "前端页面改版"],
       "repo": "https://github.com/xiaopu-ai/web-design.git",
-      "path": ".",
-      "track": { "kind": "branch", "value": "main" }
+      "path": "skills/web-design",
+      "entry": "SKILL.md",
+      "track": { "kind": "commit", "value": "pin-required" },
+      "resolve": "deferred"
     },
     {
       "id": "baoyu-design",
+      "purpose": "宝玉设计相关图像与内容工作流",
+      "when": ["宝玉设计", "图像设计工作流", "内容视觉化"],
       "repo": "https://github.com/JimLiu/baoyu-design.git",
       "path": "skills/baoyu-design",
-      "track": { "kind": "branch", "value": "main" }
+      "entry": "SKILL.md",
+      "track": { "kind": "commit", "value": "pin-required" },
+      "resolve": "deferred"
     },
     {
       "id": "mattpocock-skills",
+      "purpose": "TypeScript 与工程开发辅助 Skill 目录",
+      "when": ["TypeScript 工程", "类型设计", "开发工具工作流"],
       "repo": "https://github.com/mattpocock/skills.git",
       "path": "skills",
-      "track": { "kind": "branch", "value": "main" },
-      "exclude": ["deprecated/", "in-progress/"]
+      "entry": "按任务选择具体 Skill/SKILL.md",
+      "track": { "kind": "commit", "value": "pin-required" },
+      "exclude": ["deprecated/", "in-progress/"],
+      "resolve": "deferred",
+      "requireSpecificEntry": true
     },
     {
       "id": "architecture-diagram",
+      "purpose": "架构图生成与系统关系可视化",
+      "when": ["架构图", "系统拓扑", "组件关系可视化"],
       "repo": "https://github.com/Cocoon-AI/architecture-diagram-generator.git",
-      "path": ".",
-      "track": { "kind": "branch", "value": "main" }
+      "path": "skills/architecture-diagram",
+      "entry": "SKILL.md",
+      "track": { "kind": "commit", "value": "pin-required" },
+      "resolve": "deferred"
     }
   ]
 }

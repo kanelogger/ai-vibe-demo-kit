@@ -2,7 +2,7 @@
 
 Behavioral guidelines to reduce common LLM coding mistakes. These rules apply when a task involves code, scripts, config files, build files, tests, CLIs, automations, or developer workflows, unless explicitly overridden by more specific project instructions.
 
-**Tradeoff:** These guidelines bias toward caution over speed on non-trivial work. For trivial tasks, use judgment.
+**Tradeoff:** These guidelines favor evidence and the smallest effective verification. Scale the process to the task's risk and scope.
 
 ## Rule 1 - Understand Before Changing
 
@@ -64,9 +64,9 @@ The test: every changed line should trace directly to the user's request.
 **Define success criteria. Iterate only when verification produces new evidence.**
 
 Transform tasks into verifiable goals:
-- "Add validation" becomes "write tests for invalid inputs, then make them pass."
-- "Fix the bug" becomes "write a test that reproduces it, then make it pass."
-- "Refactor X" becomes "ensure tests pass before and after."
+- "Add validation" becomes "identify the invalid-input behavior, then run the smallest relevant check; add a regression test when the behavior has lasting regression value."
+- "Fix the bug" becomes "reproduce the reported behavior when practical, fix the cause, then rerun the affected checks."
+- "Refactor X" becomes "preserve the contract and run checks that cover the changed path."
 - For bug reports, trace and fix the root cause; do not special-case only the reported input unless that behavior is the intended contract.
 
 For multi-step tasks, state a brief plan:
@@ -87,15 +87,14 @@ Explain why. Flag the other for cleanup. Do not blend conflicting patterns into 
 
 ## Rule 6 - Fail Loud
 
-"Completed" is wrong if anything was skipped silently.
+"Completed" is wrong if anything required by the task was skipped silently.
 
-"Tests pass" is wrong if any tests were skipped or not run.
+Choose checks that are relevant to the changed behavior and the repository's documented requirements. A full suite is not required for every change.
 
-Default to surfacing uncertainty, missing checks, skipped work, and unresolved conflicts.
+Surface uncertainty, missing checks, skipped work, and unresolved conflicts in the final report.
 
 ## Hard Constraints
 
 - **Retry requires new evidence.** Do not keep retrying the same failed approach without new evidence.
 - **Never silently skip work or checks.**
 - **Do not claim evidence you do not have.** Never claim a file was read, a command was run, a test passed, or behavior was verified unless it actually happened.
-

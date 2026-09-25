@@ -28,10 +28,12 @@ commands:
   typecheck: not-applicable
   lint: not-applicable
   build: not-applicable
+  # e2e 填实际可运行的全套命令；针对性场景的执行方式写入测试规则或环境命令文档。
+  # 若无全套入口，保持 not-applicable，不得把普通 node --test 命令当作 E2E。
   e2e: not-applicable
   browser_test: not-applicable
   # 维护流程、harness、commit 检查和 completion 检查不是默认命令。
-  validation_policy: "按改动风险选择最小有效检查；未运行、跳过或失败的检查必须报告。"
+  validation_policy: "开发期间选针对性检查；有适用 E2E 的实现任务交付前在最终代码上运行全套；未运行、跳过或失败的检查必须报告。"
 
 authoritative_context:
   agent_entry: AGENTS.md

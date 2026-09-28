@@ -33,7 +33,7 @@ commands:
   e2e: not-applicable
   browser_test: not-applicable
   # 维护流程、harness、commit 检查和 completion 检查不是默认命令。
-  validation_policy: "开发期间选针对性检查；有适用 E2E 的实现任务交付前在最终代码上运行全套；未运行、跳过或失败的检查必须报告。"
+  validation_policy: "开发期间选针对性检查；有适用 E2E 的实现任务交付前在最终代码上运行全套；矩阵类项目可用一次代表性运行、额外组合交 CI；纯文档/纯测试/不改运行时的配置改动豁免全套 E2E；未运行、跳过或失败的检查必须报告。"
 
 authoritative_context:
   agent_entry: AGENTS.md

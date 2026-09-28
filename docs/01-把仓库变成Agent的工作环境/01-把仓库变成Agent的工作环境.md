@@ -165,6 +165,7 @@ project/
 
 ## 工具与验证
 
+- 运行时：【语言/运行时与最低版本；某条命令隐含更严版本时（例如 lint 需要更高 minor）一并写在这里。】
 - 包管理器：`【仅在默认选择不明确时填写】`
 - 安装：`【仅填写非标准命令】`
 - 构建：`【仅填写非标准命令】`
@@ -176,6 +177,7 @@ project/
 
 - 【只填写适用于整个仓库、可执行且无法从代码可靠推导的规则。】
 - 【安全关键规则可保留，即使触发频率较低。】
+- 【默认分支与 PR 目标仓库；推送前检查 `git log <base>..HEAD` 是否混入无关提交及其处理原则。】
 - 【新增普通规则应有重复会话证据，不为一次性失败追加规则。】
 
 ## 稳定领域概念
@@ -265,6 +267,7 @@ project/
 - 完成后审查差异，运行与改动相称的验证；
 - 任务结束时报告变更清单和验证结果，不自动创建提交；是否提交、何时提交由用户决定；
 - 用户要求提交或推送时，通过 `git-commit-push` Skill 执行，提交与推送流程以 Skill 为准；
+- 推送前检查本分支相对默认分支的提交区间（`git log <base>..HEAD`），不把混入的无关提交一并推走；
 - 不擅自推送、变基、修改历史或打包无关修改。
 ```
 
@@ -275,5 +278,6 @@ project/
 - Review the final diff and run proportionate verification before finishing.
 - Report the list of changes and verification results when the task ends; do not create commits automatically.
 - When the user asks to commit or push, run the `git-commit-push` skill; the commit and push procedure follows the skill.
+- Before pushing, check `git log <base>..HEAD` and do not carry unrelated commits into the push.
 - Never push, amend, or rewrite history on your own initiative.
 ```

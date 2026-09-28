@@ -85,7 +85,13 @@ If two patterns contradict, pick one based on evidence such as recency, test cov
 
 Explain why. Flag the other for cleanup. Do not blend conflicting patterns into a third accidental style.
 
-## Rule 6 - Fail Loud
+## Rule 6 - Trace Shared State
+
+Before changing anything that other code reads, list every reader and every writer of that state, and check each one still holds after the change. Applies to mutable fields, caches, singletons, config values, files, environment variables, global registries, and published interfaces.
+
+Review the whole branch diff, not only the last change. A change is not verified if a caller, consumer, or persisted artifact was left reading the old shape.
+
+## Rule 7 - Fail Loud
 
 "Completed" is wrong if anything required by the task was skipped silently.
 

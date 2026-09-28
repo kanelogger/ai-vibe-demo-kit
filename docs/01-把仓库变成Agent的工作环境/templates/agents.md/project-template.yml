@@ -13,6 +13,17 @@ repositories:
   primary: "."
   related: []
 
+workspace:
+  # 当前检出的项目根；不要写机器相关的绝对路径。
+  current_checkout_root: "."
+  # 稳定项目身份，可由仓库锚点、远程地址或项目 ID 表示；不能放凭据。
+  project_identity: unknown
+  # 当前工作区内实际被 Agent 发现或写入的项目级资源根。
+  project_scope_resource_roots: []
+  # 机器状态、缓存、锁和凭据的本地根；不适用时保持 not-applicable。
+  local_state_root: not-applicable
+  worktree_aware: unknown
+
 environment:
   supported_os: []
   supported_architectures: []

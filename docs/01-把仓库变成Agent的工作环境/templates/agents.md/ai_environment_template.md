@@ -31,7 +31,7 @@
 | Schema version | `2` |
 | Manifest owner | `unknown`（在项目实例中填写角色） |
 | Project reference | `project.yml` |
-| Source of truth | 本索引及其按需章节；冲突时以最新证据为准 |
+| Source of truth | `project.yml` 负责命令、路径和权限声明；代码、Schema、CI 与探测结果分别负责对应事实；本索引只负责路由 |
 | Last verified at | `unknown` |
 | Verified by | `unknown` |
 | Refresh trigger | 工具链、依赖、CI 镜像、权限、网络策略或服务配置变化 |

@@ -258,24 +258,22 @@ project/
 - 有适用 E2E 的实现任务，开发期间只运行针对性场景，准备交付时在最终代码上运行全套。若全套后又修改了会影响结果的代码或测试，最终版本必须重跑全套。
 - 每次 E2E 结束后生成并保存可核验、可复现的工件；没有适用或可运行的 E2E 时说明原因和风险。具体命令、复现所需的版本与数据，以及工件位置写在项目测试规则中；根 `AGENTS.md` 只保留简短约束和入口。
 
-### 修改文件的实现任务必须以一次 Git 提交结束
+### Git 提交规范
 
 ```md
 - 编辑前检查现有变更，并把已有或并发修改视为用户资产；
 - 完成后审查差异，运行与改动相称的验证；
-- 只提交当前任务相关的文件或代码块，不夹带无关修改；
-- 使用简洁、可描述本轮工作的提交信息，并向用户报告提交哈希；
-- 不擅自推送、变基、修改历史或打包无关修改；
-- 只读任务和没有文件变化的任务不创建空提交。
+- 任务结束时报告变更清单和验证结果，不自动创建提交；是否提交、何时提交由用户决定；
+- 用户要求提交或推送时，通过 `git-commit-push` Skill 执行，提交与推送流程以 Skill 为准；
+- 不擅自推送、变基、修改历史或打包无关修改。
 ```
 
 英文版：
 
 ```md
-Every implementation task that changes files MUST end with a git commit before the final response.
 - Inspect `git status` before editing and treat pre-existing or concurrent changes as user-owned.
-- Review the final diff and run proportionate verification before committing.
-- Stage only files or hunks that belong to the current task. Never bundle unrelated changes unless the user explicitly asks.
-- Use a concise descriptive commit message on `main`, report the commit hash, and do not push, amend, or rewrite history unless asked.
-- Read-only tasks and tasks with no file changes do not create empty commits.
+- Review the final diff and run proportionate verification before finishing.
+- Report the list of changes and verification results when the task ends; do not create commits automatically.
+- When the user asks to commit or push, run the `git-commit-push` skill; the commit and push procedure follows the skill.
+- Never push, amend, or rewrite history on your own initiative.
 ```
